@@ -5,4 +5,4 @@
 
 For use with LNbits Legend OnchainWallet extension.
 
-Join us t.me/lnbits, t.me/makerbits
+Join us <a href="https://t.me/lnbits">t.me/lnbits</a>, <a href="https://t.me/makerbits">t.me/makerbits</a>
