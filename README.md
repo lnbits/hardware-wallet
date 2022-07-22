@@ -1,4 +1,4 @@
-# DIY Bitcoin Hardware Wallet
+# DIY Bitcoin Hardware Wallet (powered by <a href="https://www.arduino.cc/reference/en/libraries/ubitcoin/">uBitcoin</a>)
 ## Use a world of microcontrollers to contruct your own bitcoin hardware wallet
 
 <img style="width:500px;" src="https://user-images.githubusercontent.com/33088785/180316957-4f99d7e9-9820-4302-9dde-ba555cb04729.png">
@@ -6,8 +6,6 @@
 For use with LNbits Legend OnchainWallet extension, but can other wallet applications can easily be built
 
 Join us <a href="https://t.me/lnbits">t.me/lnbits</a>, <a href="https://t.me/makerbits">t.me/makerbits</a>
-
-## Bitcoin Hardware Wallet (powered by <a href="https://www.arduino.cc/reference/en/libraries/ubitcoin/">uBitcoin</a>)
 
 This very cheap off the shelf hardware wallet is designed to work with Lilygos <a href="https://www.aliexpress.com/item/33048962331.html">Tdisplay</a>, but you can easily make work with any ESP32.
 
