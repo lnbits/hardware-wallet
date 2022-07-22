@@ -7,7 +7,7 @@ For use with LNbits Legend OnchainWallet extension, but can other wallet applica
 
 Join us <a href="https://t.me/lnbits">t.me/lnbits</a>, <a href="https://t.me/makerbits">t.me/makerbits</a>
 
-## Bitcoin Hardware Wallet (powered by uBitcoin)
+## Bitcoin Hardware Wallet (powered by <a href="https://www.arduino.cc/reference/en/libraries/ubitcoin/">uBitcoin</a>)
 
 This very cheap off the shelf hardware wallet is designed to work with Lilygos <a href="https://www.aliexpress.com/item/33048962331.html">Tdisplay</a>, but you can easily make work with any ESP32.
 
