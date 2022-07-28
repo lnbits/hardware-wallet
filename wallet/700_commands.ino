@@ -198,20 +198,22 @@ void executeSignPsbt(String commandData) {
   }
   printFeeDetails(psbt.fee());
 
-  // todo: custom paths
-  HDPrivateKey hd44 = hd.derive("m/44'/0'/0'"); // p2pkh
-  HDPrivateKey hd49 = hd.derive("m/49'/0'/0'"); // p2sh-p2wpkh
-  HDPrivateKey hd84 = hd.derive("m/84'/0'/0'"); // p2wpkh
-  HDPrivateKey hd86 = hd.derive("m/86'/0'/0'"); // p2tr
-
 
   commandData = awaitSerialData();
   if (commandData == COMMAND_SIGN_PSBT) {
+    showMessage("Please wait", "Signing PSBT...");
+
+    // todo: custom paths
+    HDPrivateKey hd44 = hd.derive("m/44'/0'/0'"); // p2pkh
+    HDPrivateKey hd49 = hd.derive("m/49'/0'/0'"); // p2sh-p2wpkh
+    HDPrivateKey hd84 = hd.derive("m/84'/0'/0'"); // p2wpkh
+    // HDPrivateKey hd86 = hd.derive("m/86'/0'/0'"); // p2tr not supported
+
     uint8_t signed44 = psbt.sign(hd44);
     uint8_t signed49 = psbt.sign(hd49);
     uint8_t signed84 = psbt.sign(hd84);
-    uint8_t signed86 = psbt.sign(hd86);
-    uint8_t signedInputCount = signed44 + signed49 + signed84 + signed86;
+    // uint8_t signed86 = psbt.sign(hd86);
+    uint8_t signedInputCount = signed44 + signed49 + signed84; //  + signed86
 
     Serial.println(COMMAND_SIGN_PSBT + " " + psbt.toBase64());
     message = "Signed inputs:";
