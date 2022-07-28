@@ -170,6 +170,7 @@ void executeSignPsbt(String commandData) {
     return;
   }
 
+  showMessage("Please wait", "Parsing PSBT...");
   PSBT psbt = parseBase64Psbt(commandData);
   if (!psbt) {
     message = "Failed parsing";
@@ -178,9 +179,22 @@ void executeSignPsbt(String commandData) {
   }
 
   HDPrivateKey hd(encrytptedMnemonic, ""); // todo: no passphrase yet
-  if (!hd) { // check if it is valid
+  // check if it is valid
+  if (!hd) {
     message = "Invalid Mnemonic";
     return;
+  }
+
+  Serial.println(COMMAND_SEND_PSBT);
+
+  for (int i = 0; i < psbt.tx.outputsNumber; i++) {
+    printOutputDetails(psbt, hd, i);
+    serialData = awaitSerialData();
+    Command c = extractCommand(serialData);
+    if (c.cmd != COMMAND_CONFIRM_NEXT) {
+      executeUnknown(c.data);
+      return;
+    }
   }
 
   // todo: custom paths
@@ -189,13 +203,6 @@ void executeSignPsbt(String commandData) {
   HDPrivateKey hd84 = hd.derive("m/84'/0'/0'"); // p2wpkh
   HDPrivateKey hd86 = hd.derive("m/86'/0'/0'"); // p2tr
 
-  // printPsbtDetails(psbt, hd44);
-  printOutputDetails(psbt, hd, 0);
-  Serial.println(COMMAND_SEND_PSBT);
-
-  //   for (int i = 0; i < psbt.tx.outputsNumber; i++) {
-
-  // }
 
   commandData = awaitSerialData();
   if (commandData == COMMAND_SIGN_PSBT) {

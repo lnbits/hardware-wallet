@@ -5,6 +5,7 @@ PSBT parseBase64Psbt(String psbtBase64) {
   return psbt;
 }
 
+// todo: remove
 void printPsbtDetails(PSBT psbt, HDPrivateKey hd) {
 
   // check parsing is ok
@@ -87,7 +88,5 @@ void printSats(String sats, int textSize) {
       tft.print(" ");
       tft.setTextSize(textSize);
     }
-
-
   }
 }
