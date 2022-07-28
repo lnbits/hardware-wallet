@@ -196,6 +196,7 @@ void executeSignPsbt(String commandData) {
       return;
     }
   }
+  printFeeDetails(psbt.fee());
 
   // todo: custom paths
   HDPrivateKey hd44 = hd.derive("m/44'/0'/0'"); // p2pkh

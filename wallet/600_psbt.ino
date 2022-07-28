@@ -65,6 +65,18 @@ void printOutputDetails(PSBT psbt, HDPrivateKey hd, int index) {
   tft.println(" sat");
 }
 
+void printFeeDetails(uint64_t fee) {
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setCursor(0, 30);
+  tft.setTextSize(2);
+  tft.print("Fee: ");
+  tft.setTextColor(TFT_GREEN, TFT_BLACK);
+  String sats = int64ToString(fee);
+  printSats(sats, 2);
+  tft.println(" sat");
+}
+
 bool isChangeAddress(HDPrivateKey hd, PSBTOutputMetadata txOutMeta, TxOut txOut) {
   Serial.println("### isChangeAddress IN " );
   if (txOutMeta.derivationsLen > 0) { // there is derivation path
