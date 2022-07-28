@@ -191,7 +191,11 @@ void executeSignPsbt(String commandData) {
     printOutputDetails(psbt, hd, i);
     serialData = awaitSerialData();
     Command c = extractCommand(serialData);
-    if (c.cmd != COMMAND_CONFIRM_NEXT) {
+    if (c.cmd == COMMAND_CANCEL) {
+      message = "Operation Canceled";
+      subMessage = "`/help` for details";
+      return;
+    } else if (c.cmd != COMMAND_CONFIRM_NEXT) {
       executeUnknown(c.data);
       return;
     }
@@ -199,8 +203,9 @@ void executeSignPsbt(String commandData) {
   printFeeDetails(psbt.fee());
 
 
-  commandData = awaitSerialData();
-  if (commandData == COMMAND_SIGN_PSBT) {
+  serialData = awaitSerialData();
+  Command c = extractCommand(serialData);
+  if (c.cmd == COMMAND_SIGN_PSBT) {
     showMessage("Please wait", "Signing PSBT...");
 
     // todo: custom paths
@@ -219,6 +224,9 @@ void executeSignPsbt(String commandData) {
     message = "Signed inputs:";
     // Stupid hack. For some reason `psbt.sign()` returns the square of the signed input count
     subMessage = String((int)sqrt(signedInputCount));
+  } else if (c.cmd = COMMAND_CANCEL) {
+    message = "Operation Canceled";
+    subMessage = "`/help` for details";
   } else {
     executeUnknown(commandData);
   }
