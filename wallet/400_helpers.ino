@@ -52,3 +52,12 @@ bool isAlphaNumeric(String instr) {
   }
   return true;
 }
+
+String int64ToString(uint64_t value) {
+  String s = "";
+  while (value != 0) {
+    s = String((int)(value % 10)) + s;
+    value = (uint64_t) value / 10;
+  }
+  return s;
+}

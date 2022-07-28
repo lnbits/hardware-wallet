@@ -189,8 +189,13 @@ void executeSignPsbt(String commandData) {
   HDPrivateKey hd84 = hd.derive("m/84'/0'/0'"); // p2wpkh
   HDPrivateKey hd86 = hd.derive("m/86'/0'/0'"); // p2tr
 
-  printPsbtDetails(psbt, hd44);
+  // printPsbtDetails(psbt, hd44);
+  printOutputDetails(psbt, hd, 0);
   Serial.println(COMMAND_SEND_PSBT);
+
+  //   for (int i = 0; i < psbt.tx.outputsNumber; i++) {
+
+  // }
 
   commandData = awaitSerialData();
   if (commandData == COMMAND_SIGN_PSBT) {
