@@ -49,6 +49,8 @@ void executeCommand(Command c) {
     executeSignPsbt(c.data);
   } else if (c.cmd == COMMAND_RESTORE) {
     executeRestore(c.data, "");
+  } else if (c.cmd == COMMAND_XPUB) {
+    executeXpub(c.data);
   } else {
     executeUnknown(c.data);
   }
@@ -119,6 +121,48 @@ void executeShowSeed(String commandData) {
   printMnemonic(encrytptedMnemonic);
 }
 
+void executeXpub(String commandData) {
+  if (authenticated == false) {
+    message = "Enter password!";
+    subMessage = "8 numbers/letters";
+    return;
+  }
+
+  int spacePos = commandData.indexOf(" ");
+  String networkName = commandData.substring(0, spacePos);
+  String path = commandData.substring(spacePos + 1, commandData.length() );
+
+  Network network;
+  if (networkName == "Mainnet") {
+    network = Mainnet;
+  } else if (networkName == "Testnet") {
+    network = Testnet;
+  } else {
+    message = "Unknown Network";
+    subMessage = "Must be Mainent or Testnet";
+    return;
+  }
+
+  if (!path) {
+    message = "Derivation path missing!";
+    subMessage = "XPUB not generated";
+    return;
+  }
+
+  Serial.println("xpub received: " + networkName + " path:" + path);
+
+  HDPrivateKey hd(encrytptedMnemonic, "");
+  if (!hd) {
+    message = "Invalid Mnemonic";
+    Serial.println(COMMAND_XPUB + " 0 invalid_mnemonic");
+    return;
+  }
+  HDPrivateKey account = hd.derive(path);
+  String xpub = account.xpub();
+  Serial.println(COMMAND_XPUB + " 1 " + xpub + " " + account.fingerprint());
+  message = xpub;
+}
+
 void executeRestore(String mnemonic, String password) {
   if (mnemonic == "") {
     message = "Enter seed words";
@@ -171,10 +215,27 @@ void executeSignPsbt(String commandData) {
   }
 
   showMessage("Please wait", "Parsing PSBT...");
-  PSBT psbt = parseBase64Psbt(commandData);
+  int spacePos = commandData.indexOf(" ");
+  String networkName = commandData.substring(0, spacePos);
+  String psbtBase64 = commandData.substring(spacePos + 1, commandData.length() );
+
+  Network network;
+  if (networkName == "Mainnet") {
+    network = Mainnet;
+  } else if (networkName == "Testnet") {
+    network = Testnet;
+  } else {
+    message = "Unknown Network";
+    subMessage = "Must be Mainent or Testnet";
+    return;
+  }
+
+  PSBT psbt = parseBase64Psbt(psbtBase64);
   if (!psbt) {
+    Serial.println("Failed psbt: " + psbtBase64);
     message = "Failed parsing";
     subMessage = "Send PSBT again";
+    Serial.println(COMMAND_SEND_PSBT + " psbt_parse_failed");
     return;
   }
 
@@ -182,13 +243,14 @@ void executeSignPsbt(String commandData) {
   // check if it is valid
   if (!hd) {
     message = "Invalid Mnemonic";
+    Serial.println(COMMAND_SEND_PSBT + " invalid_mnemonic'");
     return;
   }
 
-  Serial.println(COMMAND_SEND_PSBT);
+  Serial.println(COMMAND_SEND_PSBT + " 1");
 
   for (int i = 0; i < psbt.tx.outputsNumber; i++) {
-    printOutputDetails(psbt, hd, i);
+    printOutputDetails(psbt, hd, i, network);
     serialData = awaitSerialData();
     Command c = extractCommand(serialData);
     if (c.cmd == COMMAND_CANCEL) {

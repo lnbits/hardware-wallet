@@ -10,3 +10,4 @@ const String COMMAND_SIGN_PSBT = "/sign";
 const String COMMAND_CONFIRM_NEXT = "/confirm-next";
 const String COMMAND_CANCEL = "/cancel";
 const String COMMAND_HELP = "/help";
+const String COMMAND_XPUB = "/xpub";
