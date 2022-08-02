@@ -110,15 +110,38 @@ void executeWipeHww(String password) {
   Serial.println(COMMAND_WIPE + " " + String(authenticated));
 }
 
-void executeShowSeed(String commandData) {
+void executeShowSeed(String position) {
   if (authenticated == false) {
     message = "Enter password!";
     subMessage = "8 numbers/letters";
     return;
   }
+  if (!position || position.toInt() == 0) {
+    message = "Bad word position";
+    subMessage = "`/help` for details ";
+    return;
+  }
   message = "";
   subMessage = "";
-  printMnemonic(encrytptedMnemonic);
+  String word = getWordAtPosition(encrytptedMnemonic, position.toInt());
+  printMnemonicWord(position, word);
+}
+
+String getWordAtPosition(String str, int position) {
+  String s = str.substring(0);
+  int spacePos = 0;
+  int i = 1;
+  while (spacePos != -1) {
+    spacePos = s.indexOf(" ");
+    if (i == position) {
+      if (spacePos == -1) return s;
+      return s.substring(0, spacePos);
+    }
+    s = s.substring(spacePos + 1);
+    i++;
+  }
+
+  return "";
 }
 
 void executeXpub(String commandData) {

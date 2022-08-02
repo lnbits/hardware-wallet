@@ -52,13 +52,14 @@ void help()
   delay(10000);
 }
 
-void printMnemonic(String mn) {
+void printMnemonicWord(String position, String word) {
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setTextSize(2);
-  tft.setCursor(0, 0);
-  tft.println("Word list:");
-  tft.setCursor(0, 20);
-  tft.setTextSize(1);
-  tft.println(mn);
+  tft.setCursor(0, 10);
+  tft.println("Word " + position + ":");
+  tft.println("");
+  tft.setTextColor(TFT_GREEN, TFT_BLACK);
+  tft.setTextSize(3);
+  tft.println(word);
 }
