@@ -148,7 +148,7 @@ void executeXpub(String commandData) {
   }
   HDPrivateKey account = hd.derive(path);
   String xpub = account.xpub();
-  Serial.println(COMMAND_XPUB + " 1 " + xpub + " " + account.fingerprint());
+  Serial.println(COMMAND_XPUB + " 1 " + xpub + " " + hd.fingerprint());
   message = xpub;
 }
 
@@ -208,11 +208,11 @@ void executeSignPsbt(String commandData) {
   String networkName = commandData.substring(0, spacePos);
   String psbtBase64 = commandData.substring(spacePos + 1, commandData.length() );
 
-  Network network;
+  const Network * network;
   if (networkName == "Mainnet") {
-    network = Mainnet;
+    network = &Mainnet;
   } else if (networkName == "Testnet") {
-    network = Testnet;
+    network = &Testnet;
   } else {
     message = "Unknown Network";
     subMessage = "Must be Mainent or Testnet";
@@ -228,7 +228,7 @@ void executeSignPsbt(String commandData) {
     return;
   }
 
-  HDPrivateKey hd(encrytptedMnemonic, ""); // todo: no passphrase yet
+  HDPrivateKey hd(encrytptedMnemonic, "", network); // todo: no passphrase yet
   // check if it is valid
   if (!hd) {
     message = "Invalid Mnemonic";
@@ -239,7 +239,7 @@ void executeSignPsbt(String commandData) {
   Serial.println(COMMAND_SEND_PSBT + " 1");
 
   for (int i = 0; i < psbt.tx.outputsNumber; i++) {
-    printOutputDetails(psbt, hd, i, network);
+    printOutputDetails(psbt, hd, i);
     serialData = awaitSerialData();
     Command c = extractCommand(serialData);
     if (c.cmd == COMMAND_CANCEL) {
@@ -265,16 +265,16 @@ void executeSignPsbt(String commandData) {
     HDPrivateKey hd84 = hd.derive("m/84'/0'/0'"); // p2wpkh
     // HDPrivateKey hd86 = hd.derive("m/86'/0'/0'"); // p2tr not supported
 
-    uint8_t signed44 = psbt.sign(hd44);
-    uint8_t signed49 = psbt.sign(hd49);
-    uint8_t signed84 = psbt.sign(hd84);
+    // uint8_t signed44 = psbt.sign(hd44);
+    // uint8_t signed49 = psbt.sign(hd49);
+    // uint8_t signed84 = psbt.sign(hd84);
     // uint8_t signed86 = psbt.sign(hd86);
-    uint8_t signedInputCount = signed44 + signed49 + signed84; //  + signed86
+    // uint8_t signedInputCount = signed44 + signed49 + signed84; //  + signed86
+    uint8_t signedInputCount = psbt.sign(hd);
 
     Serial.println(COMMAND_SIGN_PSBT + " " + psbt.toBase64());
     message = "Signed inputs:";
-    // Stupid hack. For some reason `psbt.sign()` returns the square of the signed input count
-    subMessage = String((int)sqrt(signedInputCount));
+    subMessage = String(signedInputCount);
   } else if (c.cmd = COMMAND_CANCEL) {
     message = "Operation Canceled";
     subMessage = "`/help` for details";
