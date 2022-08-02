@@ -132,24 +132,13 @@ void executeXpub(String commandData) {
   String networkName = commandData.substring(0, spacePos);
   String path = commandData.substring(spacePos + 1, commandData.length() );
 
-  Network network;
-  if (networkName == "Mainnet") {
-    network = Mainnet;
-  } else if (networkName == "Testnet") {
-    network = Testnet;
-  } else {
-    message = "Unknown Network";
-    subMessage = "Must be Mainent or Testnet";
-    return;
-  }
+  Serial.println("xpub received: " + networkName + " path:" + path);
 
   if (!path) {
     message = "Derivation path missing!";
     subMessage = "XPUB not generated";
     return;
   }
-
-  Serial.println("xpub received: " + networkName + " path:" + path);
 
   HDPrivateKey hd(encrytptedMnemonic, "");
   if (!hd) {
