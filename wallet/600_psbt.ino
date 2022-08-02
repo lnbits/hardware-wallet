@@ -36,7 +36,7 @@ void printPsbtDetails(PSBT psbt, HDPrivateKey hd) {
   tft.println(" bits");
 }
 
-void printOutputDetails(PSBT psbt, HDPrivateKey hd, int index, Network network) {
+void printOutputDetails(PSBT psbt, HDPrivateKey hd, int index) {
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setCursor(0, 0);
@@ -51,7 +51,7 @@ void printOutputDetails(PSBT psbt, HDPrivateKey hd, int index, Network network) 
 
   tft.setTextSize(2);
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
-  tft.println(psbt.tx.txOuts[index].address(&network));
+  tft.println(psbt.tx.txOuts[index].address());
   tft.setTextSize(1);
 
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
