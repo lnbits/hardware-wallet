@@ -127,23 +127,6 @@ void executeShowSeed(String position) {
   printMnemonicWord(position, word);
 }
 
-String getWordAtPosition(String str, int position) {
-  String s = str.substring(0);
-  int spacePos = 0;
-  int i = 1;
-  while (spacePos != -1) {
-    spacePos = s.indexOf(" ");
-    if (i == position) {
-      if (spacePos == -1) return s;
-      return s.substring(0, spacePos);
-    }
-    s = s.substring(spacePos + 1);
-    i++;
-  }
-
-  return "";
-}
-
 void executeXpub(String commandData) {
   if (authenticated == false) {
     message = "Enter password!";
@@ -157,13 +140,24 @@ void executeXpub(String commandData) {
 
   Serial.println("xpub received: " + networkName + " path:" + path);
 
+  const Network * network;
+  if (networkName == "Mainnet") {
+    network = &Mainnet;
+  } else if (networkName == "Testnet") {
+    network = &Testnet;
+  } else {
+    message = "Unknown Network";
+    subMessage = "Must be Mainent or Testnet";
+    return;
+  }
+
   if (!path) {
     message = "Derivation path missing!";
     subMessage = "XPUB not generated";
     return;
   }
 
-  HDPrivateKey hd(encrytptedMnemonic, "");
+  HDPrivateKey hd(encrytptedMnemonic, "", &Testnet);
   if (!hd) {
     message = "Invalid Mnemonic";
     Serial.println(COMMAND_XPUB + " 0 invalid_mnemonic");
@@ -282,17 +276,6 @@ void executeSignPsbt(String commandData) {
   if (c.cmd == COMMAND_SIGN_PSBT) {
     showMessage("Please wait", "Signing PSBT...");
 
-    // todo: custom paths
-    HDPrivateKey hd44 = hd.derive("m/44'/0'/0'"); // p2pkh
-    HDPrivateKey hd49 = hd.derive("m/49'/0'/0'"); // p2sh-p2wpkh
-    HDPrivateKey hd84 = hd.derive("m/84'/0'/0'"); // p2wpkh
-    // HDPrivateKey hd86 = hd.derive("m/86'/0'/0'"); // p2tr not supported
-
-    // uint8_t signed44 = psbt.sign(hd44);
-    // uint8_t signed49 = psbt.sign(hd49);
-    // uint8_t signed84 = psbt.sign(hd84);
-    // uint8_t signed86 = psbt.sign(hd86);
-    // uint8_t signedInputCount = signed44 + signed49 + signed84; //  + signed86
     uint8_t signedInputCount = psbt.sign(hd);
 
     Serial.println(COMMAND_SIGN_PSBT + " " + psbt.toBase64());
