@@ -256,7 +256,7 @@ void executeSignPsbt(String commandData) {
   Serial.println(COMMAND_SEND_PSBT + " 1");
 
   for (int i = 0; i < psbt.tx.outputsNumber; i++) {
-    printOutputDetails(psbt, hd, i);
+    printOutputDetails(psbt, hd, i, network);
     serialData = awaitSerialData();
     Command c = extractCommand(serialData);
     if (c.cmd == COMMAND_CANCEL) {

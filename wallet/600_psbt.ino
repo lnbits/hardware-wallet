@@ -36,7 +36,7 @@ void printPsbtDetails(PSBT psbt, HDPrivateKey hd) {
   tft.println(" bits");
 }
 
-void printOutputDetails(PSBT psbt, HDPrivateKey hd, int index) {
+void printOutputDetails(PSBT psbt, HDPrivateKey hd, int index, const Network * network) {
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setCursor(0, 0);
@@ -45,13 +45,13 @@ void printOutputDetails(PSBT psbt, HDPrivateKey hd, int index) {
   tft.setTextSize(1);
   tft.println("");
   bool isChange = isChangeAddress(hd, psbt.txOutsMeta[index], psbt.tx.txOuts[index]);
-  if (isChange) tft.print("Change ");
+  if (isChange == true) tft.print("Change ");
   tft.println("Address:");
   tft.println("");
 
   tft.setTextSize(2);
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
-  tft.println(psbt.tx.txOuts[index].address());
+  tft.println(psbt.tx.txOuts[index].address(network));
   tft.setTextSize(1);
 
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
