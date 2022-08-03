@@ -38,17 +38,27 @@ void help()
   tft.println("HardwareSigner Commands");
   tft.setCursor(0, 20);
   tft.setTextSize(1);
-  tft.println("'wipe' will completely wipe device and creat a new wallet");
-  tft.println("'restore <BIP39 seed words seperated by space>' will restore from seed");
-  tft.println("'seed' will send seed to serial output");
-  tft.println("'cHNid...' Will parse valid psbt");
-  tft.println("'sign' Will sign valid psbt");
+
+  tft.println("'/help' show available commands");
+  tft.println("'/restore <BIP39 seed words seperated by space>' will restore from seed");
+  tft.println("'/wipe' will completely wipe device and creat a new wallet");
+  tft.println("'/password' login by providing a password");
+  tft.println("'/password-clear' logout");
+  tft.println("'/seed' will show the seed on the hww display");
+  tft.println("'/psbt' will parse valid psbt and show its outputs and fee");
+  tft.println("'/sign' will sign valid psbt");
+  tft.println("'/xpub' will return the XPub for a provided derivation path");
+
   Serial.println("HardwareSigner Commands");
-  Serial.println("'wipe' will completely wipe device and creat a new wallet");
-  Serial.println("'restore <BIP39 seed words seperated by space>' will restore from seed");
-  Serial.println("'seed' will send seed to serial output");
-  Serial.println("'cHNid...' Will parse valid psbt");
-  Serial.println("'sign' Will sign valid psbt");
+  Serial.println("'/help' show available commands");
+  Serial.println("'/restore <BIP39 seed words seperated by space>' will restore from seed");
+  Serial.println("'/wipe' will completely wipe device and creat a new wallet");
+  Serial.println("'/password' login by providing a password");
+  Serial.println("'/password-clear' logout");
+  Serial.println("'/seed' will show the seed on the hww display");
+  Serial.println("'/psbt' will parse valid psbt and show its outputs and fee");
+  Serial.println("'/sign' will sign valid psbt");
+  Serial.println("'/xpub' will return the XPub for a provided derivation path");
   delay(10000);
 }
 
