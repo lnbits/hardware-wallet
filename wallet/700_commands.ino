@@ -278,7 +278,7 @@ void executeSignPsbt(String commandData) {
 
     uint8_t signedInputCount = psbt.sign(hd);
 
-    Serial.println(COMMAND_SIGN_PSBT + " " + psbt.toBase64());
+    Serial.println(COMMAND_SIGN_PSBT + " " + signedInputCount + " " + psbt.toBase64());
     message = "Signed inputs:";
     subMessage = String(signedInputCount);
   } else if (c.cmd = COMMAND_CANCEL) {
