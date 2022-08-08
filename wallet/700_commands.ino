@@ -57,7 +57,53 @@ void executeCommand(Command c) {
 }
 
 void executeHelp(String commandData) {
-  help();
+  // help();
+  String alicesPrivateKeyHex =  "359A8CA1418C49DD26DC7D92C789AC33347F64C6B7789C666098805AF3CC60E5";
+  String bobsPrivateKeyHex = "AB52F1F981F639BD83F884703BC690B10DB709FF48806680A0D3FBC6475E6093";
+
+
+  uint8_t alicePrivateKeyBin[32];
+  int len = fromHex(alicesPrivateKeyHex, alicePrivateKeyBin, 32);
+  PrivateKey alicePrivateKey(alicePrivateKeyBin);
+  PublicKey alicePublicKey = alicePrivateKey.publicKey();
+
+  uint8_t bobsPrivateKeyBin[32];
+  fromHex(bobsPrivateKeyHex, bobsPrivateKeyBin, 32);
+  PrivateKey bobsPrivateKey(bobsPrivateKeyBin);
+
+  Serial.println("### length: " + len);
+  Serial.println("### bobsPrivateKey: " + toHex(bobsPrivateKeyBin, len));
+
+
+  byte shared_secret1[32];
+  bobsPrivateKey.ecdh(alicePublicKey, shared_secret1);
+  Serial.println("### shared_secret1: " + toHex(shared_secret1, 32));
+
+
+
+
+
+
+  uint8_t iv[]  = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };
+   uint8_t in[]  = { 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
+                      0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, 0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51,
+                      0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11, 0xe5, 0xfb, 0xc1, 0x19, 0x1a, 0x0a, 0x52, 0xef,
+                      0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17, 0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10 };
+  String ivs = (char*)iv;  
+  Serial.println("### iv: " + ivs);
+  String in_str = (char*)in;  
+  Serial.println("### in_str: " + in_str);
+
+
+  struct AES_ctx ctx;
+
+  AES_init_ctx_iv(&ctx, bobsPrivateKeyBin, iv);
+  AES_CBC_encrypt_buffer(&ctx, in, 64);
+
+  String out_str = (char*)in;  
+  Serial.println("### iv: " + out_str);
+
+
 }
 
 void executePasswordCheck(String commandData) {
