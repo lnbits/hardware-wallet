@@ -18,6 +18,8 @@
 #include "Bitcoin.h"
 #include "PSBT.h"
 
+#include <aes.h>
+
 #include <FS.h>
 #include <SPIFFS.h>
 fs::SPIFFSFS &FlashFS = SPIFFS;
