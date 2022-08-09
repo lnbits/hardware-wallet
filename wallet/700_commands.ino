@@ -118,13 +118,13 @@ void executeHelp(String commandData) {
 
   String message = "Hello ₿ World";
   byte plain[message.length()];
-  message.getBytes(plain, message.length()+1);
+  message.getBytes(plain, sizeof(message));
   Serial.println("### message2: " + String((char *)plain));
 
   String messageHex = toHex(plain, sizeof(plain));
   Serial.println("### messageHex: " + messageHex);
-  int byteSize = messageHex.length() / 2;
-  uint8_t messageBin[byteSize];
+  int byteSize = sizeof(messageHex);
+  byte messageBin[byteSize];
   fromHex(messageHex, messageBin, byteSize);
   Serial.println("### re-message2: " + String((char *)messageBin));
 }
