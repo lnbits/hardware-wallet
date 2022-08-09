@@ -58,6 +58,7 @@ void executeCommand(Command c) {
 
 void executeHelp(String commandData) {
   // help();
+  Serial.println("### executeHelp: " + commandData);
   String alicesPrivateKeyHex =  "359a8ca1418c49dd26dc7d92c789ac33347f64c6b7789c666098805af3cc60e5";
   String bobsPrivateKeyHex = "ab52f1f981f639bd83f884703bc690b10db709ff48806680a0d3fbc6475e6093";
 
@@ -121,12 +122,18 @@ void executeHelp(String commandData) {
   message.getBytes(plain, sizeof(message));
   Serial.println("### message2: " + String((char *)plain));
 
-  String messageHex = toHex(plain, sizeof(plain));
+  String messageHex = commandData; //toHex(plain, sizeof(plain));
   Serial.println("### messageHex: " + messageHex);
-  int byteSize = sizeof(messageHex);
+  int byteSize = messageHex.length() / 2; //sizeof(messageHex);
+  Serial.println("### byteSize: "+ String(byteSize));
   byte messageBin[byteSize];
   fromHex(messageHex, messageBin, byteSize);
-  Serial.println("### re-message2: " + String((char *)messageBin));
+  Serial.println("### messageHex return: " + toHex(messageBin, sizeof(messageBin)));
+
+  AES_init_ctx_iv(&ctx, shared_secret1, iv);
+  AES_CBC_decrypt_buffer(&ctx, messageBin, byteSize);
+  Serial.println("### re-message decrypted: " + toHex(messageBin, sizeof(messageBin)));
+  Serial.println("### end help");
 }
 
 void executePasswordCheck(String commandData) {
