@@ -58,8 +58,8 @@ void executeCommand(Command c) {
 
 void executeHelp(String commandData) {
   // help();
-  String alicesPrivateKeyHex =  "359A8CA1418C49DD26DC7D92C789AC33347F64C6B7789C666098805AF3CC60E5";
-  String bobsPrivateKeyHex = "AB52F1F981F639BD83F884703BC690B10DB709FF48806680A0D3FBC6475E6093";
+  String alicesPrivateKeyHex =  "359a8ca1418c49dd26dc7d92c789ac33347f64c6b7789c666098805af3cc60e5";
+  String bobsPrivateKeyHex = "ab52f1f981f639bd83f884703bc690b10db709ff48806680a0d3fbc6475e6093";
 
 
   uint8_t alicePrivateKeyBin[32];
@@ -67,17 +67,27 @@ void executeHelp(String commandData) {
   PrivateKey alicePrivateKey(alicePrivateKeyBin);
   PublicKey alicePublicKey = alicePrivateKey.publicKey();
 
+  Serial.println("### alice length: " + String(len));
+  Serial.println("### alicePrivateKey: " + toHex(alicePrivateKeyBin, len));
+  Serial.println("### alicePublicKey: " + toHex(alicePublicKey.point, 64));
+
   uint8_t bobsPrivateKeyBin[32];
   fromHex(bobsPrivateKeyHex, bobsPrivateKeyBin, 32);
   PrivateKey bobsPrivateKey(bobsPrivateKeyBin);
+  PublicKey bobsPublicKey = bobsPrivateKey.publicKey();
 
-  Serial.println("### length: " + len);
+  Serial.println("### length: " + String(len));
   Serial.println("### bobsPrivateKey: " + toHex(bobsPrivateKeyBin, len));
+  Serial.println("### bobsPublicKey: " + toHex(bobsPublicKey.point, 64));
 
 
   byte shared_secret1[32];
-  bobsPrivateKey.ecdh(alicePublicKey, shared_secret1);
-  Serial.println("### shared_secret1: " + toHex(shared_secret1, 32));
+  bobsPrivateKey.ecdh(alicePublicKey, shared_secret1, false);
+  Serial.println("### shared_secret1: " + toHex(shared_secret1, sizeof(shared_secret1)));
+
+  byte shared_secret2[32];
+  alicePrivateKey.ecdh(bobsPublicKey, shared_secret2, false);
+  Serial.println("### shared_secret2: " + toHex(shared_secret2, sizeof(shared_secret2)));
 
 
 
@@ -85,24 +95,21 @@ void executeHelp(String commandData) {
 
 
   uint8_t iv[]  = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };
-   uint8_t in[]  = { 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
-                      0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, 0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51,
-                      0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11, 0xe5, 0xfb, 0xc1, 0x19, 0x1a, 0x0a, 0x52, 0xef,
-                      0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17, 0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10 };
-  String ivs = (char*)iv;  
-  Serial.println("### iv: " + ivs);
-  String in_str = (char*)in;  
-  Serial.println("### in_str: " + in_str);
+  uint8_t in[]  = { 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
+                    0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, 0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51,
+                    0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11, 0xe5, 0xfb, 0xc1, 0x19, 0x1a, 0x0a, 0x52, 0xef,
+                    0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17, 0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10
+                  };
 
+  Serial.println("### iv: " + toHex(iv, sizeof(iv)));
+  Serial.println("### in: " + toHex(in, sizeof(in)));
 
-  struct AES_ctx ctx;
+  AES_ctx ctx;
 
-  AES_init_ctx_iv(&ctx, bobsPrivateKeyBin, iv);
+  AES_init_ctx_iv(&ctx, bobsPrivateKeyBin, iv); // shared_secret1
   AES_CBC_encrypt_buffer(&ctx, in, 64);
 
-  String out_str = (char*)in;  
-  Serial.println("### iv: " + out_str);
-
+  Serial.println("### in2: " + toHex(in, sizeof(in)));
 
 }
 
