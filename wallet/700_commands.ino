@@ -124,15 +124,17 @@ void executeHelp(String commandData) {
 
   String messageHex = commandData; //toHex(plain, sizeof(plain));
   Serial.println("### messageHex: " + messageHex);
-  int byteSize = messageHex.length() / 2; //sizeof(messageHex);
+  int byteSize =  messageHex.length() / 2; // sizeof(messageHex); 
   Serial.println("### byteSize: "+ String(byteSize));
   byte messageBin[byteSize];
   fromHex(messageHex, messageBin, byteSize);
-  Serial.println("### messageHex return: " + toHex(messageBin, sizeof(messageBin)));
+  // Serial.println("### messageHex return: " + toHex(messageBin, sizeof(messageBin)));
+  String commandTxt = (char *)messageBin;
+  Serial.println("### messageText return: " + commandTxt.substring(0, byteSize));
 
-  AES_init_ctx_iv(&ctx, shared_secret1, iv);
-  AES_CBC_decrypt_buffer(&ctx, messageBin, byteSize);
-  Serial.println("### re-message decrypted: " + toHex(messageBin, sizeof(messageBin)));
+  // AES_init_ctx_iv(&ctx, shared_secret1, iv);
+  // AES_CBC_decrypt_buffer(&ctx, messageBin, byteSize);
+  // Serial.println("### re-message decrypted: " + toHex(messageBin, sizeof(messageBin)));
   Serial.println("### end help");
 }
 
