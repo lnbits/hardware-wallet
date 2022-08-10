@@ -15,6 +15,7 @@ String subMessage = "Enter password";
 String serialData = "";
 
 void listenForCommands() {
+  // todo: called too many times
   if (loadFiles() == false) {
     message = "Failed opening files";
     subMessage = "Reset or 'help'";
@@ -55,8 +56,63 @@ void executeCommand(Command c) {
     executeUnknown(c.data);
   }
 }
-
 void executeHelp(String commandData) {
+  // help();
+  Serial.println("### executeHelp 1: " + commandData);
+  String messageB = "Hello HWW  World";
+  byte plainB[messageB.length()];
+  messageB.getBytes(plainB, sizeof(messageB));
+  Serial.println("### messageB: " + toHex(plainB, sizeof(plainB)));
+  
+  String alicesPrivateKeyHex =  "359a8ca1418c49dd26dc7d92c789ac33347f64c6b7789c666098805af3cc60e5";
+  String bobsPrivateKeyHex = "ab52f1f981f639bd83f884703bc690b10db709ff48806680a0d3fbc6475e6093";
+
+
+  uint8_t alicePrivateKeyBin[32];
+  int len = fromHex(alicesPrivateKeyHex, alicePrivateKeyBin, 32);
+  PrivateKey alicePrivateKey(alicePrivateKeyBin);
+  PublicKey alicePublicKey = alicePrivateKey.publicKey();
+
+  uint8_t bobsPrivateKeyBin[32];
+  fromHex(bobsPrivateKeyHex, bobsPrivateKeyBin, 32);
+  PrivateKey bobsPrivateKey(bobsPrivateKeyBin);
+  PublicKey bobsPublicKey = bobsPrivateKey.publicKey();
+
+  byte shared_secret1[32];
+  bobsPrivateKey.ecdh(alicePublicKey, shared_secret1, false);
+  Serial.println("### shared_secret1: " + toHex(shared_secret1, sizeof(shared_secret1)));
+  
+
+
+  String messageHex = commandData;
+  int byteSize =  messageHex.length() / 2;
+  byte messageBin[byteSize];
+
+  Serial.println("### messageHex: " + messageHex);
+  Serial.println("### byteSize: "+ String(byteSize));
+
+  fromHex(messageHex, messageBin, byteSize);
+  Serial.println("### messageText return0: " + toHex(messageBin, sizeof(messageBin)));
+
+  uint8_t iv[]  = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };
+  byte shared_secret[32];
+  fromHex("f96c85875055a5586688fea4cf7c4a2bd9541ffcf34f9d663d97e0cf2f6af4af", shared_secret, 32);
+  Serial.println("### iv: " + toHex(iv, sizeof(iv)));
+  
+  AES_ctx ctx;
+  AES_init_ctx_iv(&ctx, shared_secret, iv);
+  AES_CBC_decrypt_buffer(&ctx, messageBin, sizeof(messageBin));
+
+  String commandTxt = String((char *)messageBin);
+  Serial.println("### messageText return1: " + commandTxt.substring(0, byteSize));
+  Serial.println("### messageText return2: " + commandTxt);
+  Serial.println("### messageText return3: " + toHex(messageBin, sizeof(messageBin)));
+  
+  Serial.println("### end help 1");
+}
+
+/*
+void executeHelpTest(String commandData) {
   // help();
   Serial.println("### executeHelp: " + commandData);
   String alicesPrivateKeyHex =  "359a8ca1418c49dd26dc7d92c789ac33347f64c6b7789c666098805af3cc60e5";
@@ -137,6 +193,7 @@ void executeHelp(String commandData) {
   // Serial.println("### re-message decrypted: " + toHex(messageBin, sizeof(messageBin)));
   Serial.println("### end help");
 }
+*/
 
 void executePasswordCheck(String commandData) {
   if (commandData == "") {
