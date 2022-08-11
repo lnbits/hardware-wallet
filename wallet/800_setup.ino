@@ -12,4 +12,8 @@ void setup() {
   h.begin();
   FlashFS.begin(FORMAT_ON_FAIL);
   SPIFFS.begin(true);
+
+  Serial.println("HWW: waiting for commands");
+  // in case of forced reboot, tell the client to logout
+  Serial.println(COMMAND_PASSWORD_CLEAR + " 1");
 }
