@@ -12,7 +12,7 @@ String command = ""; // todo: remove
 String commandData = ""; // todo: remove
 
 String message = "Welcome";
-String subMessage = "Enter password";
+String subMessage = "Row, row, row your boat";
 
 String serialData = "";
 
@@ -30,7 +30,7 @@ void listenForCommands() {
 
   Command c = extractCommand(serialData);
   if (c.cmd != COMMAND_DH_EXCHANGE) {
-    serialData = decryptData(serialData);
+    serialData = decryptMessageWithIv(serialData);
     c = extractCommand(serialData);
   }
   // flush stale data from buffer
@@ -212,7 +212,7 @@ void executeRestore(String mnemonic, String password) {
     return;
   }
 
-  if (!hasValidChecksum(mnemonic, size)) {
+  if (!checkMnemonic(mnemonic)) {
     message = "Wrong mnemonic!";
     subMessage = "Incorrect checksum";
     serialSendCommand(COMMAND_RESTORE, "0");
@@ -336,7 +336,7 @@ bool loadFiles() {
 bool wipeHww(String password, String mnemonic) {
   if (isAlphaNumeric(password) == false)
     return false;
-  // todo: use checkMnemonic (Bitcoin.cpp)
+
   deleteFile(SPIFFS, "/mn.txt");
   deleteFile(SPIFFS, "/hash.txt");
   if (mnemonic == "") {
@@ -348,14 +348,6 @@ bool wipeHww(String password, String mnemonic) {
 
   delay(DELAY_MS);
   return true;
-}
-
-
-bool hasValidChecksum(String mnemonic, int size) {
-  uint8_t out[size];
-  size_t len = mnemonicToEntropy(mnemonic, out, sizeof(out));
-  String deserializedMnemonic = mnemonicFromEntropy(out, sizeof(out));
-  return mnemonic == deserializedMnemonic;
 }
 
 void serialSendCommand(String command, String commandData) {
@@ -372,6 +364,18 @@ void serialPrintlnSecure(String msg) {
 }
 
 
+String decryptMessageWithIv(String messageWithIvHex) {
+   int ivSize = 16;
+  String messageHex = messageWithIvHex.substring(0, messageWithIvHex.length() - ivSize * 2);
+  String ivHex = messageWithIvHex.substring(messageWithIvHex.length() - ivSize * 2, messageWithIvHex.length());
+
+  String decryptedData = decryptData(messageHex, ivHex);
+
+  Command c = extractCommand(decryptedData);
+  int commandLength = c.cmd.toInt();
+  return c.data.substring(0, commandLength);
+}
+
 String encryptData(String msg) {
   int ivSize = 16;
   uint8_t iv[ivSize];
@@ -382,45 +386,29 @@ String encryptData(String msg) {
   byte messageBin[msg.length()];
   msg.getBytes(messageBin, msg.length());
 
-  // logSerial("### encryptData msg:"+ msg + ":"+String(sizeof(messageBin)));
-  // logSerial("### encryptData messageBin: " + toHex(messageBin, sizeof(messageBin)));
-
   AES_ctx ctx;
   AES_init_ctx_iv(&ctx, dhe_shared_secret, iv);
 
   AES_CBC_encrypt_buffer(&ctx, messageBin, sizeof(messageBin));
-  // logSerial("### messageHex: " + toHex(messageBin, sizeof(messageBin)));
 
   String messageHex = toHex(messageBin, sizeof(messageBin));
   return messageHex + ivHex;
 }
 
-String decryptData(String messageWithIvHex) {
-  int ivSize = 16;
-  String messageHex = messageWithIvHex.substring(0, messageWithIvHex.length() - ivSize * 2);
-  String ivHex = messageWithIvHex.substring(messageWithIvHex.length() - ivSize * 2, messageWithIvHex.length());
-
+String decryptData(String messageHex, String ivHex) {
   int byteSize =  messageHex.length() / 2;
   byte messageBin[byteSize];
   fromHex(messageHex, messageBin, byteSize);
 
-  // uint8_t iv[]  = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };
-  logSerial("### ivHex:"+ivHex);
-  uint8_t iv[ivSize];
-  fromHex(ivHex, iv, ivSize);
+  uint8_t iv[16];
+  fromHex(ivHex, iv, 16);
 
 
   AES_ctx ctx;
   AES_init_ctx_iv(&ctx, dhe_shared_secret, iv);
   AES_CBC_decrypt_buffer(&ctx, messageBin, sizeof(messageBin));
-  String commandTxt = String((char *)messageBin).substring(0, byteSize);
 
-  // logSerial("### decryptData messageHex:"+messageHex);
-  // logSerial("### decryptData commandTxt:"+commandTxt);
-  // not actually a command
-  Command c = extractCommand(commandTxt);
-  int commandLength = c.cmd.toInt();
-  return c.data.substring(0, commandLength);
+  return String((char *)messageBin).substring(0, byteSize);
 }
 
 Command extractCommand(String s) {
