@@ -12,7 +12,7 @@ void logo() {
   tft.setCursor(0, 80);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.print("LNbits/ubitcoin HWW");
-  Serial.println("HardwareSigner LNbits/ubitcoin");
+  logSerial("HardwareSigner LNbits/ubitcoin");
 }
 
 void showMessage(String message, String additional)
@@ -25,8 +25,8 @@ void showMessage(String message, String additional)
   tft.setCursor(0, 80);
   tft.setTextSize(2);
   tft.println(additional);
-  Serial.println(message);
-  Serial.println(additional);
+  logSerial(message);
+  logSerial(additional);
 }
 
 void help()
@@ -49,16 +49,16 @@ void help()
   tft.println("'/sign' will sign valid psbt");
   tft.println("'/xpub' will return the XPub for a provided derivation path");
 
-  Serial.println("HardwareSigner Commands");
-  Serial.println("'/help' show available commands");
-  Serial.println("'/restore <BIP39 seed words seperated by space>' will restore from seed");
-  Serial.println("'/wipe' will completely wipe device and creat a new wallet");
-  Serial.println("'/password' login by providing a password");
-  Serial.println("'/password-clear' logout");
-  Serial.println("'/seed' will show the seed on the hww display");
-  Serial.println("'/psbt' will parse valid psbt and show its outputs and fee");
-  Serial.println("'/sign' will sign valid psbt");
-  Serial.println("'/xpub' will return the XPub for a provided derivation path");
+  logSerial("HardwareSigner Commands");
+  logSerial("'/help' show available commands");
+  logSerial("'/restore <BIP39 seed words seperated by space>' will restore from seed");
+  logSerial("'/wipe' will completely wipe device and creat a new wallet");
+  logSerial("'/password' login by providing a password");
+  logSerial("'/password-clear' logout");
+  logSerial("'/seed' will show the seed on the hww display");
+  logSerial("'/psbt' will parse valid psbt and show its outputs and fee");
+  logSerial("'/sign' will sign valid psbt");
+  logSerial("'/xpub' will return the XPub for a provided derivation path");
   delay(10000);
 }
 
