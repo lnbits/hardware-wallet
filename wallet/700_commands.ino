@@ -373,7 +373,11 @@ void serialPrintlnSecure(String msg) {
 
 
 String encryptData(String msg) {
-  uint8_t iv[]  = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };
+  int ivSize = 16;
+  uint8_t iv[ivSize];
+  String tempMnemonic = createMnemonic(24);
+  mnemonicToEntropy(tempMnemonic, iv, ivSize);
+  String ivHex = toHex(iv, ivSize);
 
   byte messageBin[msg.length()];
   msg.getBytes(messageBin, msg.length());
@@ -387,15 +391,25 @@ String encryptData(String msg) {
   AES_CBC_encrypt_buffer(&ctx, messageBin, sizeof(messageBin));
   // logSerial("### messageHex: " + toHex(messageBin, sizeof(messageBin)));
 
-  return toHex(messageBin, sizeof(messageBin));
+  String messageHex = toHex(messageBin, sizeof(messageBin));
+  return messageHex + ivHex;
 }
 
-String decryptData(String messageHex) {
+String decryptData(String messageWithIvHex) {
+  int ivSize = 16;
+  String messageHex = messageWithIvHex.substring(0, messageWithIvHex.length() - ivSize * 2);
+  String ivHex = messageWithIvHex.substring(messageWithIvHex.length() - ivSize * 2, messageWithIvHex.length());
+
   int byteSize =  messageHex.length() / 2;
   byte messageBin[byteSize];
   fromHex(messageHex, messageBin, byteSize);
 
-  uint8_t iv[]  = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };
+  // uint8_t iv[]  = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };
+  logSerial("### ivHex:"+ivHex);
+  uint8_t iv[ivSize];
+  fromHex(ivHex, iv, ivSize);
+
+
   AES_ctx ctx;
   AES_init_ctx_iv(&ctx, dhe_shared_secret, iv);
   AES_CBC_decrypt_buffer(&ctx, messageBin, sizeof(messageBin));
