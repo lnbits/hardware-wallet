@@ -366,8 +366,8 @@ void serialPrintlnSecure(String msg) {
   mnemonicToEntropy(tempMnemonic, iv, ivSize);
   String ivHex = toHex(iv, ivSize);
 
-  String messageHex = encryptData(data, ivHex);
-  
+  String messageHex = encryptData(dhe_shared_secret, ivHex, data);
+
   Serial.println(messageHex + ivHex);
 }
 
@@ -377,43 +377,11 @@ String decryptMessageWithIv(String messageWithIvHex) {
   String messageHex = messageWithIvHex.substring(0, messageWithIvHex.length() - ivSize * 2);
   String ivHex = messageWithIvHex.substring(messageWithIvHex.length() - ivSize * 2, messageWithIvHex.length());
 
-  String decryptedData = decryptData(messageHex, ivHex);
+  String decryptedData = decryptData(dhe_shared_secret, ivHex, messageHex);
 
   Command c = extractCommand(decryptedData);
   int commandLength = c.cmd.toInt();
   return c.data.substring(0, commandLength);
-}
-
-String encryptData(String msg, String ivHex) {
-  int ivSize = 16;
-  uint8_t iv[ivSize];
-  fromHex(ivHex, iv, ivSize);
-
-  byte messageBin[msg.length()];
-  msg.getBytes(messageBin, msg.length());
-
-  AES_ctx ctx;
-  AES_init_ctx_iv(&ctx, dhe_shared_secret, iv);
-
-  AES_CBC_encrypt_buffer(&ctx, messageBin, sizeof(messageBin));
-
-  return toHex(messageBin, sizeof(messageBin));
-}
-
-String decryptData(String messageHex, String ivHex) {
-  int byteSize =  messageHex.length() / 2;
-  byte messageBin[byteSize];
-  fromHex(messageHex, messageBin, byteSize);
-
-  uint8_t iv[16];
-  fromHex(ivHex, iv, 16);
-
-
-  AES_ctx ctx;
-  AES_init_ctx_iv(&ctx, dhe_shared_secret, iv);
-  AES_CBC_decrypt_buffer(&ctx, messageBin, sizeof(messageBin));
-
-  return String((char *)messageBin).substring(0, byteSize);
 }
 
 Command extractCommand(String s) {
