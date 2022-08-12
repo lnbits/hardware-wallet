@@ -5,7 +5,7 @@
 
 
 FileData readFile(fs::FS &fs, const char * path) {
-  Serial.printf("Reading file: %s\r\n", path);
+  logSerial("Reading file:" + String(path));
   struct FileData fd = {false, ""};
   File file = fs.open(path);
   if (!file || file.isDirectory()) {
@@ -24,7 +24,7 @@ FileData readFile(fs::FS &fs, const char * path) {
 }
 
 void writeFile(fs::FS &fs, const char * path, String message) {
-  Serial.printf("Writing file: %s\r\n", path);
+  logSerial("Writing file: " + String(path));
   File file = fs.open(path, FILE_WRITE);
   if (!file) {
     logSerial("- failed to open file for writing");
@@ -39,7 +39,7 @@ void writeFile(fs::FS &fs, const char * path, String message) {
 }
 
 void deleteFile(fs::FS &fs, const char * path) {
-  Serial.printf("Deleting file: %s\r\n", path);
+  logSerial("Deleting file: " + String(path));
   if (fs.remove(path)) {
     logSerial("- file deleted");
   } else {
