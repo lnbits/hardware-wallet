@@ -264,6 +264,7 @@ void executeShowSeed(String position) {
   subMessage = "";
   String word = getWordAtPosition(encrytptedMnemonic, position.toInt());
   printMnemonicWord(position, word);
+  printlnSecure("0123456789abcdef");
 }
 
 void executeXpub(String commandData) {
@@ -472,20 +473,35 @@ bool hasValidChecksum(String mnemonic, int size) {
   return mnemonic == deserializedMnemonic;
 }
 
+void printlnSecure(String message){
+  String messageHex = encryptData(message);
+  Serial.println(messageHex);
+}
+
+String encryptData(String message) {
+  uint8_t iv[]  = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };
+
+  byte messageBin[message.length()];
+  message.getBytes(messageBin, sizeof(message));
+
+  // Serial.println("###");
+  // Serial.println("### messageBin: " + toHex(messageBin, sizeof(messageBin)));
+
+  AES_ctx ctx;
+  AES_init_ctx_iv(&ctx, dhe_shared_secret, iv);
+
+  AES_CBC_encrypt_buffer(&ctx, messageBin, sizeof(messageBin));
+  // Serial.println("### messageHex: " + toHex(messageBin, sizeof(messageBin)));
+
+  return toHex(messageBin, sizeof(messageBin));
+}
+
 String decryptData(String messageHex) {
   int byteSize =  messageHex.length() / 2;
   byte messageBin[byteSize];
-
-  Serial.println("### messageHex: " + messageHex);
-  Serial.println("### byteSize: " + String(byteSize));
-
   fromHex(messageHex, messageBin, byteSize);
 
   uint8_t iv[]  = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };
-  Serial.println("### iv: " + toHex(iv, sizeof(iv)));
-  Serial.println("### dhe_shared_secret: " + toHex(dhe_shared_secret, sizeof(dhe_shared_secret)));
-
-
   AES_ctx ctx;
   AES_init_ctx_iv(&ctx, dhe_shared_secret, iv);
   AES_CBC_decrypt_buffer(&ctx, messageBin, sizeof(messageBin));
