@@ -355,17 +355,25 @@ void serialSendCommand(String command, String commandData) {
 }
 
 void serialPrintlnSecure(String msg) {
-
   String data = String(msg.length()) + " " + msg;
+  // pad data
   while (data.length() % 16 != 0) data += " ";
-  String messageHex = encryptData(data);
+
+  // create random initialization vector
+  int ivSize = 16;
+  uint8_t iv[ivSize];
+  String tempMnemonic = createMnemonic(24);
+  mnemonicToEntropy(tempMnemonic, iv, ivSize);
+  String ivHex = toHex(iv, ivSize);
+
+  String messageHex = encryptData(data, ivHex);
   
-  Serial.println(messageHex);
+  Serial.println(messageHex + ivHex);
 }
 
 
 String decryptMessageWithIv(String messageWithIvHex) {
-   int ivSize = 16;
+  int ivSize = 16;
   String messageHex = messageWithIvHex.substring(0, messageWithIvHex.length() - ivSize * 2);
   String ivHex = messageWithIvHex.substring(messageWithIvHex.length() - ivSize * 2, messageWithIvHex.length());
 
@@ -376,12 +384,10 @@ String decryptMessageWithIv(String messageWithIvHex) {
   return c.data.substring(0, commandLength);
 }
 
-String encryptData(String msg) {
+String encryptData(String msg, String ivHex) {
   int ivSize = 16;
   uint8_t iv[ivSize];
-  String tempMnemonic = createMnemonic(24);
-  mnemonicToEntropy(tempMnemonic, iv, ivSize);
-  String ivHex = toHex(iv, ivSize);
+  fromHex(ivHex, iv, ivSize);
 
   byte messageBin[msg.length()];
   msg.getBytes(messageBin, msg.length());
@@ -391,8 +397,7 @@ String encryptData(String msg) {
 
   AES_CBC_encrypt_buffer(&ctx, messageBin, sizeof(messageBin));
 
-  String messageHex = toHex(messageBin, sizeof(messageBin));
-  return messageHex + ivHex;
+  return toHex(messageBin, sizeof(messageBin));
 }
 
 String decryptData(String messageHex, String ivHex) {
