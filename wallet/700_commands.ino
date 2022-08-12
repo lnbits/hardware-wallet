@@ -29,7 +29,7 @@ void listenForCommands() {
   serialData = awaitSerialData();
 
   Command c = extractCommand(serialData);
-  if (c.cmd != COMMAND_DH_EXCHANGE){
+  if (c.cmd != COMMAND_DH_EXCHANGE) {
     serialData = decryptData(serialData);
     c = extractCommand(serialData);
   }
@@ -264,7 +264,7 @@ void executeShowSeed(String position) {
   subMessage = "";
   String word = getWordAtPosition(encrytptedMnemonic, position.toInt());
   printMnemonicWord(position, word);
-  printlnSecure("0123456789abcdef");
+  serialPrintlnSecure(word + "XYZ0123456789abcdefxXx");
 }
 
 void executeXpub(String commandData) {
@@ -473,19 +473,26 @@ bool hasValidChecksum(String mnemonic, int size) {
   return mnemonic == deserializedMnemonic;
 }
 
-void printlnSecure(String message){
-  String messageHex = encryptData(message);
+void serialPrintlnSecure(String msg) {
+  String data = String(msg.length()) + " " + msg;
+  while (data.length() % 16 != 0) data += " ";
+
+  String messageHex = encryptData(data);
   Serial.println(messageHex);
 }
 
-String encryptData(String message) {
+void serianPrintlnPlain(String msg) {
+  Serial.println(COMMAND_LOG + " " + msg);
+}
+
+String encryptData(String msg) {
   uint8_t iv[]  = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };
 
-  byte messageBin[message.length()];
-  message.getBytes(messageBin, sizeof(message));
+  byte messageBin[msg.length()];
+  msg.getBytes(messageBin, msg.length());
 
-  // Serial.println("###");
-  // Serial.println("### messageBin: " + toHex(messageBin, sizeof(messageBin)));
+  // Serial.println("### encryptData msg:"+ msg + ":"+String(sizeof(messageBin)));
+  // Serial.println("### encryptData messageBin: " + toHex(messageBin, sizeof(messageBin)));
 
   AES_ctx ctx;
   AES_init_ctx_iv(&ctx, dhe_shared_secret, iv);
@@ -506,7 +513,10 @@ String decryptData(String messageHex) {
   AES_init_ctx_iv(&ctx, dhe_shared_secret, iv);
   AES_CBC_decrypt_buffer(&ctx, messageBin, sizeof(messageBin));
   String commandTxt = String((char *)messageBin).substring(0, byteSize);
-  // not actually a command 
+
+  // Serial.println("### decryptData messageHex:"+messageHex);
+  // Serial.println("### decryptData commandTxt:"+commandTxt);
+  // not actually a command
   Command c = extractCommand(commandTxt);
   int commandLength = c.cmd.toInt();
   return c.data.substring(0, commandLength);
