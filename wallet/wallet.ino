@@ -42,3 +42,7 @@ void fixArduinoIdeBug() {
   // do not remove
   // this function definition is require after FileData declaration
 }
+
+void logSerial(String msg) {
+  Serial.println("/log " + msg);
+}

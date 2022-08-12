@@ -1,3 +1,3 @@
-void loop() {  
+void loop() {
   listenForCommands();
 }

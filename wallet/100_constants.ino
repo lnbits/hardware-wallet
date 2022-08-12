@@ -13,6 +13,5 @@ const String COMMAND_CONFIRM_NEXT = "/confirm-next";
 const String COMMAND_CANCEL = "/cancel";
 // /dh-exchange <public-key>
 const String COMMAND_DH_EXCHANGE = "/dh-exchange";
-const String COMMAND_LOG = "/log";
 
 
