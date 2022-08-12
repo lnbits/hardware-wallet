@@ -81,6 +81,7 @@ void executeDhExchange(String publicKeyHex) {
 
   logSerial("### dhe_shared_secret: " + toHex(dhe_shared_secret, sizeof(dhe_shared_secret)));
   Serial.println(COMMAND_DH_EXCHANGE + " " + toHex(dhPublicKey.point, sizeof(dhPublicKey.point)));
+  logSerial("sent: " + COMMAND_DH_EXCHANGE + " " + toHex(dhPublicKey.point, sizeof(dhPublicKey.point)));
 }
 void executeHelp(String commandData) {
 
@@ -131,12 +132,12 @@ void executePasswordCheck(String commandData) {
     message = "Wrong password, try again";
     subMessage = "8 numbers/letters";
   }
-  Serial.println(COMMAND_PASSWORD + " " + String(authenticated));
+  serialSendCommand(COMMAND_PASSWORD, String(authenticated));
 }
 
 void executePasswordClear(String commandData) {
   authenticated = false;
-  Serial.println(COMMAND_PASSWORD_CLEAR + " 1");
+  serialSendCommand(COMMAND_PASSWORD_CLEAR, "1");
   showMessage("Logging out...", "");
   delay(2000);
 
@@ -162,7 +163,7 @@ void executeWipeHww(String password) {
     message = "Error, try again";
     subMessage = "8 numbers/letters";
   }
-  Serial.println(COMMAND_WIPE + " " + String(authenticated));
+  serialSendCommand(COMMAND_WIPE,  String(authenticated));
 }
 
 void executeShowSeed(String position) {
@@ -216,12 +217,12 @@ void executeXpub(String commandData) {
   HDPrivateKey hd(encrytptedMnemonic, "", &Testnet);
   if (!hd) {
     message = "Invalid Mnemonic";
-    Serial.println(COMMAND_XPUB + " 0 invalid_mnemonic");
+    serialSendCommand(COMMAND_XPUB, "0 invalid_mnemonic");
     return;
   }
   HDPrivateKey account = hd.derive(path);
   String xpub = account.xpub();
-  Serial.println(COMMAND_XPUB + " 1 " + xpub + " " + hd.fingerprint());
+  serialSendCommand(COMMAND_XPUB, "1 " + xpub + " " + hd.fingerprint());
   message = xpub;
 }
 
@@ -236,14 +237,14 @@ void executeRestore(String mnemonic, String password) {
   if (size == 0) {
     message = "Wrong word count!";
     subMessage = "Must be 12, 15, 18, 21 or 24";
-    Serial.println(COMMAND_RESTORE + " 0");
+    serialSendCommand(COMMAND_RESTORE, "0");
     return;
   }
 
   if (!hasValidChecksum(mnemonic, size)) {
     message = "Wrong mnemonic!";
     subMessage = "Incorrect checksum";
-    Serial.println(COMMAND_RESTORE + " 0");
+    serialSendCommand(COMMAND_RESTORE, "0");
     return;
   }
 
@@ -266,7 +267,7 @@ void executeRestore(String mnemonic, String password) {
     message = "Error, try again";
     subMessage = "8 numbers/letters";
   }
-  Serial.println(COMMAND_RESTORE + " " + String(authenticated));
+  serialSendCommand(COMMAND_RESTORE, String(authenticated));
 }
 
 void executeSignPsbt(String commandData) {
@@ -297,7 +298,7 @@ void executeSignPsbt(String commandData) {
     logSerial("Failed psbt: " + psbtBase64);
     message = "Failed parsing";
     subMessage = "Send PSBT again";
-    Serial.println(COMMAND_SEND_PSBT + " psbt_parse_failed");
+    serialSendCommand(COMMAND_SEND_PSBT, "psbt_parse_failed");
     return;
   }
 
@@ -305,11 +306,11 @@ void executeSignPsbt(String commandData) {
   // check if it is valid
   if (!hd) {
     message = "Invalid Mnemonic";
-    Serial.println(COMMAND_SEND_PSBT + " invalid_mnemonic'");
+    serialSendCommand(COMMAND_SEND_PSBT, "invalid_mnemonic'");
     return;
   }
 
-  Serial.println(COMMAND_SEND_PSBT + " 1");
+  serialSendCommand(COMMAND_SEND_PSBT, "1");
 
   for (int i = 0; i < psbt.tx.outputsNumber; i++) {
     printOutputDetails(psbt, hd, i, network);
@@ -334,7 +335,7 @@ void executeSignPsbt(String commandData) {
 
     uint8_t signedInputCount = psbt.sign(hd);
 
-    Serial.println(COMMAND_SIGN_PSBT + " " + signedInputCount + " " + psbt.toBase64());
+    serialSendCommand(COMMAND_SIGN_PSBT, signedInputCount + " " + psbt.toBase64());
     message = "Signed inputs:";
     subMessage = String(signedInputCount);
   } else if (c.cmd = COMMAND_CANCEL) {
@@ -386,12 +387,21 @@ bool hasValidChecksum(String mnemonic, int size) {
   return mnemonic == deserializedMnemonic;
 }
 
+void serialSendCommand(String command, String commandData) {
+  serialPrintlnSecure(command + " " + commandData);
+}
+
 void serialPrintlnSecure(String msg) {
+  logSerial("serialPrintlnSecure 1:" + msg+":");
+
   String data = String(msg.length()) + " " + msg;
   while (data.length() % 16 != 0) data += " ";
 
+  logSerial("serialPrintlnSecure 2:" + data+":");
+
   String messageHex = encryptData(data);
-  logSerial(messageHex);
+  
+  Serial.println(messageHex);
 }
 
 
