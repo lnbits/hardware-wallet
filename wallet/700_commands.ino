@@ -60,27 +60,6 @@ CommandResponse executeCommand(Command c) {
 
 }
 
-bool initHww(String password, String mnemonic) {
-  if (isAlphaNumeric(password) == false)
-    return false;
-
-  deleteFile(SPIFFS, "/mn.txt");
-  deleteFile(SPIFFS, "/hash.txt");
-  if (mnemonic == "") {
-    mnemonic = createMnemonic(24); // todo: allow 12 also
-  }
-  
-  String passwordHash  = hashPassword(password);
-  writeFile(SPIFFS, "/hash.txt", passwordHash);
-  global.passwordHash = passwordHash;
-  
-  writeFile(SPIFFS, "/mn.txt", mnemonic);
-  global.encrytptedMnemonic = mnemonic;
-
-  delay(DELAY_MS);
-  return true;
-}
-
 void serialSendCommand(String command, String commandData) {
   serialPrintlnSecure(command + " " + commandData);
 }

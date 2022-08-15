@@ -27,9 +27,14 @@ CommandResponse executeRestore(String mnemonic, String password) {
     password = c.data;
   }
 
-  global.authenticated = initHww(password, mnemonic);
+  HwwInitData data = initHww(password, mnemonic);
+  delay(DELAY_MS);
+  global.authenticated = data.success;
   serialSendCommand(COMMAND_RESTORE, String(global.authenticated));
+
   if (global.authenticated == true) {
+    global.passwordHash = data.passwordHash;
+    global.encrytptedMnemonic = data.mnemonic;
     return {"Restore successfull",  "/seed` to view word list"};
   }
   return { "Error, try again", "8 numbers/letters"};
