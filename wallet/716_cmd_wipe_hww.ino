@@ -6,9 +6,15 @@ CommandResponse executeWhipeHww(String password) {
   showMessage("Resetting...", "");
   delay(2000);
 
-  global.authenticated = initHww(password, "");
+  HwwInitData data = initHww(password, "");
+  delay(DELAY_MS);
+  global.authenticated = data.success;
+
   serialSendCommand(COMMAND_WIPE,  String(global.authenticated));
+
   if (global.authenticated == true) {
+    global.passwordHash = data.passwordHash;
+    global.encrytptedMnemonic = data.mnemonic;
     return { "Successfully wiped!",  "Every new beginning comes from some other beginning's end."};
   }
   return {"Error, try again"  "8 numbers/letters"};

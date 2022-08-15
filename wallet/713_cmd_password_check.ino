@@ -1,6 +1,6 @@
 CommandResponse executePasswordCheck(String commandData) {
   if (commandData == "") {
-    return { "Enter password",  "8 numbers/letters", 0 };
+    return { "Enter password",  "8 numbers/letters"};
   }
   String hash = hashPassword(commandData);
   if (global.passwordHash == hash) {

@@ -36,7 +36,7 @@ struct GlobalState {
   byte dhe_shared_secret[32];
 };
 
-// Note: this is not an endorsment for the World Goverment
+// Note: this is not an endorsment for One World Goverment
 GlobalState global = {false, "", ""};
 
 ////////////////////////////////           Global State End            ////////////////////////////////
@@ -54,14 +54,17 @@ struct Command {
 struct CommandResponse {
   String message;
   String subMessage;
-  int code;
+  int statusCode;
 };
 
-void fixArduinoIdeBug() {
-  // do not remove
-  // this function definition is require after FileData declaration
-}
+struct HwwInitData {
+  String passwordHash;
+  String mnemonic;
+  bool success;
+};
 
+// do not move/remove, arduino IDE bug
+// at least one function definition is require after `struct` declaration
 void logSerial(String msg) {
   Serial.println("/log " + msg);
 }
