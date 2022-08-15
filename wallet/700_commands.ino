@@ -10,11 +10,6 @@ byte dhe_shared_secret[32];
 bool authenticated = false;
 CommandResponse cmdRes = {"Welcome", "Row, row, row your boat"};
 
-String command = ""; // todo: remove
-String commandData = ""; // todo: remove
-
-
-String serialData = "";
 
 void listenForCommands() {
   // todo: called too many times
@@ -25,12 +20,12 @@ void listenForCommands() {
   if (cmdRes.message != "" || cmdRes.subMessage != "")
     showMessage(cmdRes.message, cmdRes.subMessage);
 
-  serialData = awaitSerialData();
+  String data = awaitSerialData();
 
-  Command c = extractCommand(serialData);
+  Command c = extractCommand(data);
   if (c.cmd != COMMAND_DH_EXCHANGE) {
-    serialData = decryptMessageWithIv(serialData);
-    c = extractCommand(serialData);
+    data = decryptMessageWithIv(data);
+    c = extractCommand(data);
   }
   // flush stale data from buffer
   logSerial("received command: " + c.cmd);
@@ -109,6 +104,7 @@ CommandResponse executePasswordCheck(String commandData) {
     return {"Password correct!",   "Ready to sign sir!" };
   }
   authenticated = false;
+  serialSendCommand(COMMAND_PASSWORD, String(authenticated));
   return {"Wrong password, try again", "8 numbers/letters"};
 }
 
@@ -205,8 +201,8 @@ CommandResponse executeRestore(String mnemonic, String password) {
 
   if (password == "") {
     showMessage("Enter new password!", "8 numbers/letters");
-    serialData = awaitSerialData();
-    Command c = extractCommand(serialData);
+    String data = awaitSerialData();
+    Command c = extractCommand(data);
 
     if (c.cmd != COMMAND_PASSWORD)
       return executeUnknown("");
@@ -259,8 +255,8 @@ CommandResponse executeSignPsbt(String commandData) {
 
   for (int i = 0; i < psbt.tx.outputsNumber; i++) {
     printOutputDetails(psbt, hd, i, network);
-    serialData = awaitSerialData();
-    Command c = extractCommand(serialData);
+    String data = awaitSerialData();
+    Command c = extractCommand(data);
     if (c.cmd == COMMAND_CANCEL) {
       return {"Operation Canceled", "`/help` for details" };
     }
@@ -271,8 +267,8 @@ CommandResponse executeSignPsbt(String commandData) {
 
   printFeeDetails(psbt.fee());
 
-  serialData = awaitSerialData();
-  Command c = extractCommand(serialData);
+  String data = awaitSerialData();
+  Command c = extractCommand(data);
   if (c.cmd == COMMAND_SIGN_PSBT) {
     showMessage("Please wait", "Signing PSBT...");
 
@@ -355,11 +351,10 @@ String decryptMessageWithIv(String messageWithIvHex) {
 
 Command extractCommand(String s) {
   int spacePos = s.indexOf(" ");
-  command = s.substring(0, spacePos);
+  String command = s.substring(0, spacePos);
   if (spacePos == -1) {
-    commandData = "";
-  } else {
-    commandData = s.substring(spacePos + 1, s.length());
+    return {command, ""};
   }
+  String commandData = s.substring(spacePos + 1, s.length());
   return {command, commandData};
 }
