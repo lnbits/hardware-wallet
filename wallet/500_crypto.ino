@@ -42,3 +42,15 @@ String decryptData(byte key[32], String ivHex, String messageHex) {
 
   return String((char *)messageBin).substring(0, byteSize);
 }
+
+String decryptMessageWithIv(byte key[32], String messageWithIvHex) {
+  int ivSize = 16;
+  String messageHex = messageWithIvHex.substring(0, messageWithIvHex.length() - ivSize * 2);
+  String ivHex = messageWithIvHex.substring(messageWithIvHex.length() - ivSize * 2, messageWithIvHex.length());
+
+  String decryptedData = decryptData(key, ivHex, messageHex);
+
+  Command c = extractCommand(decryptedData);
+  int commandLength = c.cmd.toInt();
+  return c.data.substring(0, commandLength);
+}

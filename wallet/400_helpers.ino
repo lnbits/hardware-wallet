@@ -86,3 +86,13 @@ String getWordAtPosition(String str, int position) {
 
   return "";
 }
+
+Command extractCommand(String s) {
+  int spacePos = s.indexOf(" ");
+  String command = s.substring(0, spacePos);
+  if (spacePos == -1) {
+    return {command, ""};
+  }
+  String commandData = s.substring(spacePos + 1, s.length());
+  return {command, commandData};
+}
