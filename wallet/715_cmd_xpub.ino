@@ -1,5 +1,5 @@
 CommandResponse executeXpub(String commandData) {
-  if (g.authenticated == false) {
+  if (global.authenticated == false) {
     return {"Enter password!", "8 numbers/letters"};
   }
 
@@ -22,7 +22,7 @@ CommandResponse executeXpub(String commandData) {
     return {"Derivation path missing!", "XPUB not generated"};
   }
 
-  HDPrivateKey hd(g.encrytptedMnemonic, "", &Testnet);
+  HDPrivateKey hd(global.encrytptedMnemonic, "", &Testnet);
   if (!hd) {
     serialSendCommand(COMMAND_XPUB, "0 invalid_mnemonic");
     return {"Invalid Mnemonic", ""};

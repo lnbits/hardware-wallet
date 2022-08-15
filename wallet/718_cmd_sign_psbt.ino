@@ -1,5 +1,5 @@
 CommandResponse executeSignPsbt(String commandData) {
-  if (g.authenticated == false) {
+  if (global.authenticated == false) {
     return { "Enter password!", "8 numbers/letters"};
   }
 
@@ -24,7 +24,7 @@ CommandResponse executeSignPsbt(String commandData) {
     return {"Failed parsing",  "Send PSBT again"};
   }
 
-  HDPrivateKey hd(g.encrytptedMnemonic, "", network); // todo: no passphrase yet
+  HDPrivateKey hd(global.encrytptedMnemonic, "", network); // todo: no passphrase yet
   // check if it is valid
   if (!hd) {
     serialSendCommand(COMMAND_SEND_PSBT, "invalid_mnemonic'");

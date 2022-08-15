@@ -36,7 +36,8 @@ struct GlobalState {
   byte dhe_shared_secret[32];
 };
 
-  GlobalState g = {false, "", ""};
+// Note: this is not an endorsment for the World Goverment
+GlobalState global = {false, "", ""};
 
 ////////////////////////////////           Global State End            ////////////////////////////////
 
