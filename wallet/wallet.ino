@@ -28,6 +28,11 @@ fs::SPIFFSFS &FlashFS = SPIFFS;
 SHA256 h;
 TFT_eSPI tft = TFT_eSPI();
 
+struct GlobalState {
+  String cmd;
+  String data;
+};
+
 struct FileData {
   bool success;
   String data;
@@ -36,6 +41,12 @@ struct FileData {
 struct Command {
   String cmd;
   String data;
+};
+
+struct CommandResponse {
+  String message;
+  String subMessage;
+  int code;
 };
 
 void fixArduinoIdeBug() {
