@@ -1,4 +1,5 @@
 CommandResponse executeRestore(String mnemonic, String password) {
+  logSerial("Execute Restore");
   if (mnemonic == "") {
     return { "Enter seed words",  "Separated by spaces"};
   }
@@ -17,10 +18,11 @@ CommandResponse executeRestore(String mnemonic, String password) {
   if (password == "") {
     showMessage("Enter new password!", "8 numbers/letters");
     String data = awaitSerialData();
-    Command c = extractCommand(data);
+    Command c = decryptAndExtractCommand(data);
 
-    if (c.cmd != COMMAND_PASSWORD)
+    if (c.cmd != COMMAND_PASSWORD) {
       return executeUnknown("");
+    }
 
     password = c.data;
   }

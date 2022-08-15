@@ -36,7 +36,7 @@ CommandResponse executeSignPsbt(String commandData) {
   for (int i = 0; i < psbt.tx.outputsNumber; i++) {
     printOutputDetails(psbt, hd, i, network);
     String data = awaitSerialData();
-    Command c = extractCommand(data);
+    Command c = decryptAndExtractCommand(data);
     if (c.cmd == COMMAND_CANCEL) {
       return {"Operation Canceled", "`/help` for details" };
     }
@@ -48,7 +48,7 @@ CommandResponse executeSignPsbt(String commandData) {
   printFeeDetails(psbt.fee());
 
   String data = awaitSerialData();
-  Command c = extractCommand(data);
+  Command c = decryptAndExtractCommand(data);
   if (c.cmd == COMMAND_SIGN_PSBT) {
     showMessage("Please wait", "Signing PSBT...");
 
