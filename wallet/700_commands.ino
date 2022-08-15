@@ -10,7 +10,7 @@ CommandResponse cmdRes = {"Welcome", "Row, row, row your boat"};
 void listenForCommands() {
   // todo: called too many times
   if (loadFiles() == false) {
-    cmdRes = { "Failed opening files",  "Reset or 'help'"};
+    cmdRes = { "Failed to open files",  "Reset or 'help'"};
   }
 
   if (cmdRes.message != "" || cmdRes.subMessage != "")
