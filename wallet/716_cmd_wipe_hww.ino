@@ -1,4 +1,4 @@
-CommandResponse executeinitHww(String password) {
+CommandResponse executeWhipeHww(String password) {
   if (password == "") {
     return { "Enter new password", "8 numbers/letters"};
   }

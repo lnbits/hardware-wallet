@@ -9,9 +9,7 @@ CommandResponse cmdRes = {"Welcome", "Row, row, row your boat"};
 
 void listenForCommands() {
   // todo: called too many times
-  if (loadFiles() == false) {
-    cmdRes = { "Failed to open files",  "Reset or 'help'"};
-  }
+
 
   if (cmdRes.message != "" || cmdRes.subMessage != "")
     showMessage(cmdRes.message, cmdRes.subMessage);
@@ -20,10 +18,7 @@ void listenForCommands() {
 
   Command c = extractCommand(data);
   if (c.cmd != COMMAND_DH_EXCHANGE) {
-    // if (!global.dhe_shared_secret)
-    //   return { "No secure connection",  "Please reconnect"};
-    data = decryptMessageWithIv(global.dhe_shared_secret, data);
-    c = extractCommand(data);
+    c = decryptAndExtractCommand(data);
   }
   // flush stale data from buffer
   logSerial("received command: " + c.cmd);
@@ -41,7 +36,7 @@ CommandResponse executeCommand(Command c) {
     return executeHelp(c.data);
 
   if (c.cmd == COMMAND_WIPE)
-    return executeinitHww(c.data);
+    return executeWhipeHww(c.data);
 
   if (c.cmd == COMMAND_PASSWORD)
     return executePasswordCheck(c.data);
@@ -65,17 +60,6 @@ CommandResponse executeCommand(Command c) {
 
 }
 
-
-bool loadFiles() {
-  FileData mnFile = readFile(SPIFFS, "/mn.txt");
-  global.encrytptedMnemonic = mnFile.data;
-
-  FileData pwdFile = readFile(SPIFFS, "/hash.txt");
-  global.passwordHash = pwdFile.data;
-
-  return mnFile.success && pwdFile.success;
-}
-
 bool initHww(String password, String mnemonic) {
   if (isAlphaNumeric(password) == false)
     return false;
@@ -85,9 +69,13 @@ bool initHww(String password, String mnemonic) {
   if (mnemonic == "") {
     mnemonic = createMnemonic(24); // todo: allow 12 also
   }
-  global.passwordHash = hashPassword(password);
+  
+  String passwordHash  = hashPassword(password);
+  writeFile(SPIFFS, "/hash.txt", passwordHash);
+  global.passwordHash = passwordHash;
+  
   writeFile(SPIFFS, "/mn.txt", mnemonic);
-  writeFile(SPIFFS, "/hash.txt", global.passwordHash);
+  global.encrytptedMnemonic = mnemonic;
 
   delay(DELAY_MS);
   return true;
@@ -112,4 +100,9 @@ void serialPrintlnSecure(String msg) {
   String messageHex = encryptData(global.dhe_shared_secret, ivHex, data);
 
   Serial.println(messageHex + ivHex);
+}
+
+Command decryptAndExtractCommand(String ecryptedData) {
+  String data = decryptMessageWithIv(global.dhe_shared_secret, ecryptedData);
+  return extractCommand(data);
 }
