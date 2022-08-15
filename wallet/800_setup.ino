@@ -17,5 +17,17 @@ void setup() {
   // in case of forced reboot, tell the client to logout
   logSerial(COMMAND_PASSWORD_CLEAR + " 1");
 
+  if (loadFiles() == false)
+    showMessage("Failed to open files",  "Reset or 'help'");
 
+}
+
+bool loadFiles() {
+  FileData mnFile = readFile(SPIFFS, "/mn.txt");
+  global.encrytptedMnemonic = mnFile.data;
+
+  FileData pwdFile = readFile(SPIFFS, "/hash.txt");
+  global.passwordHash = pwdFile.data;
+
+  return mnFile.success && pwdFile.success;
 }
