@@ -8,23 +8,22 @@ byte dhe_secret[32];
 byte dhe_shared_secret[32];
 
 bool authenticated = false;
+CommandResponse cmdRes = {"Welcome", "Row, row, row your boat"};
+
 String command = ""; // todo: remove
 String commandData = ""; // todo: remove
 
-String message = "Welcome";
-String subMessage = "Row, row, row your boat";
 
 String serialData = "";
 
 void listenForCommands() {
   // todo: called too many times
   if (loadFiles() == false) {
-    message = "Failed opening files";
-    subMessage = "Reset or 'help'";
+    cmdRes = { "Failed opening files",  "Reset or 'help'"};
   }
 
-  if (message != "" || subMessage != "")
-    showMessage(message, subMessage);
+  if (cmdRes.message != "" || cmdRes.subMessage != "")
+    showMessage(cmdRes.message, cmdRes.subMessage);
 
   serialData = awaitSerialData();
 
@@ -35,36 +34,45 @@ void listenForCommands() {
   }
   // flush stale data from buffer
   logSerial("received command: " + c.cmd);
-  executeCommand(c);
+  cmdRes = executeCommand(c);
 
   delay(DELAY_MS);
 }
 
 
-void executeCommand(Command c) {
-  if (c.cmd == COMMAND_DH_EXCHANGE) {
-    executeDhExchange(c.data);
-  } else if (c.cmd == COMMAND_HELP) {
-    executeHelp(c.data);
-  } else if (c.cmd == COMMAND_WIPE) {
-    executeWipeHww(c.data);
-  } else if (c.cmd == COMMAND_PASSWORD) {
-    executePasswordCheck(c.data);
-  } else if (c.cmd == COMMAND_PASSWORD_CLEAR) {
-    executePasswordClear(c.data);
-  } else if (c.cmd == COMMAND_SEED) {
-    executeShowSeed(c.data);
-  } else if (c.cmd == COMMAND_SEND_PSBT) {
-    executeSignPsbt(c.data);
-  } else if (c.cmd == COMMAND_RESTORE) {
-    executeRestore(c.data, "");
-  } else if (c.cmd == COMMAND_XPUB) {
-    executeXpub(c.data);
-  } else {
-    executeUnknown(c.data);
-  }
+CommandResponse executeCommand(Command c) {
+  if (c.cmd == COMMAND_DH_EXCHANGE)
+    return executeDhExchange(c.data);
+
+  if (c.cmd == COMMAND_HELP)
+    return executeHelp(c.data);
+
+  if (c.cmd == COMMAND_WIPE)
+    return executeWipeHww(c.data);
+
+  if (c.cmd == COMMAND_PASSWORD)
+    return executePasswordCheck(c.data);
+
+  if (c.cmd == COMMAND_PASSWORD_CLEAR)
+    return executePasswordClear(c.data);
+
+  if (c.cmd == COMMAND_SEED)
+    return executeShowSeed(c.data);
+
+  if (c.cmd == COMMAND_SEND_PSBT)
+    return executeSignPsbt(c.data);
+
+  if (c.cmd == COMMAND_RESTORE)
+    return executeRestore(c.data, "");
+
+  if (c.cmd == COMMAND_XPUB)
+    return executeXpub(c.data);
+
+  return executeUnknown(c.data);
+
 }
-void executeDhExchange(String publicKeyHex) {
+
+CommandResponse executeDhExchange(String publicKeyHex) {
   logSerial("### publicKeyHex: " + publicKeyHex);
   String tempMnemonic = createMnemonic(24);
   mnemonicToEntropy(tempMnemonic, dhe_secret, sizeof(dhe_secret));
@@ -82,84 +90,71 @@ void executeDhExchange(String publicKeyHex) {
   logSerial("### dhe_shared_secret: " + toHex(dhe_shared_secret, sizeof(dhe_shared_secret)));
   Serial.println(COMMAND_DH_EXCHANGE + " " + toHex(dhPublicKey.point, sizeof(dhPublicKey.point)));
   logSerial("sent: " + COMMAND_DH_EXCHANGE + " " + toHex(dhPublicKey.point, sizeof(dhPublicKey.point)));
-}
-void executeHelp(String commandData) {
-  help();
+  return {"Connected", "Encrypted connection"};
 }
 
-void executePasswordCheck(String commandData) {
+CommandResponse executeHelp(String commandData) {
+  help();
+  return {"More info at:", "github.com/lnbits/hardware-wallet"};
+}
+
+CommandResponse executePasswordCheck(String commandData) {
   if (commandData == "") {
-    message = "Enter password";
-    subMessage = "8 numbers/letters";
-    return;
+    return { "Enter password",  "8 numbers/letters", 0 };
   }
   String hash = hashPassword(commandData);
   if (passwordHash == hash) {
     authenticated = true;
-    message = "Password correct!";
-    subMessage = "Ready to sign sir!";
-  } else {
-    authenticated = false;
-    message = "Wrong password, try again";
-    subMessage = "8 numbers/letters";
+    serialSendCommand(COMMAND_PASSWORD, String(authenticated));
+    return {"Password correct!",   "Ready to sign sir!" };
   }
-  serialSendCommand(COMMAND_PASSWORD, String(authenticated));
+  authenticated = false;
+  return {"Wrong password, try again", "8 numbers/letters"};
 }
 
-void executePasswordClear(String commandData) {
+CommandResponse executePasswordClear(String commandData) {
   authenticated = false;
   serialSendCommand(COMMAND_PASSWORD_CLEAR, "1");
   showMessage("Logging out...", "");
   delay(2000);
 
-  message = "Logged out";
-  subMessage = "Enter password";
+  return {"Logged out",  "Enter password"};
 }
 
-void executeWipeHww(String password) {
+CommandResponse executeWipeHww(String password) {
   if (password == "") {
-    message = "Enter new password";
-    subMessage = "8 numbers/letters";
-    return;
+    return { "Enter new password", "8 numbers/letters"};
   }
 
   showMessage("Resetting...", "");
   delay(2000);
 
   authenticated = wipeHww(password, "");
-  if (authenticated == true) {
-    message = "Successfully wiped!";
-    subMessage = "Every new beginning comes from some other beginning's end.";
-  } else {
-    message = "Error, try again";
-    subMessage = "8 numbers/letters";
-  }
   serialSendCommand(COMMAND_WIPE,  String(authenticated));
+  if (authenticated == true) {
+    return { "Successfully wiped!",  "Every new beginning comes from some other beginning's end."};
+  }
+  return {"Error, try again"  "8 numbers/letters"};
+
+
 }
 
-void executeShowSeed(String position) {
+CommandResponse executeShowSeed(String position) {
   if (authenticated == false) {
-    message = "Enter password!";
-    subMessage = "8 numbers/letters";
-    return;
+    return {"Enter password!", "8 numbers/letters"};
   }
   if (!position || position.toInt() == 0) {
-    message = "Bad word position";
-    subMessage = "`/help` for details ";
-    return;
+    return {"Bad word position",  "`/help` for details " };
   }
-  message = "";
-  subMessage = "";
   String word = getWordAtPosition(encrytptedMnemonic, position.toInt());
   printMnemonicWord(position, word);
-  serialPrintlnSecure(word + "XYZ0123456789abcdefxXx");
+  serialPrintlnSecure(word);
+  return {"", ""};
 }
 
-void executeXpub(String commandData) {
+CommandResponse executeXpub(String commandData) {
   if (authenticated == false) {
-    message = "Enter password!";
-    subMessage = "8 numbers/letters";
-    return;
+    return {"Enter password!", "8 numbers/letters"};
   }
 
   int spacePos = commandData.indexOf(" ");
@@ -174,78 +169,62 @@ void executeXpub(String commandData) {
   } else if (networkName == "Testnet") {
     network = &Testnet;
   } else {
-    message = "Unknown Network";
-    subMessage = "Must be Mainent or Testnet";
-    return;
+    return {"Unknown Network",  "Must be Mainent or Testnet"};
   }
 
   if (!path) {
-    message = "Derivation path missing!";
-    subMessage = "XPUB not generated";
-    return;
+    return {"Derivation path missing!", "XPUB not generated"};
   }
 
   HDPrivateKey hd(encrytptedMnemonic, "", &Testnet);
   if (!hd) {
-    message = "Invalid Mnemonic";
     serialSendCommand(COMMAND_XPUB, "0 invalid_mnemonic");
-    return;
+    return {"Invalid Mnemonic", ""};
   }
   HDPrivateKey account = hd.derive(path);
   String xpub = account.xpub();
   serialSendCommand(COMMAND_XPUB, "1 " + xpub + " " + hd.fingerprint());
-  message = xpub;
+  return { xpub, "" };
 }
 
-void executeRestore(String mnemonic, String password) {
+CommandResponse executeRestore(String mnemonic, String password) {
   if (mnemonic == "") {
-    message = "Enter seed words";
-    subMessage = "Separated by spaces";
-    return;
+    return { "Enter seed words",  "Separated by spaces"};
   }
 
   int size = getMnemonicBytes(mnemonic);
   if (size == 0) {
-    message = "Wrong word count!";
-    subMessage = "Must be 12, 15, 18, 21 or 24";
     serialSendCommand(COMMAND_RESTORE, "0");
-    return;
+    return {"Wrong word count!", "Must be 12, 15, 18, 21 or 24"};
   }
 
   if (!checkMnemonic(mnemonic)) {
-    message = "Wrong mnemonic!";
-    subMessage = "Incorrect checksum";
     serialSendCommand(COMMAND_RESTORE, "0");
-    return;
+    return {"Wrong mnemonic!", "Incorrect checksum"};
   }
 
   if (password == "") {
     showMessage("Enter new password!", "8 numbers/letters");
     serialData = awaitSerialData();
     Command c = extractCommand(serialData);
-    if (c.cmd != COMMAND_PASSWORD) {
-      executeUnknown("");
-      return;
-    }
+
+    if (c.cmd != COMMAND_PASSWORD)
+      return executeUnknown("");
+
     password = c.data;
   }
 
   authenticated = wipeHww(password, mnemonic);
-  if (authenticated == true) {
-    message = "Restore successfull";
-    subMessage = "/seed` to view word list";
-  } else {
-    message = "Error, try again";
-    subMessage = "8 numbers/letters";
-  }
   serialSendCommand(COMMAND_RESTORE, String(authenticated));
+  if (authenticated == true) {
+    return {"Restore successfull",  "/seed` to view word list"};
+  }
+  return { "Error, try again", "8 numbers/letters"};
 }
 
-void executeSignPsbt(String commandData) {
+CommandResponse executeSignPsbt(String commandData) {
   if (authenticated == false) {
-    message = "Enter password!";
-    subMessage = "8 numbers/letters";
-    return;
+    return { "Enter password!", "8 numbers/letters"};
   }
 
   showMessage("Please wait", "Parsing PSBT...");
@@ -259,26 +238,21 @@ void executeSignPsbt(String commandData) {
   } else if (networkName == "Testnet") {
     network = &Testnet;
   } else {
-    message = "Unknown Network";
-    subMessage = "Must be Mainent or Testnet";
-    return;
+    return { "Unknown Network", "Must be Mainent or Testnet"};
   }
 
   PSBT psbt = parseBase64Psbt(psbtBase64);
   if (!psbt) {
     logSerial("Failed psbt: " + psbtBase64);
-    message = "Failed parsing";
-    subMessage = "Send PSBT again";
     serialSendCommand(COMMAND_SEND_PSBT, "psbt_parse_failed");
-    return;
+    return {"Failed parsing",  "Send PSBT again"};
   }
 
   HDPrivateKey hd(encrytptedMnemonic, "", network); // todo: no passphrase yet
   // check if it is valid
   if (!hd) {
-    message = "Invalid Mnemonic";
     serialSendCommand(COMMAND_SEND_PSBT, "invalid_mnemonic'");
-    return;
+    return {"Invalid Mnemonic", ""};
   }
 
   serialSendCommand(COMMAND_SEND_PSBT, "1");
@@ -288,16 +262,14 @@ void executeSignPsbt(String commandData) {
     serialData = awaitSerialData();
     Command c = extractCommand(serialData);
     if (c.cmd == COMMAND_CANCEL) {
-      message = "Operation Canceled";
-      subMessage = "`/help` for details";
-      return;
-    } else if (c.cmd != COMMAND_CONFIRM_NEXT) {
-      executeUnknown(c.data);
-      return;
+      return {"Operation Canceled", "`/help` for details" };
+    }
+    if (c.cmd != COMMAND_CONFIRM_NEXT) {
+      return executeUnknown(c.data);
     }
   }
-  printFeeDetails(psbt.fee());
 
+  printFeeDetails(psbt.fee());
 
   serialData = awaitSerialData();
   Command c = extractCommand(serialData);
@@ -307,19 +279,16 @@ void executeSignPsbt(String commandData) {
     uint8_t signedInputCount = psbt.sign(hd);
 
     serialSendCommand(COMMAND_SIGN_PSBT, signedInputCount + " " + psbt.toBase64());
-    message = "Signed inputs:";
-    subMessage = String(signedInputCount);
-  } else if (c.cmd = COMMAND_CANCEL) {
-    message = "Operation Canceled";
-    subMessage = "`/help` for details";
-  } else {
-    executeUnknown(commandData);
+    return { "Signed inputs:", String(signedInputCount) };
   }
+  if (c.cmd = COMMAND_CANCEL) {
+    return { "Operation Canceled",  "`/help` for details" };
+  }
+  return  executeUnknown(commandData);
 }
 
-void executeUnknown(String commandData) {
-  message = "Unknown command";
-  subMessage = "`/help` for details";
+CommandResponse executeUnknown(String commandData) {
+  return {"Unknown command",  "`/help` for details"};
 }
 
 

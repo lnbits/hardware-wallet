@@ -35,7 +35,7 @@ void help()
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setTextSize(2);
   tft.setCursor(0, 0);
-  tft.println("HardwareSigner Commands");
+  tft.println("Commands");
   tft.setCursor(0, 20);
   tft.setTextSize(1);
 
@@ -49,7 +49,7 @@ void help()
   tft.println("'/sign' will sign valid psbt");
   tft.println("'/xpub' will return the XPub for a provided derivation path");
 
-  logSerial("HardwareSigner Commands");
+  logSerial("Commands");
   logSerial("'/help' show available commands");
   logSerial("'/restore <BIP39 seed words seperated by space>' will restore from seed");
   logSerial("'/wipe' will completely wipe device and creat a new wallet");
