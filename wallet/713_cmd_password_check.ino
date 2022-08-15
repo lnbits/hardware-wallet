@@ -3,12 +3,12 @@ CommandResponse executePasswordCheck(String commandData) {
     return { "Enter password",  "8 numbers/letters", 0 };
   }
   String hash = hashPassword(commandData);
-  if (g.passwordHash == hash) {
-    g.authenticated = true;
-    serialSendCommand(COMMAND_PASSWORD, String(g.authenticated));
+  if (global.passwordHash == hash) {
+    global.authenticated = true;
+    serialSendCommand(COMMAND_PASSWORD, String(global.authenticated));
     return {"Password correct!",   "Ready to sign sir!" };
   }
-  g.authenticated = false;
-  serialSendCommand(COMMAND_PASSWORD, String(g.authenticated));
+  global.authenticated = false;
+  serialSendCommand(COMMAND_PASSWORD, String(global.authenticated));
   return {"Wrong password, try again", "8 numbers/letters"};
 }

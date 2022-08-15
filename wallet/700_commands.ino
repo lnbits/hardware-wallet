@@ -20,9 +20,9 @@ void listenForCommands() {
 
   Command c = extractCommand(data);
   if (c.cmd != COMMAND_DH_EXCHANGE) {
-    // if (!g.dhe_shared_secret)
+    // if (!global.dhe_shared_secret)
     //   return { "No secure connection",  "Please reconnect"};
-    data = decryptMessageWithIv(g.dhe_shared_secret, data);
+    data = decryptMessageWithIv(global.dhe_shared_secret, data);
     c = extractCommand(data);
   }
   // flush stale data from buffer
@@ -68,10 +68,10 @@ CommandResponse executeCommand(Command c) {
 
 bool loadFiles() {
   FileData mnFile = readFile(SPIFFS, "/mn.txt");
-  g.encrytptedMnemonic = mnFile.data;
+  global.encrytptedMnemonic = mnFile.data;
 
   FileData pwdFile = readFile(SPIFFS, "/hash.txt");
-  g.passwordHash = pwdFile.data;
+  global.passwordHash = pwdFile.data;
 
   return mnFile.success && pwdFile.success;
 }
@@ -85,9 +85,9 @@ bool initHww(String password, String mnemonic) {
   if (mnemonic == "") {
     mnemonic = createMnemonic(24); // todo: allow 12 also
   }
-  g.passwordHash = hashPassword(password);
+  global.passwordHash = hashPassword(password);
   writeFile(SPIFFS, "/mn.txt", mnemonic);
-  writeFile(SPIFFS, "/hash.txt", g.passwordHash);
+  writeFile(SPIFFS, "/hash.txt", global.passwordHash);
 
   delay(DELAY_MS);
   return true;
@@ -109,8 +109,7 @@ void serialPrintlnSecure(String msg) {
   mnemonicToEntropy(tempMnemonic, iv, ivSize);
   String ivHex = toHex(iv, ivSize);
 
-  String messageHex = encryptData(g.dhe_shared_secret, ivHex, data);
+  String messageHex = encryptData(global.dhe_shared_secret, ivHex, data);
 
   Serial.println(messageHex + ivHex);
 }
-

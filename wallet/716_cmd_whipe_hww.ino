@@ -6,9 +6,9 @@ CommandResponse executeinitHww(String password) {
   showMessage("Resetting...", "");
   delay(2000);
 
-  g.authenticated = initHww(password, "");
-  serialSendCommand(COMMAND_WIPE,  String(g.authenticated));
-  if (g.authenticated == true) {
+  global.authenticated = initHww(password, "");
+  serialSendCommand(COMMAND_WIPE,  String(global.authenticated));
+  if (global.authenticated == true) {
     return { "Successfully wiped!",  "Every new beginning comes from some other beginning's end."};
   }
   return {"Error, try again"  "8 numbers/letters"};

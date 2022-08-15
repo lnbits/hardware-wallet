@@ -14,9 +14,9 @@ CommandResponse executeDhExchange(String publicKeyHex) {
   byte publicKeyBin[64];
   fromHex(publicKeyHex, publicKeyBin, 64);
   PublicKey otherDhPublicKey(publicKeyBin, false);
-  dhPrivateKey.ecdh(otherDhPublicKey, g.dhe_shared_secret, false);
+  dhPrivateKey.ecdh(otherDhPublicKey, global.dhe_shared_secret, false);
 
-  logSerial("### dhe_shared_secret: " + toHex(g.dhe_shared_secret, sizeof(g.dhe_shared_secret)));
+  logSerial("### dhe_shared_secret: " + toHex(global.dhe_shared_secret, sizeof(global.dhe_shared_secret)));
   Serial.println(COMMAND_DH_EXCHANGE + " " + toHex(dhPublicKey.point, sizeof(dhPublicKey.point)));
   logSerial("sent: " + COMMAND_DH_EXCHANGE + " " + toHex(dhPublicKey.point, sizeof(dhPublicKey.point)));
   return {"Connected", "Encrypted connection"};
