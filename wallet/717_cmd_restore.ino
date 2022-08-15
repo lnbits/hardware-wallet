@@ -1,5 +1,11 @@
-CommandResponse executeRestore(String mnemonic, String password) {
-  logSerial("Execute Restore");
+CommandResponse executeRestore(String commandData) {
+  int spacePos = commandData.indexOf(" ");
+  String password = commandData.substring(0, spacePos);
+  String mnemonic = commandData.substring(spacePos + 1, commandData.length() );
+
+  if (password == "") {
+    return { "Cannot restore",  "New data missing"};
+  }
   if (mnemonic == "") {
     return { "Enter seed words",  "Separated by spaces"};
   }
@@ -13,18 +19,6 @@ CommandResponse executeRestore(String mnemonic, String password) {
   if (!checkMnemonic(mnemonic)) {
     serialSendCommand(COMMAND_RESTORE, "0");
     return {"Wrong mnemonic!", "Incorrect checksum"};
-  }
-
-  if (password == "") {
-    showMessage("Enter new password!", "8 numbers/letters");
-    String data = awaitSerialData();
-    Command c = decryptAndExtractCommand(data);
-
-    if (c.cmd != COMMAND_PASSWORD) {
-      return executeUnknown("");
-    }
-
-    password = c.data;
   }
 
   HwwInitData data = initHww(password, mnemonic);

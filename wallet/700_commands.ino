@@ -51,7 +51,7 @@ CommandResponse executeCommand(Command c) {
     return executeSignPsbt(c.data);
 
   if (c.cmd == COMMAND_RESTORE)
-    return executeRestore(c.data, "");
+    return executeRestore(c.data);
 
   if (c.cmd == COMMAND_XPUB)
     return executeXpub(c.data);
