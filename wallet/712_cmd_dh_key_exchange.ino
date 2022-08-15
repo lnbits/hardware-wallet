@@ -1,7 +1,7 @@
 
 CommandResponse executeDhExchange(String publicKeyHex) {
   logSerial("### publicKeyHex: " + publicKeyHex);
-  String tempMnemonic = createMnemonic(24);
+  String tempMnemonic = generateMnemonic(24);
 
   byte dhe_secret[32];
   mnemonicToEntropy(tempMnemonic, dhe_secret, sizeof(dhe_secret));

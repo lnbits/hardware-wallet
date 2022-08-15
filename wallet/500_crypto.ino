@@ -5,11 +5,6 @@ String hashPassword(String key) {
   return toHex(hash, hashLen);
 }
 
-String createMnemonic(int numberOfWords) {
-  String mn = generateMnemonic(numberOfWords);
-  return mn;
-}
-
 
 String encryptData(byte key[32], String ivHex, String msg) {
   int ivSize = 16;

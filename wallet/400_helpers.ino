@@ -25,7 +25,7 @@ HwwInitData initHww(String password, String mnemonic) {
   deleteFile(SPIFFS, "/mn.txt");
   deleteFile(SPIFFS, "/hash.txt");
   if (mnemonic == "") {
-    mnemonic = createMnemonic(24); // todo: allow 12 also
+    mnemonic = generateMnemonic(24); // todo: allow 12 also
   }
   
   String passwordHash  = hashPassword(password);
