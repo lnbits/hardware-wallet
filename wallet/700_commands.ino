@@ -72,7 +72,7 @@ void serialPrintlnSecure(String msg) {
   // create random initialization vector
   int ivSize = 16;
   uint8_t iv[ivSize];
-  String tempMnemonic = createMnemonic(24);
+  String tempMnemonic = generateMnemonic(24);
   mnemonicToEntropy(tempMnemonic, iv, ivSize);
   String ivHex = toHex(iv, ivSize);
 
