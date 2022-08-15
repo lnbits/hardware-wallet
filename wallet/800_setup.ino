@@ -16,4 +16,6 @@ void setup() {
   logSerial("HWW: waiting for commands");
   // in case of forced reboot, tell the client to logout
   logSerial(COMMAND_PASSWORD_CLEAR + " 1");
+
+
 }

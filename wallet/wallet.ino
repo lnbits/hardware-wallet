@@ -28,10 +28,17 @@ fs::SPIFFSFS &FlashFS = SPIFFS;
 SHA256 h;
 TFT_eSPI tft = TFT_eSPI();
 
+//////////////////////////////// Define and initialize the Global State ////////////////////////////////
 struct GlobalState {
-  String cmd;
-  String data;
+  bool authenticated;
+  String passwordHash;
+  String encrytptedMnemonic;
+  byte dhe_shared_secret[32];
 };
+
+  GlobalState g = {false, "", ""};
+
+////////////////////////////////           Global State End            ////////////////////////////////
 
 struct FileData {
   bool success;
