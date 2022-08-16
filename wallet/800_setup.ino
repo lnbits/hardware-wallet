@@ -26,7 +26,7 @@ void setup() {
 bool loadFiles() {
   FileData pwdFile = readFile(SPIFFS, "/hash.txt");
   String passwordHash = pwdFile.data;
-  
+
   int byteSize =  passwordHash.length() / 2;
   byte passwordHashBin[byteSize];
   fromHex(passwordHash, passwordHashBin, byteSize);

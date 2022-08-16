@@ -1,5 +1,9 @@
 
 CommandResponse executeDhExchange(String publicKeyHex) {
+  if ((millis() - global.startTime) > 60 * 1000) {
+    Serial.println(COMMAND_DH_EXCHANGE + " 1 " + " connection_period_expired ");
+    return {"Connection Refused", "60 secs from reboot only"};
+  }
   logSerial("### publicKeyHex: " + publicKeyHex);
   String tempMnemonic = generateMnemonic(24);
 
@@ -17,7 +21,7 @@ CommandResponse executeDhExchange(String publicKeyHex) {
   dhPrivateKey.ecdh(otherDhPublicKey, global.dhe_shared_secret, false);
 
   logSerial("### dhe_shared_secret: " + toHex(global.dhe_shared_secret, sizeof(global.dhe_shared_secret)));
-  Serial.println(COMMAND_DH_EXCHANGE + " " + toHex(dhPublicKey.point, sizeof(dhPublicKey.point)));
-  logSerial("sent: " + COMMAND_DH_EXCHANGE + " " + toHex(dhPublicKey.point, sizeof(dhPublicKey.point)));
+  Serial.println(COMMAND_DH_EXCHANGE + " 0 " + toHex(dhPublicKey.point, sizeof(dhPublicKey.point)));
+  logSerial("sent: " + COMMAND_DH_EXCHANGE + toHex(dhPublicKey.point, sizeof(dhPublicKey.point)));
   return {"Connected", "Encrypted connection"};
 }

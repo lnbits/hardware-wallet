@@ -33,11 +33,12 @@ struct GlobalState {
   bool authenticated;
   String passwordHash;
   String encrytptedMnemonic;
+  unsigned long startTime;
   byte dhe_shared_secret[32];
 };
 
 // Note: this is not an endorsment for One World Goverment
-GlobalState global = {false, "", ""};
+GlobalState global = {false, "", "", millis()};
 
 ////////////////////////////////           Global State End            ////////////////////////////////
 
