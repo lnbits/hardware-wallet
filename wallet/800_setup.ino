@@ -14,8 +14,9 @@ void setup() {
   SPIFFS.begin(true);
 
   logSerial("HWW: waiting for commands");
-  // in case of forced reboot, tell the client to logout
-  logSerial(COMMAND_PASSWORD_CLEAR + " 1");
+  // In case of forced reboot, tell the client to logout.
+  // Secure connection not established yet. Sengin in clear text.
+  Serial.println(COMMAND_PASSWORD_CLEAR +  " 1");
 
   if (loadFiles() == false)
     showMessage("Failed to open files",  "Reset or 'help'");
@@ -25,7 +26,6 @@ void setup() {
 bool loadFiles() {
   FileData pwdFile = readFile(SPIFFS, "/hash.txt");
   String passwordHash = pwdFile.data;
-  logSerial("global.passwordHas: " + passwordHash);
   
   int byteSize =  passwordHash.length() / 2;
   byte passwordHashBin[byteSize];
