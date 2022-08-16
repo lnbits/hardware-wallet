@@ -18,23 +18,6 @@ String awaitSerialData() {
   return Serial.readStringUntil('\n');
 }
 
-HwwInitData initHww(String password, String mnemonic) {
-  if (isAlphaNumeric(password) == false)
-    return {"", "", false};
-
-  deleteFile(SPIFFS, "/mn.txt");
-  deleteFile(SPIFFS, "/hash.txt");
-  if (mnemonic == "") {
-    mnemonic = generateMnemonic(24); // todo: allow 12 also
-  }
-  
-  String passwordHash  = hashPassword(password);
-  writeFile(SPIFFS, "/hash.txt", passwordHash);  
-  writeFile(SPIFFS, "/mn.txt", mnemonic);
-
-  return {passwordHash, mnemonic, true};
-}
-
 int getMnemonicBytes(String menmonicSentence) {
   int wc = wordCount(menmonicSentence);
   switch (wc)

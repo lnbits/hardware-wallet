@@ -60,28 +60,39 @@ CommandResponse executeCommand(Command c) {
 
 }
 
+HwwInitData initHww(String password, String mnemonic) {
+  if (isAlphaNumeric(password) == false)
+    return {"", "", false};
+
+  deleteFile(SPIFFS, "/mn.txt");
+  deleteFile(SPIFFS, "/hash.txt");
+  if (mnemonic == "") {
+    mnemonic = generateMnemonic(24); // todo: allow 12 also
+  }
+
+  String passwordHash  = hashPassword(password);
+  writeFile(SPIFFS, "/hash.txt", passwordHash);
+
+  int byteSize =  passwordHash.length() / 2;
+  byte encryptionKey[byteSize];
+  fromHex(passwordHash, encryptionKey, byteSize);
+
+  String data = String(mnemonic.length()) + " " + mnemonic;
+  writeFile(SPIFFS, "/mn.txt", encryptDataWithIv(encryptionKey, data));
+
+  return {passwordHash, mnemonic, true};
+}
+
 void serialSendCommand(String command, String commandData) {
   serialPrintlnSecure(command + " " + commandData);
 }
 
 void serialPrintlnSecure(String msg) {
-  String data = String(msg.length()) + " " + msg;
-  // pad data
-  while (data.length() % 16 != 0) data += " ";
-
-  // create random initialization vector
-  int ivSize = 16;
-  uint8_t iv[ivSize];
-  String tempMnemonic = generateMnemonic(24);
-  mnemonicToEntropy(tempMnemonic, iv, ivSize);
-  String ivHex = toHex(iv, ivSize);
-
-  String messageHex = encryptData(global.dhe_shared_secret, ivHex, data);
-
-  Serial.println(messageHex + ivHex);
+  String encryptedHex = encryptDataWithIv(global.dhe_shared_secret, msg);
+  Serial.println(encryptedHex);
 }
 
 Command decryptAndExtractCommand(String ecryptedData) {
-  String data = decryptMessageWithIv(global.dhe_shared_secret, ecryptedData);
+  String data = decryptDataWithIv(global.dhe_shared_secret, ecryptedData);
   return extractCommand(data);
 }
