@@ -1,9 +1,10 @@
 
 CommandResponse executeDhExchange(String publicKeyHex) {
   if ((millis() - global.startTime) > 60 * 1000) {
-    Serial.println(COMMAND_DH_EXCHANGE + " 1 " + " connection_period_expired ");
+    Serial.println(COMMAND_DH_EXCHANGE + " 1 " + " connection_period_expired");
     return {"Connection Refused", "60 secs from reboot only"};
   }
+
   logSerial("### publicKeyHex: " + publicKeyHex);
   String tempMnemonic = generateMnemonic(24);
 
