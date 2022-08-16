@@ -5,14 +5,17 @@ String hashPassword(String key) {
   return toHex(hash, hashLen);
 }
 
+String encryptData(byte key[32], byte iv[16], String msg) {
+  // String has a trailing `null` character
+  // String.getBytes() can overwrite the last character with `null`.
+  String data = msg + "        ";
 
-String encryptData(byte key[32], String ivHex, String msg) {
-  int ivSize = 16;
-  uint8_t iv[ivSize];
-  fromHex(ivHex, iv, ivSize);
+  // Pad data for encryption. Length must be multiple of 16.
+  while (data.length() % 16 != 0) data += " ";
 
-  byte messageBin[msg.length()];
-  msg.getBytes(messageBin, msg.length());
+  int byteSize = data.length();
+  byte messageBin[byteSize];
+  data.getBytes(messageBin, byteSize);
 
   AES_ctx ctx;
   AES_init_ctx_iv(&ctx, key, iv);
@@ -22,13 +25,26 @@ String encryptData(byte key[32], String ivHex, String msg) {
   return toHex(messageBin, sizeof(messageBin));
 }
 
-String decryptData(byte key[32], String ivHex, String messageHex) {
+String encryptDataWithIv(byte key[32], String msg) {
+  String data = String(msg.length()) + " " + msg;
+
+  // create random initialization vector
+  int ivSize = 16;
+  uint8_t iv[ivSize];
+  String tempMnemonic = generateMnemonic(24);
+  mnemonicToEntropy(tempMnemonic, iv, ivSize);
+  String ivHex = toHex(iv, ivSize);
+
+  String messageHex = encryptData(key, iv, data);
+
+  return messageHex + ivHex;
+}
+
+
+String decryptData(byte key[32], byte iv[16], String messageHex) {
   int byteSize =  messageHex.length() / 2;
   byte messageBin[byteSize];
   fromHex(messageHex, messageBin, byteSize);
-
-  uint8_t iv[16];
-  fromHex(ivHex, iv, 16);
 
 
   AES_ctx ctx;
@@ -38,12 +54,14 @@ String decryptData(byte key[32], String ivHex, String messageHex) {
   return String((char *)messageBin).substring(0, byteSize);
 }
 
-String decryptMessageWithIv(byte key[32], String messageWithIvHex) {
+String decryptDataWithIv(byte key[32], String messageWithIvHex) {
   int ivSize = 16;
   String messageHex = messageWithIvHex.substring(0, messageWithIvHex.length() - ivSize * 2);
   String ivHex = messageWithIvHex.substring(messageWithIvHex.length() - ivSize * 2, messageWithIvHex.length());
 
-  String decryptedData = decryptData(key, ivHex, messageHex);
+  uint8_t iv[ivSize];
+  fromHex(ivHex, iv, ivSize);
+  String decryptedData = decryptData(key, iv, messageHex);
 
   Command c = extractCommand(decryptedData);
   int commandLength = c.cmd.toInt();

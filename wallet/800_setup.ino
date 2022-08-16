@@ -23,11 +23,17 @@ void setup() {
 }
 
 bool loadFiles() {
-  FileData mnFile = readFile(SPIFFS, "/mn.txt");
-  global.encrytptedMnemonic = mnFile.data;
-
   FileData pwdFile = readFile(SPIFFS, "/hash.txt");
-  global.passwordHash = pwdFile.data;
+  String passwordHash = pwdFile.data;
+  logSerial("global.passwordHas: " + passwordHash);
+  
+  int byteSize =  passwordHash.length() / 2;
+  byte passwordHashBin[byteSize];
+  fromHex(passwordHash, passwordHashBin, byteSize);
+
+  FileData mnFile = readFile(SPIFFS, "/mn.txt");
+  global.encrytptedMnemonic = decryptDataWithIv(passwordHashBin, mnFile.data);
+  global.passwordHash = passwordHash;
 
   return mnFile.success && pwdFile.success;
 }
