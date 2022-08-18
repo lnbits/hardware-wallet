@@ -1,6 +1,5 @@
 const int DELAY_MS = 5;
-const int MAX_BUTTON_COUNT = 255;
-const String PING_VALUE = "lnbits";
+const String PAIRING_CONTROL_TEXT = "lnbits";
 
 
 const String COMMAND_HELP = "/help";

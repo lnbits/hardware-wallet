@@ -2,21 +2,33 @@
 //================================HELPERS=================================//
 //========================================================================//
 
-unsigned long startTime = 0;
-bool idle = false;
+unsigned long lastTickTime = 0;
+// seconds allowed for pairing
+int counter = 10;
 
 String awaitSerialData() {
-  startTime = millis();
-  idle = true;
+  unsigned long  waitTime = millis();
+  bool idle = true;
   while (Serial.available() == 0) {
     // just loop and wait
-    if (idle == true && (millis() - startTime) > 60 * 1000) {
-      idle = false;
-      logo();
+    if (idle == true) {
+      if  ((millis() - waitTime) > 60 * 1000) {
+        idle = false;
+        logo(0);
+      } else if  (counter > 0 && ((millis() - lastTickTime) > 1000)) {
+        counter--;
+        lastTickTime = millis();
+        logo(counter);
+      } else if (counter == 0) {
+        logo(counter);
+        counter--;
+      }
     }
   }
+  counter = -1;
   return Serial.readStringUntil('\n');
 }
+
 
 int getMnemonicBytes(String menmonicSentence) {
   int wc = wordCount(menmonicSentence);

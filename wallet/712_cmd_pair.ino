@@ -2,7 +2,7 @@
 CommandResponse executePair(String data) {
   if ((millis() - global.startTime) > 10 * 1000) {
     Serial.println(COMMAND_PAIR + " 1 " + " connection_period_expired");
-    return {"Connection Refused", "10 secs from reboot only"};
+    return {"Connection Refused", "10 secs from reboot passed"};
   }
 
   String publicKeyHex = getWordAtPosition(data, 0);

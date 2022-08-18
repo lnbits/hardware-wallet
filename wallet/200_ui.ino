@@ -2,16 +2,22 @@
 //===============================UI STUFF=================================//
 //========================================================================//
 
-void logo() {
+void logo(int counter) {
+  String title = "Signer";
+  String subTitle = "LNbits/ubitcoin HWW";
+  if (counter > 0) {
+    title = title + " " + String(counter);
+    subTitle = "Open for pairing";
+  }
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
   tft.setTextSize(4);
   tft.setCursor(0, 30);
-  tft.print("Signer");
+  tft.print(title);
   tft.setTextSize(2);
   tft.setCursor(0, 80);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.print("LNbits/ubitcoin HWW");
+  tft.print(subTitle);
   logSerial("HardwareSigner LNbits/ubitcoin");
 }
 
