@@ -83,8 +83,7 @@ HwwInitData initHww(String password, String mnemonic) {
   byte encryptionKey[byteSize];
   fromHex(passwordHash, encryptionKey, byteSize);
 
-  String data = String(mnemonic.length()) + " " + mnemonic;
-  writeFile(SPIFFS, global.mnemonicFileName.c_str(), encryptDataWithIv(encryptionKey, data));
+  writeFile(SPIFFS, global.mnemonicFileName.c_str(), encryptDataWithIv(mnemonic, data));
 
   return {passwordHash, mnemonic, true};
 }
