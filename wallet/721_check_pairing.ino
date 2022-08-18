@@ -9,8 +9,8 @@ CommandResponse executeCheckSecureConnection(String encryptedData) {
   String data = decryptDataWithIv(global.dhe_shared_secret, encryptedData);
   logSerial("data 1:" + data);
   if (data == PING_VALUE) {
-    Serial.println(COMMAND_CHECK_SECURE_CONNECTION + " 0 " + encryptDataWithIv(global.dhe_shared_secret, PING_VALUE));
+    Serial.println(COMMAND_CHECK_PAIRING + " 0 " + encryptDataWithIv(global.dhe_shared_secret, PING_VALUE));
     return {"Connected", "Encrypted connection"};
   }
-  return {"Must re-pair", "Press any button and reconnect"};
+  return {"Must re-pair", "Press & hold any button and reconnect"};
 }
