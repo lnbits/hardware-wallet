@@ -2,7 +2,7 @@ CommandResponse executePasswordCheck(String commandData) {
   if (commandData == "") {
     return { "Enter password",  "8 numbers/letters"};
   }
-  String hash = hashPassword(commandData);
+  String hash = hashStringData(commandData);
   if (global.passwordHash == hash) {
     global.authenticated = true;
     serialSendCommand(COMMAND_PASSWORD, String(global.authenticated));
