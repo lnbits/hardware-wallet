@@ -1,4 +1,4 @@
-String hashPassword(String key) {
+String hashStringData(String key) {
   byte hash[64] = { 0 };
   int hashLen = 0;
   hashLen = sha256(key, hash);

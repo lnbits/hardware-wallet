@@ -82,7 +82,7 @@ HwwInitData initHww(String password, String mnemonic) {
     mnemonic = generateMnemonic(24); // todo: allow 12 also
   }
 
-  String passwordHash  = hashPassword(password);
+  String passwordHash  = hashStringData(password);
   writeFile(SPIFFS, global.passwordFileName.c_str(), passwordHash);
 
   int byteSize =  passwordHash.length() / 2;

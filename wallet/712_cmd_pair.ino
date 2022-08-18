@@ -27,34 +27,14 @@ CommandResponse executePair(String data) {
 
   Serial.println(COMMAND_PAIR + " 0 " + toHex(dhPublicKey.point, sizeof(dhPublicKey.point)));
 
+  String sharedSecretHex =  toHex(global.dhe_shared_secret, sizeof(global.dhe_shared_secret));
   deleteFile(SPIFFS, global.sharedSecretFileName.c_str());
-  writeFile(SPIFFS, global.sharedSecretFileName.c_str(), toHex(global.dhe_shared_secret, sizeof(global.dhe_shared_secret)));
+  writeFile(SPIFFS, global.sharedSecretFileName.c_str(), sharedSecretHex);
 
   // update device config
   writeFile(SPIFFS, global.deviceMetaFileName.c_str(), global.deviceId + " " + button1Pin + " " + button2Pin);
 
-  return {"Connected", "Encrypted connection"};
+  String fingerprint = hashStringData(sharedSecretHex).substring(0, 5);
+  fingerprint.toUpperCase();
+  return {"Confirm", "Code: " + fingerprint };
 }
-
-// DeviceConfig extractDeviceConfig(String data) {
-//   int spacePos = data.indexOf(" ");
-//   if (spacePos == -1 ) {
-//     return {data, 0, 0};
-//   }
-
-//   String value = data.substring(0, spacePos);
-//   data = data.substring(spacePos + 1, data.length() )
-//   spacePos = data.indexOf(" ");
-//   if (spacePos == -1 ) {
-//     return {value, 0, 0};
-//   }
-//   String button1Pin = data.substring(0, spacePos);
-
-//   data = data.substring(spacePos + 1, data.length() )
-//   spacePos = data.indexOf(" ");
-//   if (spacePos == -1 ) {
-//     return {value, button1Pin.toInt(), 0};
-//   }
-//   String button2Pin = data.substring(spacePos + 1, data.length() );
-//   return {value, button1Pin.toInt(), button2Pin.toInt()};
-// }
