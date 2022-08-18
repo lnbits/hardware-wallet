@@ -73,7 +73,7 @@ String int64ToString(uint64_t value) {
 String getWordAtPosition(String str, int position) {
   String s = str.substring(0);
   int spacePos = 0;
-  int i = 1;
+  int i = 0;
   while (spacePos != -1) {
     spacePos = s.indexOf(" ");
     if (i == position) {

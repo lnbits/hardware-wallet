@@ -13,6 +13,7 @@ void setup() {
   FlashFS.begin(FORMAT_ON_FAIL);
   SPIFFS.begin(true);
 
+
   logSerial("HWW: waiting for commands");
   // In case of forced reboot, tell the client to logout.
   // Secure connection not established yet. Sendin in clear text.
@@ -21,6 +22,7 @@ void setup() {
   if (loadFiles() == false)
     showMessage("Failed to open files",  "Reset or 'help'");
 
+  updateDeviceConfig();
 }
 
 bool loadFiles() {
@@ -36,26 +38,32 @@ bool loadFiles() {
   global.passwordHash = passwordHash;
 
   FileData sharedSecretFile = readFile(SPIFFS, global.sharedSecretFileName.c_str());
-  logSerial("sharedSecretFile.success " + String(sharedSecretFile.success));
   if (sharedSecretFile.success) {
-    logSerial("sharedSecretFile.data " + String(sharedSecretFile.data));
     fromHex(sharedSecretFile.data, global.dhe_shared_secret, sizeof(global.dhe_shared_secret));
   }
 
+  return mnFile.success && pwdFile.success;
+}
+
+void updateDeviceConfig() {
   FileData deviceMetaFile = readFile(SPIFFS, global.deviceMetaFileName.c_str());
-  logSerial("deviceMetaFile.success " + String(deviceMetaFile.success));
+
   if (deviceMetaFile.success) {
-    logSerial("sharedSecretFile.data " + deviceMetaFile.data);
-    global.deviceUUID = deviceMetaFile.data;
+    global.deviceId = getWordAtPosition(deviceMetaFile.data, 0);
+    global.button1Pin = getWordAtPosition(deviceMetaFile.data, 1).toInt();
+    global.button2Pin = getWordAtPosition(deviceMetaFile.data, 2).toInt();
   } else {
     // create random unique ID
     int uuidSize = 32;
     uint8_t uuid[uuidSize];
     String tempMnemonic = generateMnemonic(24);
     mnemonicToEntropy(tempMnemonic, uuid, uuidSize);
-    global.deviceUUID = toHex(uuid, uuidSize);
-    writeFile(SPIFFS, global.deviceMetaFileName.c_str(), global.deviceUUID);
+    global.deviceId = toHex(uuid, uuidSize);
+    writeFile(SPIFFS, global.deviceMetaFileName.c_str(), global.deviceId);
   }
 
-  return mnFile.success && pwdFile.success;
+  pinMode(global.button1Pin, INPUT_PULLUP);
+  if (global.button1Pin != global.button2Pin) {
+    pinMode(global.button2Pin, INPUT_PULLUP);
+  }
 }

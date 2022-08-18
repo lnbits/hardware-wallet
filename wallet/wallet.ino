@@ -24,7 +24,6 @@
 #include <SPIFFS.h>
 fs::SPIFFSFS &FlashFS = SPIFFS;
 
-
 SHA256 h;
 TFT_eSPI tft = TFT_eSPI();
 const byte EMPTY_32[32] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -33,7 +32,7 @@ const byte EMPTY_32[32] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 
 //////////////////////////////// Define and initialize the Global State ////////////////////////////////
 struct GlobalState {
-  String deviceUUID;
+  String deviceId;
   bool authenticated;
   String passwordHash;
   String encrytptedMnemonic;
@@ -42,6 +41,8 @@ struct GlobalState {
   const String mnemonicFileName;
   const String sharedSecretFileName;
   const String deviceMetaFileName;
+  int button1Pin;
+  int button2Pin;
   byte dhe_shared_secret[32];
 };
 
@@ -56,6 +57,8 @@ GlobalState global = {
   "/mn.txt",
   "/shared_secret.txt",
   "/device_meta.txt",
+  0,
+  0,
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 };
 

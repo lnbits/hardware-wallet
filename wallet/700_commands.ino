@@ -9,6 +9,11 @@ void listenForCommands() {
   if (cmdRes.message != "" || cmdRes.subMessage != "")
     showMessage(cmdRes.message, cmdRes.subMessage);
 
+  int currentState1 = digitalRead(global.button1Pin);
+  int currentState2 = digitalRead(global.button2Pin);
+
+  Serial.println("Buuuuutons: "+String(currentState1) + " " + String(currentState2));
+
   String data = awaitSerialData();
 
   Command c = extractCommand(data);
@@ -23,20 +28,21 @@ void listenForCommands() {
 }
 
 bool isEncryptedCommand(String cmd) {
-  return cmd != COMMAND_DH_EXCHANGE &&
+  return cmd != COMMAND_PAIR &&
          cmd != COMMAND_CHECK_PAIRING &&
          cmd != COMMAND_PING;
 }
+
 
 CommandResponse executeCommand(Command c) {
   if (c.cmd == COMMAND_PING)
     return executePing(c.data);
 
   if (c.cmd == COMMAND_CHECK_PAIRING)
-    return executeCheckSecureConnection(c.data);
+    return executeCheckPairing(c.data);
 
-  if (c.cmd == COMMAND_DH_EXCHANGE)
-    return executeDhExchange(c.data);
+  if (c.cmd == COMMAND_PAIR)
+    return executePair(c.data);
 
   if (c.cmd == COMMAND_HELP)
     return executeHelp(c.data);
