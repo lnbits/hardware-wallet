@@ -12,5 +12,6 @@ CommandResponse executeCheckSecureConnection(String encryptedData) {
     Serial.println(COMMAND_CHECK_PAIRING + " 0 " + encryptDataWithIv(global.dhe_shared_secret, PING_VALUE));
     return {"Connected", "Encrypted connection"};
   }
+  Serial.println(COMMAND_CHECK_PAIRING + " 1 must_repair");
   return {"Must re-pair", "Press & hold any button and reconnect"};
 }
