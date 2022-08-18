@@ -1,9 +1,9 @@
-CommandResponse executeCheckSecureConnection(String encryptedData) {
+CommandResponse executeCheckPairing(String encryptedData) {
   String sharedSecret = toHex(global.dhe_shared_secret, sizeof(global.dhe_shared_secret));
   logSerial("sharedSecret 1:" + sharedSecret);
   logSerial("encryptedData 1:" + encryptedData);
   if (sharedSecret.equals("0000000000000000000000000000000000000000000000000000000000000000")) {
-    logSerial("##### executeCheckSecureConnection empty");
+    logSerial("##### executeCheckPairing empty");
     return {"Ready", "For encrypted connection"};
   }
   String data = decryptDataWithIv(global.dhe_shared_secret, encryptedData);

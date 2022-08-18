@@ -1,5 +1,7 @@
 const int DELAY_MS = 5;
+const int MAX_BUTTON_COUNT = 255;
 const String PING_VALUE = "lnbits";
+
 
 const String COMMAND_HELP = "/help";
 const String COMMAND_PING = "/ping";
@@ -13,7 +15,6 @@ const String COMMAND_SIGN_PSBT = "/sign";
 const String COMMAND_XPUB = "/xpub";
 const String COMMAND_CONFIRM_NEXT = "/confirm-next";
 const String COMMAND_CANCEL = "/cancel";
-// /dh-exchange <public-key>
-const String COMMAND_DH_EXCHANGE = "/dh-exchange";
+const String COMMAND_PAIR = "/pair";
 const String COMMAND_CHECK_PAIRING = "/check-pairing";
 
