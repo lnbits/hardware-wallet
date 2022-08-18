@@ -15,5 +15,5 @@ const String COMMAND_CONFIRM_NEXT = "/confirm-next";
 const String COMMAND_CANCEL = "/cancel";
 // /dh-exchange <public-key>
 const String COMMAND_DH_EXCHANGE = "/dh-exchange";
-const String COMMAND_CHECK_SECURE_CONNECTION = "/check-connection";
+const String COMMAND_CHECK_PAIRING = "/check-pairing";
 

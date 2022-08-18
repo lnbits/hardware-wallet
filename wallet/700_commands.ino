@@ -24,7 +24,7 @@ void listenForCommands() {
 
 bool isEncryptedCommand(String cmd) {
   return cmd != COMMAND_DH_EXCHANGE &&
-         cmd != COMMAND_CHECK_SECURE_CONNECTION &&
+         cmd != COMMAND_CHECK_PAIRING &&
          cmd != COMMAND_PING;
 }
 
@@ -32,7 +32,7 @@ CommandResponse executeCommand(Command c) {
   if (c.cmd == COMMAND_PING)
     return executePing(c.data);
 
-  if (c.cmd == COMMAND_CHECK_SECURE_CONNECTION)
+  if (c.cmd == COMMAND_CHECK_PAIRING)
     return executeCheckSecureConnection(c.data);
 
   if (c.cmd == COMMAND_DH_EXCHANGE)
