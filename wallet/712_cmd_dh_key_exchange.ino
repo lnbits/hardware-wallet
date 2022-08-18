@@ -5,6 +5,13 @@ CommandResponse executeDhExchange(String publicKeyHex) {
     return {"Connection Refused", "60 secs from reboot only"};
   }
 
+  // getAllButtonStates
+  // if one down, allow
+  // if (global.dhe_shared_secret != EMPTY_32) {
+    // check one button pressed
+  // }
+
+
   logSerial("### publicKeyHex: " + publicKeyHex);
   String tempMnemonic = generateMnemonic(24);
 
@@ -24,5 +31,9 @@ CommandResponse executeDhExchange(String publicKeyHex) {
   logSerial("### dhe_shared_secret: " + toHex(global.dhe_shared_secret, sizeof(global.dhe_shared_secret)));
   Serial.println(COMMAND_DH_EXCHANGE + " 0 " + toHex(dhPublicKey.point, sizeof(dhPublicKey.point)));
   logSerial("sent: " + COMMAND_DH_EXCHANGE + toHex(dhPublicKey.point, sizeof(dhPublicKey.point)));
+
+  deleteFile(SPIFFS, global.sharedSecretFileName.c_str());
+  writeFile(SPIFFS, global.sharedSecretFileName.c_str(), toHex(global.dhe_shared_secret, sizeof(global.dhe_shared_secret)));
+  
   return {"Connected", "Encrypted connection"};
 }

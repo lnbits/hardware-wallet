@@ -2,22 +2,17 @@
 //================================COMMANDS================================//
 //========================================================================//
 
-
-
 CommandResponse cmdRes = {"Welcome", "Row, row, row your boat"};
 
 
 void listenForCommands() {
-  // todo: called too many times
-
-
   if (cmdRes.message != "" || cmdRes.subMessage != "")
     showMessage(cmdRes.message, cmdRes.subMessage);
 
   String data = awaitSerialData();
 
   Command c = extractCommand(data);
-  if (c.cmd != COMMAND_DH_EXCHANGE) {
+  if (isEncryptedCommand(c.cmd)) {
     c = decryptAndExtractCommand(data);
   }
   // flush stale data from buffer
@@ -27,8 +22,19 @@ void listenForCommands() {
   delay(DELAY_MS);
 }
 
+bool isEncryptedCommand(String cmd) {
+  return cmd != COMMAND_DH_EXCHANGE &&
+         cmd != COMMAND_CHECK_SECURE_CONNECTION &&
+         cmd != COMMAND_PING;
+}
 
 CommandResponse executeCommand(Command c) {
+  if (c.cmd == COMMAND_PING)
+    return executePing(c.data);
+
+  if (c.cmd == COMMAND_CHECK_SECURE_CONNECTION)
+    return executeCheckSecureConnection(c.data);
+
   if (c.cmd == COMMAND_DH_EXCHANGE)
     return executeDhExchange(c.data);
 
@@ -64,21 +70,21 @@ HwwInitData initHww(String password, String mnemonic) {
   if (isAlphaNumeric(password) == false)
     return {"", "", false};
 
-  deleteFile(SPIFFS, "/mn.txt");
-  deleteFile(SPIFFS, "/hash.txt");
+  deleteFile(SPIFFS, global.mnemonicFileName.c_str());
+  deleteFile(SPIFFS, global.passwordFileName.c_str());
   if (mnemonic == "") {
     mnemonic = generateMnemonic(24); // todo: allow 12 also
   }
 
   String passwordHash  = hashPassword(password);
-  writeFile(SPIFFS, "/hash.txt", passwordHash);
+  writeFile(SPIFFS, global.passwordFileName.c_str(), passwordHash);
 
   int byteSize =  passwordHash.length() / 2;
   byte encryptionKey[byteSize];
   fromHex(passwordHash, encryptionKey, byteSize);
 
   String data = String(mnemonic.length()) + " " + mnemonic;
-  writeFile(SPIFFS, "/mn.txt", encryptDataWithIv(encryptionKey, data));
+  writeFile(SPIFFS, global.mnemonicFileName.c_str(), encryptDataWithIv(encryptionKey, data));
 
   return {passwordHash, mnemonic, true};
 }
@@ -88,6 +94,8 @@ void serialSendCommand(String command, String commandData) {
 }
 
 void serialPrintlnSecure(String msg) {
+  logSerial("### serialPrintlnSecure.dhe_shared_secret: " + toHex(global.dhe_shared_secret, sizeof(global.dhe_shared_secret)));
+
   String encryptedHex = encryptDataWithIv(global.dhe_shared_secret, msg);
   Serial.println(encryptedHex);
 }
