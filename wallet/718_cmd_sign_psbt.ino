@@ -35,7 +35,13 @@ CommandResponse executeSignPsbt(String commandData) {
 
   for (int i = 0; i < psbt.tx.outputsNumber; i++) {
     printOutputDetails(psbt, hd, i, network);
-    String data = awaitSerialData();
+
+    EventData event = awaitEvent();
+    if (event.type != EVENT_SERIAL_DATA) {
+      return {"Operation Canceled", "button pressed" };
+    };
+    String data = event.data;
+
     Command c = decryptAndExtractCommand(data);
     if (c.cmd == COMMAND_CANCEL) {
       return {"Operation Canceled", "`/help` for details" };
@@ -47,14 +53,25 @@ CommandResponse executeSignPsbt(String commandData) {
 
   printFeeDetails(psbt.fee());
 
-  String data = awaitSerialData();
+  EventData event = awaitEvent();
+  if (event.type != EVENT_SERIAL_DATA) {
+    return {"Operation Canceled", "`/help` for details" };
+  }
+  String data = event.data;
+
   Command c = decryptAndExtractCommand(data);
   if (c.cmd == COMMAND_SIGN_PSBT) {
+    showMessage("Confirm", "Press button to confirm");
+    EventData event = awaitEvent();
+    if (event.type != EVENT_BUTTON_ACTION) {
+      return {"Operation Canceled", "" };
+    };
+
     showMessage("Please wait", "Signing PSBT...");
 
     uint8_t signedInputCount = psbt.sign(hd);
 
-    serialSendCommand(COMMAND_SIGN_PSBT, signedInputCount + " " + psbt.toBase64());
+    serialSendCommand(COMMAND_SIGN_PSBT,  String(signedInputCount) + " " + psbt.toBase64());
     return { "Signed inputs:", String(signedInputCount) };
   }
   if (c.cmd = COMMAND_CANCEL) {

@@ -68,6 +68,13 @@ GlobalState global = {
 
 ////////////////////////////////           Global State End            ////////////////////////////////
 
+struct EventData {
+  String type;
+  String data;
+  int pinNumber;
+  int value;
+};
+
 struct FileData {
   bool success;
   String data;
