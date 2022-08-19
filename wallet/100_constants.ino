@@ -17,3 +17,5 @@ const String COMMAND_CANCEL = "/cancel";
 const String COMMAND_PAIR = "/pair";
 const String COMMAND_CHECK_PAIRING = "/check-pairing";
 
+const String EVENT_SERIAL_DATA = "serial";
+const String EVENT_BUTTON_ACTION = "button";

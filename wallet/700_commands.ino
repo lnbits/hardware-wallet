@@ -12,7 +12,10 @@ void listenForCommands() {
   int currentState1 = digitalRead(global.button1Pin);
   int currentState2 = digitalRead(global.button2Pin);
 
-  String data = awaitSerialData();
+  EventData event = awaitEvent();
+  if (event.type != EVENT_SERIAL_DATA) return;
+
+  String data = event.data;
 
   Command c = extractCommand(data);
   if (isEncryptedCommand(c.cmd)) {
@@ -68,6 +71,52 @@ CommandResponse executeCommand(Command c) {
 
   return executeUnknown(c.data);
 
+}
+
+unsigned long lastTickTime = 0;
+int counter = 10;
+
+int button1State = HIGH;
+int button2State = HIGH;
+
+
+EventData awaitEvent() {
+  unsigned long  waitTime = millis();
+  bool idle = true;
+  while (Serial.available() == 0) {
+    // check if ok for pairing or if idle
+    if (idle == true) {
+      if  ((millis() - waitTime) > 60 * 1000) {
+        idle = false;
+        logo(0);
+      } else if  (counter > 0 && ((millis() - lastTickTime) > 1000)) {
+        counter--;
+        lastTickTime = millis();
+        logo(counter);
+      } else if (counter == 0) {
+        logo(counter);
+        counter--;
+      }
+    }
+
+    // button state
+    int button1NewState = digitalRead(global.button1Pin);
+    if (button1NewState != button1State) {
+      logSerial("button 1: " + String(button1NewState));
+      button1State = button1NewState;
+      return { EVENT_BUTTON_ACTION, "", global.button1Pin, button1NewState };
+    }
+
+    int button2NewState = digitalRead(global.button2Pin);
+    if (button2NewState != button2State) {
+      logSerial("button 2: " + String(button2NewState));
+      button2State = button2NewState;
+      return { EVENT_BUTTON_ACTION, "", global.button2Pin, button2NewState };
+    }
+  }
+  counter = -1;
+  String data = Serial.readStringUntil('\n');
+  return { EVENT_SERIAL_DATA, data };
 }
 
 HwwInitData initHww(String password, String mnemonic) {

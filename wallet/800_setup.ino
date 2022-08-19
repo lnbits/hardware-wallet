@@ -55,7 +55,7 @@ void updateDeviceConfig() {
     if (button1PinStr) {
       global.button1Pin = button1PinStr.toInt();
     }
-    
+
     String button2PinStr = getWordAtPosition(deviceMetaFile.data, 2);
     if (button2PinStr) {
       global.button2Pin = button2PinStr.toInt();
