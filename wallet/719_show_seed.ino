@@ -7,6 +7,5 @@ CommandResponse executeShowSeed(String position) {
   }
   String word = getWordAtPosition(global.encrytptedMnemonic, position.toInt() - 1);
   printMnemonicWord(position, word);
-  serialPrintlnSecure(word);
   return {"", ""};
 }
