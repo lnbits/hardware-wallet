@@ -12,8 +12,6 @@ void listenForCommands() {
   int currentState1 = digitalRead(global.button1Pin);
   int currentState2 = digitalRead(global.button2Pin);
 
-  Serial.println("Buuuuutons: "+String(currentState1) + " " + String(currentState2));
-
   String data = awaitSerialData();
 
   Command c = extractCommand(data);

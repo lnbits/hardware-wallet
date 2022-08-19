@@ -22,14 +22,19 @@
 
 #include <FS.h>
 #include <SPIFFS.h>
+
+
 fs::SPIFFSFS &FlashFS = SPIFFS;
 
 SHA256 h;
 TFT_eSPI tft = TFT_eSPI();
-const byte EMPTY_32[32] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+#define button1PinNumber 0
+#define button2PinNumber 35
 
 
 //////////////////////////////// Define and initialize the Global State ////////////////////////////////
+
 struct GlobalState {
   String deviceId;
   bool authenticated;
@@ -56,8 +61,8 @@ GlobalState global = {
   "/mn.txt",
   "/shared_secret.txt",
   "/device_meta.txt",
-  0,
-  0,
+  button1PinNumber,
+  button2PinNumber,
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 };
 

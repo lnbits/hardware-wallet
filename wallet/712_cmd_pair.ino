@@ -27,8 +27,19 @@ CommandResponse executePair(String data) {
   deleteFile(SPIFFS, global.sharedSecretFileName.c_str());
   writeFile(SPIFFS, global.sharedSecretFileName.c_str(), sharedSecretHex);
 
+  String deviceConfig = global.deviceId;
+  if (button1Pin) {
+    global.button1Pin = button1Pin.toInt();
+    deviceConfig = deviceConfig + " " + button1Pin;
+  }
+
+  if (button2Pin) {
+    global.button2Pin = button2Pin.toInt();
+    deviceConfig = deviceConfig + " " + button2Pin;
+  }
+
   // update device config
-  writeFile(SPIFFS, global.deviceMetaFileName.c_str(), global.deviceId + " " + button1Pin + " " + button2Pin);
+  writeFile(SPIFFS, global.deviceMetaFileName.c_str(), deviceConfig);
 
   String fingerprint = hashStringData(sharedSecretHex).substring(0, 5);
   fingerprint.toUpperCase();
