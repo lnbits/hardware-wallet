@@ -99,8 +99,6 @@ void serialSendCommand(String command, String commandData) {
 }
 
 void serialPrintlnSecure(String msg) {
-  logSerial("### serialPrintlnSecure.dhe_shared_secret: " + toHex(global.dhe_shared_secret, sizeof(global.dhe_shared_secret)));
-
   String encryptedHex = encryptDataWithIv(global.dhe_shared_secret, msg);
   Serial.println(encryptedHex);
 }
