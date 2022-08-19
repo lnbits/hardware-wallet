@@ -18,7 +18,6 @@ void logo(int counter) {
   tft.setCursor(0, 80);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.print(subTitle);
-  logSerial("HardwareSigner LNbits/ubitcoin");
 }
 
 void showMessage(String message, String additional)
