@@ -1,13 +1,10 @@
 CommandResponse executeCheckPairing(String encryptedData) {
   String sharedSecret = toHex(global.dhe_shared_secret, sizeof(global.dhe_shared_secret));
-  logSerial("sharedSecret 1:" + sharedSecret);
-  logSerial("encryptedData 1:" + encryptedData);
+
   if (sharedSecret.equals("0000000000000000000000000000000000000000000000000000000000000000")) {
-    logSerial("##### executeCheckPairing empty");
     return {"Ready", "For encrypted connection"};
   }
   String data = decryptDataWithIv(global.dhe_shared_secret, encryptedData);
-  logSerial("data 1:" + data);
   if (data == PAIRING_CONTROL_TEXT) {
     Serial.println(COMMAND_CHECK_PAIRING + " 0 " + encryptDataWithIv(global.dhe_shared_secret, PAIRING_CONTROL_TEXT));
     return {"Paired", "Encrypted connection"};

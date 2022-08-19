@@ -9,11 +9,7 @@ CommandResponse executePair(String data) {
   String button1Pin = getWordAtPosition(data, 1);
   String button2Pin = getWordAtPosition(data, 2);
 
-  logSerial("pairing: " + publicKeyHex + " btn1:" + String(button1Pin.toInt()) + " btn2:" + String(button2Pin.toInt()));
-
-
   String tempMnemonic = generateMnemonic(24);
-
   byte dhe_secret[32];
   mnemonicToEntropy(tempMnemonic, dhe_secret, sizeof(dhe_secret));
 
