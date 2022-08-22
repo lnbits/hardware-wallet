@@ -10,5 +10,5 @@ CommandResponse executeCheckPairing(String encryptedData) {
     return {"Paired", "Encrypted connection"};
   }
   Serial.println(COMMAND_CHECK_PAIRING + " 1 must_repair");
-  return {"Must re-pair", "Press & hold any button and reconnect"};
+  return {"Must re-pair", "Restart device"};
 }
