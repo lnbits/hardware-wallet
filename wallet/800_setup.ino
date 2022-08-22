@@ -14,14 +14,13 @@ void setup() {
     delay(1000);
   }
   if (!Serial.available()) {
-    showMessage("Failed to connect", "Connection time exceeded");
+    showMessage("Connection failed", "5 sec time exceeded");
     while(true){
     }
   }
   h.begin();
   FlashFS.begin(FORMAT_ON_FAIL);
   SPIFFS.begin(true);
-
 
   logSerial("HWW: waiting for commands");
   // In case of forced reboot, tell the client to logout.
