@@ -119,7 +119,7 @@ EventData awaitEvent() {
   return { EVENT_SERIAL_DATA, data };
 }
 
-HwwInitData initHww(String password, String mnemonic) {
+HwwInitData initHww(String password, String mnemonic, String passphrase) {
   if (isAlphaNumeric(password) == false)
     return {"", "", false};
 
@@ -136,7 +136,12 @@ HwwInitData initHww(String password, String mnemonic) {
   byte encryptionKey[byteSize];
   fromHex(passwordHash, encryptionKey, byteSize);
 
-  writeFile(SPIFFS, global.mnemonicFileName.c_str(), encryptDataWithIv(encryptionKey, mnemonic));
+  String mnemonicWithPassphrase = mnemonic;
+  if (passphrase) {
+    mnemonicWithPassphrase += "/" + passphrase;
+  }
+
+  writeFile(SPIFFS, global.mnemonicFileName.c_str(), encryptDataWithIv(encryptionKey, mnemonicWithPassphrase));
 
   return {passwordHash, mnemonic, true};
 }

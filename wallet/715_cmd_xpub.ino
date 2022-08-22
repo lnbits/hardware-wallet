@@ -22,7 +22,7 @@ CommandResponse executeXpub(String commandData) {
     return {"Derivation path missing!", "XPUB not generated"};
   }
 
-  HDPrivateKey hd(global.encrytptedMnemonic, "", &Testnet);
+  HDPrivateKey hd(global.mnemonic, global.passphrase, &Testnet);
   if (!hd) {
     serialSendCommand(COMMAND_XPUB, "0 invalid_mnemonic");
     return {"Invalid Mnemonic", ""};

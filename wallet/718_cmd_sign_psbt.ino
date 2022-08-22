@@ -24,7 +24,7 @@ CommandResponse executeSignPsbt(String commandData) {
     return {"Failed parsing",  "Send PSBT again"};
   }
 
-  HDPrivateKey hd(global.encrytptedMnemonic, "", network); // todo: no passphrase yet
+  HDPrivateKey hd(global.mnemonic, global.passphrase, network);
   // check if it is valid
   if (!hd) {
     serialSendCommand(COMMAND_SEND_PSBT, "invalid_mnemonic'");
