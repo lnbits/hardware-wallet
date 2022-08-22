@@ -1,3 +1,4 @@
-CommandResponse executeUnknown(String commandData) {
-  return {"Unknown command",  "`/help` for details"};
+CommandResponse executeUnknown(String details) {
+  logSerial("Unknown command: "+ details);
+  return {"Unknown command",  details};
 }
