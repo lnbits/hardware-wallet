@@ -69,7 +69,7 @@ CommandResponse executeCommand(Command c) {
   if (c.cmd == COMMAND_XPUB)
     return executeXpub(c.data);
 
-  return executeUnknown(c.data);
+  return executeUnknown(c.cmd + ": " + c.data);
 
 }
 
