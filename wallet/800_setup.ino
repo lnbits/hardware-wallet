@@ -34,7 +34,10 @@ bool loadFiles() {
   fromHex(passwordHash, passwordHashBin, byteSize);
 
   FileData mnFile = readFile(SPIFFS, global.mnemonicFileName.c_str());
-  global.encrytptedMnemonic = decryptDataWithIv(passwordHashBin, mnFile.data);
+  String mnemonicWithPassphrase = decryptDataWithIv(passwordHashBin, mnFile.data);
+  SeedData seedData = parseSeedData(mnemonicWithPassphrase);
+  global.mnemonic = seedData.mnemonic;
+  global.passphrase = seedData.passphrase;
   global.passwordHash = passwordHash;
 
   FileData sharedSecretFile = readFile(SPIFFS, global.sharedSecretFileName.c_str());

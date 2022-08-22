@@ -39,7 +39,8 @@ struct GlobalState {
   String deviceId;
   bool authenticated;
   String passwordHash;
-  String encrytptedMnemonic;
+  String mnemonic;
+  String passphrase;
   unsigned long startTime;
   const String passwordFileName;
   const String mnemonicFileName;
@@ -54,6 +55,7 @@ struct GlobalState {
 GlobalState global = {
   "",
   false,
+  "",
   "",
   "",
   millis(),
@@ -95,6 +97,11 @@ struct HwwInitData {
   String passwordHash;
   String mnemonic;
   bool success;
+};
+
+struct SeedData {
+  String mnemonic;
+  String passphrase;
 };
 
 // do not move/remove, arduino IDE bug

@@ -6,7 +6,7 @@ CommandResponse executeWhipeHww(String password) {
   showMessage("Resetting...", "");
   delay(2000);
 
-  HwwInitData data = initHww(password, "");
+  HwwInitData data = initHww(password, "", "");
   delay(DELAY_MS);
   global.authenticated = data.success;
 
@@ -14,7 +14,8 @@ CommandResponse executeWhipeHww(String password) {
 
   if (global.authenticated == true) {
     global.passwordHash = data.passwordHash;
-    global.encrytptedMnemonic = data.mnemonic;
+    global.mnemonic = data.mnemonic;
+    global.passphrase = "";
     return { "Successfully wiped!",  "Every new beginning comes from some other beginning's end."};
   }
   return {"Error, try again"  "8 numbers/letters"};
