@@ -13,6 +13,11 @@ void setup() {
     logo(5 - i);
     delay(1000);
   }
+  if (!Serial.available()) {
+    showMessage("Failed to connect", "Connection time exceeded");
+    while(true){
+    }
+  }
   h.begin();
   FlashFS.begin(FORMAT_ON_FAIL);
   SPIFFS.begin(true);
