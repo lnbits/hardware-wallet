@@ -47,7 +47,7 @@ CommandResponse executeSignPsbt(String commandData) {
       return {"Operation Canceled", "`/help` for details" };
     }
     if (c.cmd != COMMAND_CONFIRM_NEXT) {
-      return executeUnknown(c.data);
+      return executeUnknown("Expected: " + COMMAND_CONFIRM_NEXT);
     }
   }
 
@@ -77,5 +77,5 @@ CommandResponse executeSignPsbt(String commandData) {
   if (c.cmd = COMMAND_CANCEL) {
     return { "Operation Canceled",  "`/help` for details" };
   }
-  return  executeUnknown(commandData);
+  return  executeUnknown("Expected: " + COMMAND_SIGN_PSBT);
 }
