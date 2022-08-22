@@ -8,7 +8,16 @@ void setup() {
   tft.setRotation(1);
   tft.invertDisplay(true);
   logo(0);
-  delay(3000);
+  delay(2000);
+  for (int i = 0; i <= 5; i++) {
+    logo(5 - i);
+    delay(1000);
+  }
+  if (!Serial.available()) {
+    showMessage("Failed to connect", "Connection time exceeded");
+    while(true){
+    }
+  }
   h.begin();
   FlashFS.begin(FORMAT_ON_FAIL);
   SPIFFS.begin(true);
@@ -21,7 +30,6 @@ void setup() {
 
   if (loadFiles() == false)
     showMessage("Failed to open files",  "Reset or 'help'");
-
   updateDeviceConfig();
 }
 
