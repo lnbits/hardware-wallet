@@ -70,6 +70,16 @@ GlobalState global = {
 
 ////////////////////////////////           Global State End            ////////////////////////////////
 
+//////////////////////////////// Define and initialize Environament Variables ////////////////////////////////
+struct EnvironmentVarialbes {
+  String version;
+};
+
+EnvironmentVarialbes env = {
+  "0.1",
+};
+////////////////////////////////           Env Vars End            ////////////////////////////////
+
 struct EventData {
   String type;
   String data;
