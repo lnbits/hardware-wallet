@@ -18,6 +18,9 @@ void logo(int counter) {
   tft.setCursor(0, 80);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.print(subTitle);
+  tft.setTextSize(1);
+  tft.setCursor(0, 100);
+  tft.print("version: " + env.version);
 }
 
 void showMessage(String message, String additional)
