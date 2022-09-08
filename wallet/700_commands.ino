@@ -81,23 +81,24 @@ int button2State = HIGH;
 
 
 EventData awaitEvent() {
-  // unsigned long  waitTime = millis();
-  // bool idle = true;
+  unsigned long  waitTime = millis();
+  bool idle = true;
   while (Serial.available() == 0) {
     // check if ok for pairing or if idle
-    // if (idle == true) {
-    //   if  ((millis() - waitTime) > 60 * 1000) {
-    //     idle = false;
-    //     logo(0);
-    //   } else if  (counter > 0 && ((millis() - lastTickTime) > 1000)) {
-    //     counter--;
-    //     lastTickTime = millis();
-    //     logo(counter);
-    //   } else if (counter == 0) {
-    //     logo(counter);
-    //     counter--;
-    //   }
-    // }
+    if (idle == true) {
+      if  ((millis() - waitTime) > 60 * 1000) {
+        idle = false;
+        logo(0);
+      }
+      // else if  (counter > 0 && ((millis() - lastTickTime) > 1000)) {
+      //     counter--;
+      //     lastTickTime = millis();
+      //     logo(counter);
+      //   } else if (counter == 0) {
+      //     logo(counter);
+      //     counter--;
+      //   }
+    }
 
     // button state
     int button1NewState = digitalRead(global.button1Pin);
