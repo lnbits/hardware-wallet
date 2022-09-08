@@ -71,19 +71,6 @@ String getWordAtPosition(String str, int position) {
   return "";
 }
 
-SeedData parseSeedData(String mnemonicWithPassphrase) {
-  if (!mnemonicWithPassphrase) {
-    return {"", ""};
-  }
-  int separatorPos = mnemonicWithPassphrase.indexOf("/");
-  if (separatorPos == -1) {
-    return {mnemonicWithPassphrase, ""};
-  }
-  String mnemonic = mnemonicWithPassphrase.substring(0, separatorPos);
-  String passphrase = mnemonicWithPassphrase.substring(separatorPos + 1, mnemonicWithPassphrase.length());
-  return {mnemonic, passphrase};
-}
-
 Command extractCommand(String s) {
   int spacePos = s.indexOf(" ");
   String command = s.substring(0, spacePos);

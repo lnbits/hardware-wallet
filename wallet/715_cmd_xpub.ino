@@ -15,14 +15,14 @@ CommandResponse executeXpub(String commandData) {
   } else if (networkName == "Testnet") {
     network = &Testnet;
   } else {
-    return {"Unknown Network",  "Must be Mainent or Testnet"};
+    return {"Unknown Network",  "Must be Mainnet or Testnet"};
   }
 
   if (!path) {
     return {"Derivation path missing!", "XPUB not generated"};
   }
 
-  HDPrivateKey hd(global.mnemonic, global.passphrase, &Testnet);
+  HDPrivateKey hd(global.mnemonic, global.passphrase, network);
   if (!hd) {
     serialSendCommand(COMMAND_XPUB, "0 invalid_mnemonic");
     return {"Invalid Mnemonic", ""};

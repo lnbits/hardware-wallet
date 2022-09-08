@@ -15,7 +15,7 @@ void setup() {
   }
   if (!Serial.available()) {
     showMessage("Connection failed", "5 sec time exceeded");
-    while(true){
+    while (true) {
       // todo: revisit
     }
   }
@@ -42,10 +42,7 @@ bool loadFiles() {
   fromHex(passwordHash, passwordHashBin, byteSize);
 
   FileData mnFile = readFile(SPIFFS, global.mnemonicFileName.c_str());
-  String mnemonicWithPassphrase = decryptDataWithIv(passwordHashBin, mnFile.data);
-  SeedData seedData = parseSeedData(mnemonicWithPassphrase);
-  global.mnemonic = seedData.mnemonic;
-  global.passphrase = seedData.passphrase;
+  global.mnemonic = decryptDataWithIv(passwordHashBin, mnFile.data);
   global.passwordHash = passwordHash;
 
   FileData sharedSecretFile = readFile(SPIFFS, global.sharedSecretFileName.c_str());
