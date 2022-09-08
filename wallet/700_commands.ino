@@ -57,6 +57,9 @@ CommandResponse executeCommand(Command c) {
   if (c.cmd == COMMAND_PASSWORD_CLEAR)
     return executePasswordClear(c.data);
 
+  if (c.cmd == COMMAND_ADDRESS)
+    return executeShowAddress(c.data);
+
   if (c.cmd == COMMAND_SEED)
     return executeShowSeed(c.data);
 

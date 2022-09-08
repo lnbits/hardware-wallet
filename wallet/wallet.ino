@@ -111,11 +111,6 @@ struct HwwInitData {
   bool success;
 };
 
-struct SeedData {
-  String mnemonic;
-  String passphrase;
-};
-
 // do not move/remove, arduino IDE bug
 // at least one function definition is require after `struct` declaration
 void logSerial(String msg) {
