@@ -16,6 +16,7 @@ void setup() {
   if (!Serial.available()) {
     showMessage("Connection failed", "5 sec time exceeded");
     while(true){
+      // todo: revisit
     }
   }
   h.begin();
