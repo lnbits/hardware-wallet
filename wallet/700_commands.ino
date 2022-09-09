@@ -12,7 +12,12 @@ void listenForCommands() {
   int currentState1 = digitalRead(global.button1Pin);
   int currentState2 = digitalRead(global.button2Pin);
 
-  EventData event = awaitEvent();
+  // if the command does not handle an event then it bubbles it up
+  EventData event = cmdRes.event;
+  if (&event != NULL) {
+    event = awaitEvent();
+  } 
+
   if (event.type != EVENT_SERIAL_DATA) return;
 
   String data = event.data;
