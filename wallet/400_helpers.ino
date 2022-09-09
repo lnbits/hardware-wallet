@@ -29,17 +29,8 @@ int wordCount(String s) {
 }
 
 
-bool isAlphaNumeric(String instr) {
+bool isValidPassword(String instr) {
   if (instr.length() < 8) {
-    return false;
-  }
-  for (int i = 0; i < instr.length(); i++) {
-    if (isalpha(instr[i])) {
-      continue;
-    }
-    if (isdigit(instr[i])) {
-      continue;
-    }
     return false;
   }
   return true;
