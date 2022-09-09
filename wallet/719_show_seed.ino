@@ -6,6 +6,7 @@ CommandResponse executeShowSeed(String position) {
     return {"Bad word position",  "`/help` for details " };
   }
   String word = getWordAtPosition(global.mnemonic, position.toInt() - 1);
+  serialSendCommand(COMMAND_SEED, position + " " + word);
   printMnemonicWord(position, word);
   return {"", ""};
 }
