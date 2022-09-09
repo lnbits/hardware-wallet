@@ -51,7 +51,7 @@ void printMnemonicWord(String position, String word) {
   tft.println(word);
 }
 
-int qrVersionFromDtringLength(int stringLength) {
+int qrVersionFromStringLength(int stringLength) {
   if (stringLength <= 17) return 1;
   if (stringLength <= 32) return 2;
   if (stringLength <= 53) return 3;
@@ -60,8 +60,14 @@ int qrVersionFromDtringLength(int stringLength) {
   return 28;
 }
 
+int squareSizeFromStringLength(int stringLength) {
+  if (stringLength <= 53) return 4;
+  return 3;
+}
+
 void showQRCode(String s) {
-  int version = qrVersionFromDtringLength(s.length());
+  int version = qrVersionFromStringLength(s.length());
+  int px = squareSizeFromStringLength(s.length());
   QRCode qrcode;
   uint8_t qrcodeData[qrcode_getBufferSize(version)];
   qrcode_initText(&qrcode, qrcodeData, version, 0, s.c_str());
@@ -73,7 +79,6 @@ void showQRCode(String s) {
       bool full = qrcode_getModule(&qrcode, x, y);
 
       int color = full ? TFT_WHITE : TFT_BLACK;
-      int px = 3;
       tft.fillRect((x + 2) * px, (y + 1) * px, px, px, color);
     }
   }
