@@ -17,6 +17,7 @@
 #include <ArduinoJson.h>
 #include "Bitcoin.h"
 #include "PSBT.h"
+#include "qr-code.h"
 
 #include <aes.h>
 
@@ -101,6 +102,7 @@ struct CommandResponse {
   String message;
   String subMessage;
   int statusCode;
+  EventData event; // valid event that the command does not handle
 };
 
 struct HwwInitData {
