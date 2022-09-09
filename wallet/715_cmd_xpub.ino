@@ -30,5 +30,10 @@ CommandResponse executeXpub(String commandData) {
   HDPrivateKey account = hd.derive(path);
   String xpub = account.xpub();
   serialSendCommand(COMMAND_XPUB, "1 " + xpub + " " + hd.fingerprint());
-  return { xpub, "" };
+
+
+  xpub.toUpperCase();
+  showQRCode(xpub);
+
+  return { "", "" };
 }
