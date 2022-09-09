@@ -7,7 +7,7 @@ CommandResponse executeRestore(String commandData) {
     return { "Enter seed words",  "Separated by spaces"};
   }
   if (password == "") {
-    return { "Cannot restore",  "New data missing"};
+    return { "Cannot restore",  "Password missing"};
   }
 
 
