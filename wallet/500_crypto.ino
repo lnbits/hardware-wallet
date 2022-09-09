@@ -8,6 +8,7 @@ String hashStringData(String key) {
 String encryptData(byte key[32], byte iv[16], String msg) {
   // String has a trailing `null` character
   // String.getBytes() can overwrite the last character with `null`.
+  // Add some extra-padding for safety
   String data = msg + "        ";
 
   // Pad data for encryption. Length must be multiple of 16.
