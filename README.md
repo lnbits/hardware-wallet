@@ -11,6 +11,8 @@ This very cheap off the shelf hardware wallet is designed to work with Lilygos <
 
 Data is sent to/from the **Hardware Wallet** over webdev Serial, not the most secure data transmission method, but fine for handling small-medium sized amounts of funds. You can use LNbits OnchainWallet extension, or any other serial monitor.
 
+## Install instructions
+- Flash the hardware-wallet firmware directly from the browser using the [installer](https://lnbits.github.io/hardware-wallet)
 ## Build instructions
 
 - Buy a Lilygo <a href="https://www.aliexpress.com/item/33048962331.html">Tdisplay</a> (although with a little tinkering any ESP32 will do) 
