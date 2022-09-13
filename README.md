@@ -1,6 +1,8 @@
 # DIY Bitcoin Hardware Wallet (powered by <a href="https://www.arduino.cc/reference/en/libraries/ubitcoin/">uBitcoin</a>)
 ## Use a world of microcontrollers to contruct your own bitcoin hardware wallet
 
+## Flash here https://lnbits.github.io/hardware-wallet
+
 <img style="width:500px;" src="https://user-images.githubusercontent.com/33088785/180316957-4f99d7e9-9820-4302-9dde-ba555cb04729.png">
 
 For use with LNbits Legend OnchainWallet extension, but can other wallet applications can easily be built
