@@ -4,10 +4,8 @@ CommandResponse executeXpub(String commandData) {
   }
 
   int spacePos = commandData.indexOf(" ");
-  String networkName = commandData.substring(0, spacePos);
-  String path = commandData.substring(spacePos + 1, commandData.length() );
-
-  logSerial("xpub received: " + networkName + " path:" + path);
+  String networkName = getWordAtPosition(commandData, 0);
+  String path = getWordAtPosition(commandData, 1);
 
   const Network * network;
   if (networkName == "Mainnet") {
@@ -31,9 +29,26 @@ CommandResponse executeXpub(String commandData) {
   String xpub = account.xpub();
   serialSendCommand(COMMAND_XPUB, "1 " + xpub + " " + hd.fingerprint());
 
+  bool showQR = true;
 
-  xpub.toUpperCase();
-  showQRCode(xpub);
+  String xpubUpper = xpub + "";
+  xpubUpper.toUpperCase();
+  
 
-  return { "", "" };
+  EventData event = {EVENT_BUTTON_ACTION, ""};
+  while (event.type == EVENT_BUTTON_ACTION) {
+    if (showQR == true) {
+      showQRCode(xpubUpper);
+    } else {
+      showMessage(xpub, "");
+    }
+
+    String buttonState = getWordAtPosition(event.data, 1);
+    if (buttonState == "1") {
+      showQR = !showQR;
+    }
+    event = awaitEvent();
+  }
+
+  return { "", "", 0, event };
 }
