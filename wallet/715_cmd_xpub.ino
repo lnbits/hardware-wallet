@@ -29,26 +29,7 @@ CommandResponse executeXpub(String commandData) {
   String xpub = account.xpub();
   serialSendCommand(COMMAND_XPUB, "1 " + xpub + " " + hd.fingerprint());
 
-  bool showQR = true;
-
-  String xpubUpper = xpub + "";
-  xpubUpper.toUpperCase();
-  
-
-  EventData event = {EVENT_BUTTON_ACTION, ""};
-  while (event.type == EVENT_BUTTON_ACTION) {
-    if (showQR == true) {
-      showQRCode(xpubUpper);
-    } else {
-      showMessage(xpub, "");
-    }
-
-    String buttonState = getWordAtPosition(event.data, 1);
-    if (buttonState == "1") {
-      showQR = !showQR;
-    }
-    event = awaitEvent();
-  }
+  EventData event = toggleDatanAndQR(xpub, true);
 
   return { "", "", 0, event };
 }
