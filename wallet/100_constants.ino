@@ -18,5 +18,9 @@ const String COMMAND_CANCEL = "/cancel";
 const String COMMAND_PAIR = "/pair";
 const String COMMAND_CHECK_PAIRING = "/check-pairing";
 
+// data received over the serial port
 const String EVENT_SERIAL_DATA = "serial";
+// action detected on one of the buttons
 const String EVENT_BUTTON_ACTION = "button";
+// execute un-encrypted commands
+const String EVENT_INTERNAL_COMMAND = "intern";
