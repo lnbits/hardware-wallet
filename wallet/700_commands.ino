@@ -176,3 +176,25 @@ Command decryptAndExtractCommand(String ecryptedData) {
   String data = decryptDataWithIv(global.dhe_shared_secret, ecryptedData);
   return extractCommand(data);
 }
+
+EventData toggleDatanAndQR(String data, bool showQR) {
+  String dataUpper = data + "";
+  dataUpper.toUpperCase();
+
+  EventData event = {EVENT_BUTTON_ACTION, "0 1"};
+  while (event.type == EVENT_BUTTON_ACTION) {
+    String buttonState = getWordAtPosition(event.data, 1);
+
+    if (buttonState == "1") {
+      if (showQR == true) {
+        showQRCode(dataUpper);
+      } else {
+        showMessage(data, "");
+      }
+    } else {
+      showQR = !showQR;
+    }
+    event = awaitEvent();
+  }
+  return event;
+}

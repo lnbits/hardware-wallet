@@ -28,13 +28,7 @@ CommandResponse executeShowAddress(String addressData) {
     return {"Danger! Address missmatch!", "Derived address different thant the UI address"};
   }
 
-  showMessage("Press button for QR:", derivedAddress);
+  EventData event = toggleDatanAndQR(derivedAddress, false);
 
-  EventData event = awaitEvent();
-  if (event.type == EVENT_BUTTON_ACTION) {
-    derivedAddress.toUpperCase();
-    showQRCode(derivedAddress);
-    return {"", ""};
-  }
   return {"", "", 0, event};
 }
