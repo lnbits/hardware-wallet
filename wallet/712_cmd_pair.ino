@@ -28,12 +28,12 @@ CommandResponse executePair(String data) {
   writeFile(SPIFFS, global.sharedSecretFileName.c_str(), sharedSecretHex);
 
   String deviceConfig = global.deviceId;
-  if (button1Pin) {
+  if (button1Pin && button1Pin != "") {
     global.button1Pin = button1Pin.toInt();
     deviceConfig = deviceConfig + " " + button1Pin;
   }
 
-  if (button2Pin) {
+  if (button2Pin && button2Pin != "") {
     global.button2Pin = button2Pin.toInt();
     deviceConfig = deviceConfig + " " + button2Pin;
   }

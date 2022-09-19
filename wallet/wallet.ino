@@ -84,8 +84,6 @@ EnvironmentVarialbes env = {
 struct EventData {
   String type;
   String data;
-  int pinNumber;
-  int value;
 };
 
 struct FileData {

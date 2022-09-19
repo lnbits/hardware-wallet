@@ -60,12 +60,12 @@ void updateDeviceConfig() {
     global.deviceId = getWordAtPosition(deviceMetaFile.data, 0);
 
     String button1PinStr = getWordAtPosition(deviceMetaFile.data, 1);
-    if (button1PinStr) {
+    if (button1PinStr && button1PinStr != "") {
       global.button1Pin = button1PinStr.toInt();
     }
 
     String button2PinStr = getWordAtPosition(deviceMetaFile.data, 2);
-    if (button2PinStr) {
+    if (button2PinStr && button2PinStr != "") {
       global.button2Pin = button2PinStr.toInt();
     }
   } else {

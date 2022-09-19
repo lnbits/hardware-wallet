@@ -9,24 +9,22 @@ void listenForCommands() {
   if (cmdRes.message != "" || cmdRes.subMessage != "")
     showMessage(cmdRes.message, cmdRes.subMessage);
 
-  int currentState1 = digitalRead(global.button1Pin);
-  int currentState2 = digitalRead(global.button2Pin);
 
   // if the command does not handle an event then it bubbles it up
   EventData event = cmdRes.event;
-  if (&event != NULL) {
+  if (isNotCommandEvent(event.type)) {
     event = awaitEvent();
-  } 
+  }
 
-  if (event.type != EVENT_SERIAL_DATA) return;
+  if (isNotCommandEvent(event.type)) return;
 
   String data = event.data;
 
   Command c = extractCommand(data);
-  if (isEncryptedCommand(c.cmd)) {
+  if (isEncryptedCommand(c.cmd) && isNotInternalCommand(event.type)) {
     c = decryptAndExtractCommand(data);
   }
-  // flush stale data from buffer
+  // Do not remove this log line. Flushes stale data from buffer.
   logSerial("received command: " + c.cmd);
   cmdRes = executeCommand(c);
 
@@ -37,6 +35,14 @@ bool isEncryptedCommand(String cmd) {
   return cmd != COMMAND_PAIR &&
          cmd != COMMAND_CHECK_PAIRING &&
          cmd != COMMAND_PING;
+}
+
+bool isNotInternalCommand(String type) {
+  return type != EVENT_INTERNAL_COMMAND;
+}
+
+bool isNotCommandEvent(String type) {
+  return type != EVENT_SERIAL_DATA && type != EVENT_INTERNAL_COMMAND;
 }
 
 
@@ -108,24 +114,30 @@ EventData awaitEvent() {
       //   }
     }
 
-    // button state
-    int button1NewState = digitalRead(global.button1Pin);
-    if (button1NewState != button1State) {
-      logSerial("button 1: " + String(button1NewState));
-      button1State = button1NewState;
-      return { EVENT_BUTTON_ACTION, "", global.button1Pin, button1NewState };
-    }
+    EventData buttonEvent = checkButtonsState();
+    if (buttonEvent.type == EVENT_BUTTON_ACTION) return buttonEvent;
 
-    int button2NewState = digitalRead(global.button2Pin);
-    if (button2NewState != button2State) {
-      logSerial("button 2: " + String(button2NewState));
-      button2State = button2NewState;
-      return { EVENT_BUTTON_ACTION, "", global.button2Pin, button2NewState };
-    }
   }
   // counter = -1;
   String data = Serial.readStringUntil('\n');
   return { EVENT_SERIAL_DATA, data };
+}
+
+EventData checkButtonsState() {
+  int button1NewState = digitalRead(global.button1Pin);
+  if (button1NewState != button1State) {
+    logSerial("button 1: " + String(button1NewState));
+    button1State = button1NewState;
+    return { EVENT_BUTTON_ACTION, "1 " + String(button1NewState)};
+  }
+
+  int button2NewState = digitalRead(global.button2Pin);
+  if (button2NewState != button2State) {
+    logSerial("button 2: " + String(button2NewState));
+    button2State = button2NewState;
+    return { EVENT_BUTTON_ACTION, "2 " + String(button2NewState)};
+  }
+  return {"", ""};
 }
 
 HwwInitData initHww(String password, String mnemonic, String passphrase) {
