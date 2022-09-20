@@ -107,17 +107,18 @@
                                     </a>
                                 </div>
                                 <div class="col">
-                                    <esp-web-install-button id="installStableButton" manifest="manifest.json">
-                                        <button slot="activate" class="ud-main-btn ud-white-btn" data-toggle="tooltip"
-                                            data-placement="bottom" title="Stable Version">Flash Stable Version</button>
-                                    </esp-web-install-button>
-
+                                    <select id="binVersionOption" class="ud-main-btn ud-white-btn">
+                                        <option value="v0.1">Stable Version</option>
+                                        <option value="v0.2">Test Version</option>
+                                        <option value="v0.2">Version 0.2</option>
+                                    </select>
                                 </div>
                                 <div class="col">
-                                    <esp-web-install-button id="installTestButton" manifest="manifest.test.json">
+                                    <esp-web-install-button id="espInstallButton">
                                         <button slot="activate" class="ud-main-btn ud-white-btn" data-toggle="tooltip"
-                                            data-placement="bottom" title="Test Version">Flash Test Version</button>
+                                            data-placement="bottom" title="Flasn">Flash</button>
                                     </esp-web-install-button>
+
                                 </div>
 
                             </div>
@@ -422,6 +423,16 @@
         }
 
         window.document.addEventListener("scroll", onScroll);
+    </script>
+
+    <script>
+        const versionDropdown = document.getElementById("binVersionOption")
+        const espInstallButton = document.getElementById("espInstallButton")
+        versionDropdown.addEventListener("change", () => {
+            espInstallButton.manifest = `./firmware/esp32/${versionDropdown.value}/manifest.json`;
+        }
+        );
+
     </script>
 </body>
 
