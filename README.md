@@ -1,5 +1,5 @@
 # DIY Bitcoin Hardware Wallet (powered by <a href="https://www.arduino.cc/reference/en/libraries/ubitcoin/">uBitcoin</a>)
-## !!! BETA version! To be used on **Testnet** only for the moment !!!
+## This HWW is in BETA, use with TESTNET only, or with an amount of funds you are willing to lose 
 
 ## Use a world of microcontrollers to contruct your own bitcoin hardware wallet
 
