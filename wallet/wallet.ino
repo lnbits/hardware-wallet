@@ -17,6 +17,7 @@
 #include <ArduinoJson.h>
 #include "Bitcoin.h"
 #include "PSBT.h"
+#include "qr-code.h"
 
 #include <aes.h>
 
@@ -72,11 +73,19 @@ GlobalState global = {
 
 ////////////////////////////////           Global State End            ////////////////////////////////
 
+//////////////////////////////// Define and initialize Environament Variables ////////////////////////////////
+struct EnvironmentVarialbes {
+  String version;
+};
+
+EnvironmentVarialbes env = {
+  "0.2",
+};
+////////////////////////////////           Env Vars End            ////////////////////////////////
+
 struct EventData {
   String type;
   String data;
-  int pinNumber;
-  int value;
 };
 
 struct FileData {
@@ -93,17 +102,13 @@ struct CommandResponse {
   String message;
   String subMessage;
   int statusCode;
+  EventData event; // valid event that the command does not handle
 };
 
 struct HwwInitData {
   String passwordHash;
   String mnemonic;
   bool success;
-};
-
-struct SeedData {
-  String mnemonic;
-  String passphrase;
 };
 
 // do not move/remove, arduino IDE bug

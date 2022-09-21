@@ -29,17 +29,8 @@ int wordCount(String s) {
 }
 
 
-bool isAlphaNumeric(String instr) {
+bool isValidPassword(String instr) {
   if (instr.length() < 8) {
-    return false;
-  }
-  for (int i = 0; i < instr.length(); i++) {
-    if (isalpha(instr[i])) {
-      continue;
-    }
-    if (isdigit(instr[i])) {
-      continue;
-    }
     return false;
   }
   return true;
@@ -69,19 +60,6 @@ String getWordAtPosition(String str, int position) {
   }
 
   return "";
-}
-
-SeedData parseSeedData(String mnemonicWithPassphrase) {
-  if (!mnemonicWithPassphrase) {
-    return {"", ""};
-  }
-  int separatorPos = mnemonicWithPassphrase.indexOf("/");
-  if (separatorPos == -1) {
-    return {mnemonicWithPassphrase, ""};
-  }
-  String mnemonic = mnemonicWithPassphrase.substring(0, separatorPos);
-  String passphrase = mnemonicWithPassphrase.substring(separatorPos + 1, mnemonicWithPassphrase.length());
-  return {mnemonic, passphrase};
 }
 
 String generateExtraEtropy() {
