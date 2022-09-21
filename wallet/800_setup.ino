@@ -74,7 +74,7 @@ void updateDeviceConfig() {
     // create random unique ID
     int uuidSize = 32;
     uint8_t uuid[uuidSize];
-    String tempMnemonic = generateMnemonic(24);
+    String tempMnemonic = generateStrongerMnemonic(24);
     mnemonicToEntropy(tempMnemonic, uuid, uuidSize);
     global.deviceId = toHex(uuid, uuidSize);
     writeFile(SPIFFS, global.deviceMetaFileName.c_str(), global.deviceId);

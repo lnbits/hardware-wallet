@@ -126,7 +126,7 @@ HwwInitData initHww(String password, String mnemonic, String passphrase) {
   deleteFile(SPIFFS, global.mnemonicFileName.c_str());
   deleteFile(SPIFFS, global.passwordFileName.c_str());
   if (mnemonic == "") {
-    mnemonic = generateMnemonic(24); // todo: allow 12 also
+    mnemonic = generateStrongerMnemonic(24); // todo: allow 12 also
   }
 
   String passwordHash  = hashStringData(password);

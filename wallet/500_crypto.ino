@@ -31,7 +31,7 @@ String encryptDataWithIv(byte key[32], String msg) {
   // create random initialization vector
   int ivSize = 16;
   uint8_t iv[ivSize];
-  String tempMnemonic = generateMnemonic(24);
+  String tempMnemonic = generateStrongerMnemonic(24);
   mnemonicToEntropy(tempMnemonic, iv, ivSize);
   String ivHex = toHex(iv, ivSize);
 
