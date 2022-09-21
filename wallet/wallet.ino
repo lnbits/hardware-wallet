@@ -23,6 +23,8 @@
 #include <FS.h>
 #include <SPIFFS.h>
 
+#include "bootloader_random.h"
+
 
 fs::SPIFFSFS &FlashFS = SPIFFS;
 

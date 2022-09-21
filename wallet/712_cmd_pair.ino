@@ -9,7 +9,7 @@ CommandResponse executePair(String data) {
   String button1Pin = getWordAtPosition(data, 1);
   String button2Pin = getWordAtPosition(data, 2);
 
-  String tempMnemonic = generateMnemonic(24);
+  String tempMnemonic = generateStrongerMnemonic(24);
   byte dhe_secret[32];
   mnemonicToEntropy(tempMnemonic, dhe_secret, sizeof(dhe_secret));
 
