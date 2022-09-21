@@ -62,6 +62,27 @@ String getWordAtPosition(String str, int position) {
   return "";
 }
 
+String generateExtraEtropy() {
+  bootloader_random_enable();
+
+  String uBitcoinEntropy = generateMnemonic(24);
+
+  byte espEntropy[32];
+  esp_fill_random(espEntropy, 32);
+  String espHexEntropy = toHex(espEntropy, 32);
+
+  String clientEntropy = toHex(global.dhe_shared_secret, 32);
+
+  bootloader_random_disable();
+
+  return uBitcoinEntropy + espHexEntropy + clientEntropy + global.passwordHash;
+}
+
+String generateStrongerMnemonic(int wordCount) {
+  String extraEtropy = generateExtraEtropy();
+  return generateMnemonic(wordCount, extraEtropy);
+}
+
 Command extractCommand(String s) {
   int spacePos = s.indexOf(" ");
   String command = s.substring(0, spacePos);
