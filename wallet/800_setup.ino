@@ -7,18 +7,6 @@ void setup() {
   tft.init();
   tft.setRotation(1);
   tft.invertDisplay(true);
-  logo(0);
-  delay(2000);
-  for (int i = 0; i <= 5; i++) {
-    logo(5 - i);
-    delay(1000);
-  }
-  // if (!Serial.available()) {
-  //   showMessage("Connection failed", "5 sec time exceeded");
-  //   while (true) {
-  //     // todo: revisit
-  //   }
-  // }
   h.begin();
   FlashFS.begin(FORMAT_ON_FAIL);
   SPIFFS.begin(true);
