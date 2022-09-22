@@ -87,8 +87,8 @@ CommandResponse executeCommand(Command c) {
 
 }
 
-// unsigned long lastTickTime = 0;
-// int counter = 10;
+unsigned long lastTickTime = 0;
+int counter = 10;
 
 int button1State = HIGH;
 int button2State = HIGH;
@@ -103,22 +103,21 @@ EventData awaitEvent() {
       if  ((millis() - waitTime) > 60 * 1000) {
         idle = false;
         logo(0);
-      }
-      // else if  (counter > 0 && ((millis() - lastTickTime) > 1000)) {
-      //     counter--;
-      //     lastTickTime = millis();
-      //     logo(counter);
-      //   } else if (counter == 0) {
-      //     logo(counter);
-      //     counter--;
-      //   }
+      } else if  (counter > 0 && ((millis() - lastTickTime) > 1000)) {
+          counter--;
+          lastTickTime = millis();
+          logo(counter);
+        } else if (counter == 0) {
+          logo(counter);
+          counter--;
+        }
     }
 
     EventData buttonEvent = checkButtonsState();
     if (buttonEvent.type == EVENT_BUTTON_ACTION) return buttonEvent;
 
   }
-  // counter = -1;
+  counter = -1;
   String data = Serial.readStringUntil('\n');
   return { EVENT_SERIAL_DATA, data };
 }
