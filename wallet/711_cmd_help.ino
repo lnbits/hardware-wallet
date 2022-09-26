@@ -1,5 +1,26 @@
 CommandResponse executeHelp(String commandData) {
-  help();
+  // help();
+  setupSD();
+  const String testFileName = "/abc.txt";
+  const String testFileNameOut = "/abc-out-8.txt";
+  FileData fd = readFile(SD, testFileName.c_str());
+  logSerial("fd success: " + String(fd.success));
+  logSerial("fd data: " + fd.data);
+  String line = "";
+  writeFile(SD, testFileNameOut.c_str(), "IN " + testFileNameOut + "\n");
+  int lineNumber = 0;
+  do {
+    logSerial("line-number[" + String(lineNumber) + "]:");
+    line = getLineAtPosition(fd.data, lineNumber);
+    const String l2 = String("["+String(lineNumber) + "]: " + line);
+    line.toLowerCase();
+    appendFile(SD, testFileNameOut.c_str(), line.c_str());
+    lineNumber++;
+  } while (line != ""); // last line not read!
+
+  logSerial("line-last[" + String(lineNumber) + "]: " + line);
+  // appendFile(SD, testFileNameOut.c_str(), "OUT".c_str());
+
   return {"More info at:", "github.com/lnbits/hardware-wallet"};
 }
 
