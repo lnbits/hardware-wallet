@@ -56,13 +56,14 @@ The documentation for each command can be found in the linked `.ino` file
 
 
  ## Run from SD Card (air-gapped)
- Note: it is not fully airgapped when other communication mediums are enabled (wifi, bluetooth, serial-port)
+ **Note**: the device is not fully airgapped when other communication mediums are enabled (wifi, bluetooth, serial-port, etc).
+
  In order to run from an SD Card one must:
   - mount the SD Card into a computer
   - create a file named `commands.in.txt` on the top level directory (no parent directory) of the SD Card
-  - add the commands to the file. See sample files in `examples/sd-card`
+  - add the commands to the file. See sample files in [examples/sd-card](https://github.com/lnbits/hardware-wallet/tree/main/examples/sd-card)
   - mount the SD Card into the hardware device
-  - reboot the device. On reboot the device will detect the `commands.in.txt` on the SD Card and will start executing them
+  - reboot the device. On reboot the device will detect the `commands.in.txt` on the SD Card and will start executing the commands
   - wait for the device to complete execution
   - mount the SD Card into the computer. Two new files should be present:
      - `commands.out.txt` - contains the outputs of the commands. Here you will find the relevant data (like the signed PSBT)
