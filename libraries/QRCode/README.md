@@ -1,5 +1,4 @@
-QRCode
-======
+# QRCode
 
 A simple library for generating [QR codes](https://en.wikipedia.org/wiki/QR_code) in C,
 optimized for processing and memory constrained systems.
@@ -11,29 +10,25 @@ optimized for processing and memory constrained systems.
 - Compile-time stripping of unecessary logic and constants
 - MIT License; do with this as you please
 
-
-Installing
-----------
+## Installing
 
 To install this library, download and save it to your Arduino libraries directory.
 
 Rename the directory to QRCode (if downloaded from GitHub, the filename may be
-qrcode-master; library names may not contain the hyphen, so it must be renamed)
+qrcoded-master; library names may not contain the hyphen, so it must be renamed)
 
-
-API
----
+## API
 
 **Generate a QR Code**
 
 ```c
 // The structure to manage the QR code
-QRCode qrcode;
+QRCode qrcoded;
 
 // Allocate a chunk of memory to store the QR code
 uint8_t qrcodeBytes[qrcode_getBufferSize()];
 
-qrcode_initText(&qrcode, qrcodeBytes, 3, ECC_LOW, "HELLO WORLD");
+qrcode_initText(&qrcoded, qrcodeBytes, 3, ECC_LOW, "HELLO WORLD");
 ```
 
 **Draw a QR Code**
@@ -48,9 +43,9 @@ The following example prints a QR code to the Serial Monitor (it likely will
 not be scannable, but is just for demonstration purposes).
 
 ```c
-for (uint8 y = 0; y < qrcode.size; y++) {
-    for (uint8 x = 0; x < qrcode.size; x++) {
-        if (qrcode_getModule(&qrcode, x, y) {
+for (uint8 y = 0; y < qrcoded.size; y++) {
+    for (uint8 x = 0; x < qrcoded.size; x++) {
+        if (qrcode_getModule(&qrcoded, x, y) {
             Serial.print("**");
         } else {
             Serial.print("  ");
@@ -60,9 +55,7 @@ for (uint8 y = 0; y < qrcode.size; y++) {
 }
 ```
 
-
-What is Version, Error Correction and Mode?
--------------------------------------------
+## What is Version, Error Correction and Mode?
 
 A QR code is composed of many little squares, called **modules**, which represent
 encoded data, with additional error correction (allowing partially damaged QR
@@ -84,9 +77,7 @@ internally using a compact representation, so lower modes can contain more data.
 - **ALPHANUMERIC:** uppercase letters (`A-Z`), numbers (`0-9`), the space (` `), dollar sign (`$`), percent sign (`%`), asterisk (`*`), plus (`+`), minus (`-`), decimal point (`.`), slash (`/`) and colon (`:`).
 - **BYTE:** any character
 
-
-Data Capacities
----------------
+## Data Capacities
 
 <table>
     <tr>
@@ -662,16 +653,12 @@ Data Capacities
     </tr>
 </table>
 
-
-Special Thanks
---------------
+## Special Thanks
 
 A HUGE thank you to [Project Nayuki](https://www.nayuki.io/) for the
 [QR code C++ library](https://github.com/nayuki/QR-Code-generator/tree/master/cpp)
 which was critical in development of this library.
 
-
-License
--------
+## License
 
 MIT License.
