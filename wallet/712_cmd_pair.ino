@@ -1,4 +1,20 @@
+/**
+   @brief Create an encripted connection between the device and the client.
+   It uses `Diffie-Hellman key exchange` to build a `shared secret`.
+   It uses Advanced Encryption Standard (AES) symetric encryption with the `shared secret` as key.
+   In this command certain configs can be initialized.
+   @param data: String. Space separated values. Use minus (`-`) to skip the value.
+    Value significance by position:
+    0 - publicKeyHex: String (optional). The public key of the client in hex format, used in DHKE.
+    1 - button1Pin: int (optional). The pin number for the first button (optional).
+    2 - button2Pin: int (optional). The pin number for the second button (optional).
+    3 - persistSecrets: boolean (optional).
+          - Persist the `seed` and the `password hash` to file when resoring a wallet.
+          - Set to `false` in air-gapped mode when the seed is provided in `commands.in.txt`
+          - Defaults to `true`
 
+   @return CommandResponse
+*/
 CommandResponse executePair(String data) {
   // if ((millis() - global.startTime) > 10 * 1000) {
   //   Serial.println(COMMAND_PAIR + " 1 " + " connection_period_expired");

@@ -1,3 +1,14 @@
+/**
+   @brief Show an address text and QR Code based on the BIP32 path.
+   It compares the derived address with the one received from the client.
+   If they are different an warning message will be shown.
+   @param addressData: String. Space separated values. Use minus (`-`) to skip the value.
+    Value significance by position:
+    0 - networkName: String. Can be `Testnet` or `Mainnet`.
+    1 - path: String. BIP32 (full path). Eg:
+    2 - address: String. Address derviced by the client. Used for validation
+   @return CommandResponse
+*/
 CommandResponse executeShowAddress(String addressData) {
   if (global.authenticated == false) {
     return {"Enter password!", "8 numbers/letters"};
@@ -16,7 +27,7 @@ CommandResponse executeShowAddress(String addressData) {
     return {"Unknown Network",  "Must be Mainnet or Testnet"};
   }
 
-  if (!path) {
+  if (isEmptyParam(path)) {
     return {"Derivation path missing!", "Address cannot be derived"};
   }
 

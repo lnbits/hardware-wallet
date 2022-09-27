@@ -1,3 +1,19 @@
+/**
+   @brief Sign a PSBT.
+
+   @param commandData: String. Space separated values. Use minus (`-`) to skip the value.
+    Value significance by position:
+    0 - networkName: String. Can be `Testnet` or `Mainnet`.
+    1 - psbtBase64: String. Base64 encoded PSBT
+   @return CommandResponse
+    - sign status and the number of outputs to the UI.
+    - `/psbt psbt_parse_failed` to the client if the PSBT cannot be parsed.
+    - `/psbt invalid_mnemonic`  to the client if the stored mnemonic is invalid.
+    - `psbt 1` to the client  if the PSBT can be signed
+       - `sign {inputCount} {base64Psbt}` to the client.
+          - `inputCount` is the numner of signed inputs. Not necessarlily all inputs are signed by this device.
+          - `base64Psbt` the signed psbt in base64 format.
+*/
 CommandResponse executeSignPsbt(String commandData) {
   if (global.authenticated == false) {
     return { "Enter password!", "8 numbers/letters"};
