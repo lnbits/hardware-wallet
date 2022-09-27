@@ -37,18 +37,18 @@ CommandResponse executeSignPsbt(String commandData) {
   PSBT psbt = parseBase64Psbt(psbtBase64);
   if (!psbt) {
     logInfo("Failed psbt: " + psbtBase64);
-    serialSendCommand(COMMAND_SEND_PSBT, "psbt_parse_failed");
+    sendCommandOutput(COMMAND_SEND_PSBT, "psbt_parse_failed");
     return {"Failed parsing",  "Send PSBT again"};
   }
 
   HDPrivateKey hd(global.mnemonic, global.passphrase, network);
   // check if it is valid
   if (!hd) {
-    serialSendCommand(COMMAND_SEND_PSBT, "invalid_mnemonic'");
+    sendCommandOutput(COMMAND_SEND_PSBT, "invalid_mnemonic'");
     return {"Invalid Mnemonic", ""};
   }
 
-  serialSendCommand(COMMAND_SEND_PSBT, "1");
+  sendCommandOutput(COMMAND_SEND_PSBT, "1");
 
   for (int i = 0; i < psbt.tx.outputsNumber; i++) {
     CommandResponse outRes = confirmOutputDetails(psbt, hd, i, network);
@@ -124,7 +124,7 @@ CommandResponse signPsbtToFile(PSBT psbt, HDPrivateKey hd) {
   delay(500);
 
   uint8_t signedInputCount = psbt.sign(hd);
-  serialSendCommand(COMMAND_SIGN_PSBT,  String(signedInputCount) + " " + psbt.toBase64());
+  sendCommandOutput(COMMAND_SIGN_PSBT,  String(signedInputCount) + " " + psbt.toBase64());
 
   return { "Signed inputs:", String(signedInputCount) };
 }
@@ -148,7 +148,7 @@ CommandResponse confirmAndSignPsbt(PSBT psbt, HDPrivateKey hd) {
 
     uint8_t signedInputCount = psbt.sign(hd);
 
-    serialSendCommand(COMMAND_SIGN_PSBT,  String(signedInputCount) + " " + psbt.toBase64());
+    sendCommandOutput(COMMAND_SIGN_PSBT,  String(signedInputCount) + " " + psbt.toBase64());
     return { "Signed inputs:", String(signedInputCount) };
   }
   if (c.cmd = COMMAND_CANCEL) {

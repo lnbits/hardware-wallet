@@ -19,7 +19,7 @@ CommandResponse executeWhipeHww(String password) {
   delay(DELAY_MS);
   global.authenticated = data.success;
 
-  serialSendCommand(COMMAND_WIPE,  String(global.authenticated));
+  sendCommandOutput(COMMAND_WIPE,  String(global.authenticated));
 
   if (global.authenticated == true) {
     global.passwordHash = data.passwordHash;
