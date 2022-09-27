@@ -1,16 +1,16 @@
 # commands.in.txt
 
-# do not persist `seed` and `password` info on the device (by default they will be persisted)
+# Do not persist `seed` and `password` info on the device (by default they will be persisted)
 /pair - - - false
 
-# provide new password and seed for restore
+# Provide new password and seed for restore
 /restore my-password-1 link pool sudden unfair illness west sister helmet hard rally boring tool avoid fantasy solar company favorite net cluster truly miss reduce margin memory
 
-# authenticate
+# Authenticate
 /password my-password-1
 
-# get the xpub testnet segwit
+# Get the xpub testnet segwit
 /xpub Testnet m/84'/1'/0'
 
-# sign the PSBT
+# Sign the PSBT
 /psbt Testnet cHNidP8BAJoCAAAAAs71rmzxARRlZvlQbOgiR/rCTWyOOIdlLuVgS/36AHCsAAAAAAD/////8YmlhTl0kGsGtoVU0OqC6dV4/4G3BLLuS6VlCT6is0kAAAAAAP////8CubwOAAAAAAAWABSV+CxzncoW6Iyg86XeyzrTUjr9i3caBQAAAAAAFgAU/rD86Ab8UH3m9IyXu/kff1JavoMAAAAAAAEA/XMBAgAAAAABAopmICnQ5hzOSoP/7Omb4Y+SJVwIwjleZJR2YbZ+0pSOAQAAAAD/////zf5/BuBeCqCWZ+RivpcY/e21Jtn9vvH8gHuwvNkOnxkAAAAAAP////8CZxQAAAAAAAAWABTa5JPb+n0I5dMdGNyS9scffoB2YDkwAAAAAAAAFgAU3cBAc3Yax9dPREn/xgLPZ7e5KokCSDBFAiEAzW5y41gJhnCg7jdai3rYubiUWUSjPd3thJ+WBwFlp0UCIH3YW0/Fi82GGQIlWD/5CTQzpe9aQqV4SVMFmgSITiP0ASECYntsi5OIqME0PlDPSB0wvsF7KyWJys+StS34hQCRn3QCRzBEAiB0EjBwk/XVddAhWWFb6xTlK4ip2tH3mgM+HEUyC6QrLgIgbONwBFkVR+dQHGf4eVAI6lMCqLADw4YpH2snLZZP5x0BIQMgYa7l8zqUqz2ua8YqniYlq+OfEKSx9FtwDCCB9gTCtQAAAAAiBgKmp0gWere5i+ier+KpN3+Dlh200yt7GxhgCYGZ+54SGBh/jg/pVAAAgAEAAIAAAACAAQAAAAoAAAAAAQD9dAECAAAAAAECzf5/BuBeCqCWZ+RivpcY/e21Jtn9vvH8gHuwvNkOnxkCAAAAAP////9ke7tT+O+eLRJ7M3FWI+hqf23ZnLmGykx7VvA5eanE2gEAAAAA/////wKawxMAAAAAABYAFNchQ7jvrNjEAvMkZ100BVVSp06EOTAAAAAAAAAWABTzXB7cDzhA4Q+6RvantRZj9uUlWgJIMEUCIQDV6a6zSybCt94IWG2xOSP7wGlSQKXQe8uzEKbKRL4zTAIgA6a8hIP0G0ijd8FyNTXZKEHOQePeZNVSGBsgmjtl7rkBIQNmro1w0fmjCtuXFOC03w+Pa9+k94AQUCnh4MXUebQHVwJIMEUCIQD3S3x7Z4O4y9UBVwzAx2BGLA0gctxpvFJaOXjQxi0frAIgL7HrC3plgNCUTX7fwdua2HlVEGA1i19o3G+TAstW2d8BIQJV+jBUw3kSgRCf5eVkkcpEqlsIFMoyredQyYl5b4G7CgAAAAAiBgJHlpinlDdocyntdnyoqjRd40+ibqgeNhAb2epwIQKg4hh/jg/pVAAAgAEAAIAAAACAAQAAAAkAAAAAIgIDPkeiXAcc88pCA+e/hAhZUptmNBigQKZiVigV83nvNsUYf44P6VQAAIABAACAAAAAgAEAAAALAAAAAAA=
