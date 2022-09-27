@@ -18,6 +18,7 @@ CommandResponse executeShowAddress(String addressData) {
   String path = getWordAtPosition(addressData, 1);
   String address = getWordAtPosition(addressData, 2);
 
+
   const Network * network;
   if (networkName == "Mainnet") {
     network = &Mainnet;
@@ -35,9 +36,14 @@ CommandResponse executeShowAddress(String addressData) {
 
   HDPrivateKey pK = hd.derive(path);
   String derivedAddress = pK.address();
-  if (!derivedAddress.equals(address)) {
+
+  if (isEmptyParam(address)) {
+    logInfo("Address cannot be validated. Path: " + path + " address: " + derivedAddress );
+  } else if (!derivedAddress.equals(address)) {
     return {"Danger! Address missmatch!", "Derived address different thant the UI address"};
   }
+
+  sendCommandOutput(COMMAND_ADDRESS, "1 " + derivedAddress);
 
   EventData event = toggleDatanAndQR(derivedAddress, false);
 
