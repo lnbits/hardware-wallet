@@ -3,6 +3,22 @@ CommandResponse executeShowSeed(String positionStr) {
     return {"Enter password!", "8 numbers/letters"};
   }
 
+  return showSeed(positionStr);
+}
+
+CommandResponse showSeed(String positionStr) {
+  if (global.hasCommandsFile == true) {
+    return sendSeedToFile();
+  }
+  return showSeedWordAtPosition(positionStr);
+}
+
+CommandResponse sendSeedToFile() {
+  commandOutToFile("Seed: " + global.mnemonic);
+  return {"Show Seed", "Done"};
+}
+
+CommandResponse showSeedWordAtPosition(String positionStr) {
   int position = positionStr.toInt();
   if (!positionStr || position == 0) {
     positionStr = "1";
@@ -22,6 +38,7 @@ CommandResponse executeShowSeed(String positionStr) {
   }
   return {"", "", 0, event};
 }
+
 
 EventData handleButtonDownEvent(EventData buttonEvent, int position) {
   String buttonState = getWordAtPosition(buttonEvent.data, 1);
