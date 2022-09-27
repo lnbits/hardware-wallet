@@ -29,6 +29,26 @@ Data is sent to/from the **Hardware Wallet** over webdev Serial, not the most se
 - Select "TTGO-LoRa32-OLED-V1" from tools>board
 - Upload to device
 
+## Device Commands
+The client (OnchainWallet extension or anyother one) communicates with the device using strings of this form:
+`/command-name {param1} {param2} ... {paramn}`
+ - the order of the parametes is relevant (the position gives its meaning)
+ - if the value is specified then the minus (`-`) character should be used
+ - eg: `/password my-password-1`
+
+ The device (HWW) can respond (not mandatory) with a string of the same form: 
+  - `/command-name {resp1} {resp2} ... {respn}`
+
+Below all the commands are listed
+
+### /ping
+
+
+### /pair
+
+
+### /check-paring
+
 ## How to use
 // Guide to go here
 
