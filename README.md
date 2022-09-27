@@ -44,7 +44,15 @@ The documentation for each command can be found in the lninked `.ino` file
  - `/ping` [720_ping.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/720_ping.ino)
  - `/pair` [712_cmd_pair.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/712_cmd_pair.ino)
  - `/check_pairing` [721_check_pairing.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/721_check_pairing.ino)
-
+ - `/password` [713_cmd_password_check.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/713_cmd_password_check.ino)
+ - `/password-clear` [714_cmd_password_clear.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/714_cmd_password_clear.ino)
+ - `/restore` [717_cmd_restore.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/717_cmd_restore.ino)
+ - `/wipe` [716_cmd_wipe_hww.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/716_cmd_wipe_hww.ino)
+ - `/sign` [718_cmd_sign_psbt](https://github.com/lnbits/hardware-wallet/blob/main/wallet/718_cmd_sign_psbt.ino)
+ - `/seed` [719_show_seed](https://github.com/lnbits/hardware-wallet/blob/main/wallet/719_show_seed.ino)
+ - `/xpub` [715_cmd_xpub.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/715_cmd_xpub.ino)
+ - `/address` [722_show_address](https://github.com/lnbits/hardware-wallet/blob/main/wallet/722_show_address.ino)
+ - `/help` [711_cmd_help](https://github.com/lnbits/hardware-wallet/blob/main/wallet/711_cmd_help.ino)
 ## How to use
 // Guide to go here
 
