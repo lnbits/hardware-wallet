@@ -33,8 +33,8 @@ void showMessage(String message, String additional)
   tft.setCursor(0, 80);
   tft.setTextSize(2);
   tft.println(additional);
-  logSerial(message);
-  logSerial(additional);
+  logInfo(message);
+  logInfo(additional);
 }
 
 

@@ -13,17 +13,17 @@ void setup() {
     logo(5 - i);
     delay(1000);
   }
-  if (!Serial.available()) {
-    showMessage("Connection failed", "5 sec time exceeded");
-    while (true) {
-      // todo: revisit
-    }
-  }
+  // if (!Serial.available()) {
+  //   showMessage("Connection failed", "5 sec time exceeded");
+  //   while (true) {
+  //     // todo: revisit
+  //   }
+  // }
   h.begin();
   FlashFS.begin(FORMAT_ON_FAIL);
   SPIFFS.begin(true);
 
-  logSerial("HWW: waiting for commands");
+  logInfo("HWW: waiting for commands");
   // In case of forced reboot, tell the client to logout.
   // Secure connection not established yet. Sendin in clear text.
   Serial.println(COMMAND_PASSWORD_CLEAR +  " 1");
@@ -31,6 +31,7 @@ void setup() {
   if (loadFiles() == false)
     showMessage("Failed to open files",  "Reset or 'help'");
   updateDeviceConfig();
+  setupSD();
 }
 
 bool loadFiles() {
