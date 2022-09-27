@@ -88,25 +88,27 @@ CommandResponse executeCommand(Command c) {
 }
 
 
-HwwInitData initHww(String password, String mnemonic, String passphrase) {
+HwwInitData initHww(String password, String mnemonic, String passphrase, bool persistSecrets) {
   if (isValidPassword(password) == false)
     return {"", "", false};
 
-  deleteFile(SPIFFS, global.mnemonicFileName.c_str());
-  deleteFile(SPIFFS, global.passwordFileName.c_str());
   if (mnemonic == "") {
     mnemonic = generateStrongerMnemonic(24); // todo: allow 12 also
   }
 
   String passwordHash  = hashStringData(password);
-  writeFile(SPIFFS, global.passwordFileName.c_str(), passwordHash);
 
-  int byteSize =  passwordHash.length() / 2;
-  byte encryptionKey[byteSize];
-  fromHex(passwordHash, encryptionKey, byteSize);
+  if (persistSecrets == true) {
+    deleteFile(SPIFFS, global.mnemonicFileName.c_str());
+    deleteFile(SPIFFS, global.passwordFileName.c_str());
+    writeFile(SPIFFS, global.passwordFileName.c_str(), passwordHash);
 
+    int byteSize =  passwordHash.length() / 2;
+    byte encryptionKey[byteSize];
+    fromHex(passwordHash, encryptionKey, byteSize);
 
-  writeFile(SPIFFS, global.mnemonicFileName.c_str(), encryptDataWithIv(encryptionKey, mnemonic));
+    writeFile(SPIFFS, global.mnemonicFileName.c_str(), encryptDataWithIv(encryptionKey, mnemonic));
+  }
 
   return {passwordHash, mnemonic, true};
 }

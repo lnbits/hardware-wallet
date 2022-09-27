@@ -3,10 +3,10 @@ CommandResponse executeRestore(String commandData) {
   String password = commandData.substring(0, spacePos);
   String mnemonic = commandData.substring(spacePos + 1, commandData.length() );
 
-  if (mnemonic == "") {
+  if (isEmptyParam(mnemonic)) {
     return { "Enter seed words",  "Separated by spaces"};
   }
-  if (password == "") {
+  if (isEmptyParam(password)) {
     return { "Cannot restore",  "Password missing"};
   }
 
@@ -23,7 +23,7 @@ CommandResponse executeRestore(String commandData) {
     return {"Wrong mnemonic!", "Incorrect checksum"};
   }
 
-  HwwInitData data = initHww(password, mnemonic, global.passphrase);
+  HwwInitData data = initHww(password, mnemonic, global.passphrase, global.persistSecrets);
   delay(DELAY_MS);
   global.authenticated = data.success;
   serialSendCommand(COMMAND_RESTORE, String(global.authenticated));
@@ -31,7 +31,7 @@ CommandResponse executeRestore(String commandData) {
   if (global.authenticated == true) {
     global.passwordHash = data.passwordHash;
     global.mnemonic = data.mnemonic;
-    return {"Restore successfull",  "/seed` to view word list"};
+    return {"Restore successful",  "/seed` to view word list"};
   }
   return { "Error, try again", "8 numbers/letters"};
 }

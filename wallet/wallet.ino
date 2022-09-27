@@ -53,6 +53,7 @@ TFT_eSPI tft = TFT_eSPI();
 struct GlobalState {
   String deviceId;
   bool authenticated;
+  bool persistSecrets;
   String passwordHash;
   String mnemonic;
   String passphrase;
@@ -76,6 +77,7 @@ struct GlobalState {
 GlobalState global = {
   "",
   false,
+  true,
   "",
   "",
   "",

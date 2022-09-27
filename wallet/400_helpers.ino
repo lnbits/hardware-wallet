@@ -91,6 +91,14 @@ String generateStrongerMnemonic(int wordCount) {
   return generateMnemonic(wordCount, extraEtropy);
 }
 
+bool isNotEmptyParam(String paramValue) {
+  return paramValue && paramValue != "" && paramValue != "-";
+}
+
+bool isEmptyParam(String paramValue) {
+  return !isNotEmptyParam(paramValue);
+}
+
 Command extractCommand(String s) {
   int spacePos = s.indexOf(" ");
   String command = s.substring(0, spacePos);

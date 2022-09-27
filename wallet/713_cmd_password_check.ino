@@ -1,5 +1,12 @@
+/**
+ * @brief Check if the provided password is correct.
+ * Set the global `authenticated` flag to true if password is correct, or to false otherwhise.
+ * Set the global `passphrase` value if provided.
+ * @param commandData - a string containing the password and optionaly the passphrase.
+ * @return CommandResponse 
+ */
 CommandResponse executePasswordCheck(String commandData) {
-  if (commandData == "") {
+  if (isEmptyParam(commandData)) {
     return { "Enter password",  "8 numbers/letters"};
   }
   String password = getWordAtPosition(commandData, 0);
