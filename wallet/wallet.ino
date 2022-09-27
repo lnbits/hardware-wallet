@@ -17,7 +17,7 @@
 #include <ArduinoJson.h>
 #include "Bitcoin.h"
 #include "PSBT.h"
-#include "qr-code.h"
+#include "qrcoded.h"
 
 #include <aes.h>
 
