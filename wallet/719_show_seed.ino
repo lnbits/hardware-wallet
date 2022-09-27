@@ -1,3 +1,12 @@
+/**
+   @brief Show the seed.
+   While in the "interactive" mode (communicating over wire with a client) only one word can be requested at a time.
+   In the "command file" mode all the seed words will be returned.
+   @param positionStr: String (optional). Position of the word to be displayed.
+   @return CommandResponse
+    - the seed word at the specified positon to the UI
+    - `/seed {position} {word}` to the client. Position is the postion of the word in the list.
+*/
 CommandResponse executeShowSeed(String positionStr) {
   if (global.authenticated == false) {
     return {"Enter password!", "8 numbers/letters"};

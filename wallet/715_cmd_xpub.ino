@@ -1,3 +1,15 @@
+/**
+   @brief
+
+   @param data: String. Space separated values. Use minus (`-`) to skip the value.
+    Value significance by position:
+     0 - networkName: String. Can be `Testnet` or `Mainnet`.
+     1 - path: String. The BIP32 full for  the `xpub`. Eg: `m/84'/1'/0'`.
+   @return CommandResponse
+      - `xpub` QR or text to the UI.
+      - `/xpub 0 invalid_mnemonic` to the client. If the stored mnemonic is invalid.
+      - `/xpub 1 {xpub} {fingerprint}` to the client.
+*/
 CommandResponse executeXpub(String commandData) {
   if (global.authenticated == false) {
     return {"Enter password!", "8 numbers/letters"};

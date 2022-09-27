@@ -1,3 +1,9 @@
+/**
+   @brief Show info about the existing commands.
+
+   @param commandData: String.  Not used.
+   @return CommandResponse
+*/
 CommandResponse executeHelp(String commandData) {
   help();
   return {"More info at:", "github.com/lnbits/hardware-wallet"};

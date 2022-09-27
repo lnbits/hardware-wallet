@@ -1,3 +1,9 @@
+/**
+   @brief Check if the device is already paired with the client.
+   Skip pairing if the `shared secret` is valid.
+   @param encryptedData: String. `PAIRING_CONTROL_TEXT` value encrypted by the client.
+   @return CommandResponse
+*/
 CommandResponse executeCheckPairing(String encryptedData) {
   String sharedSecret = toHex(global.dhe_shared_secret, sizeof(global.dhe_shared_secret));
 

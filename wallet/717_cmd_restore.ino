@@ -1,3 +1,14 @@
+/**
+   @brief Restore a wallet from a BIP39 word list.
+   A new password must be provided.
+   @param commandData: String. Space separated values. Use minus (`-`) to skip the value.
+    Value significance by position:
+     0 - password: String. Minimum 8 characters, spaces not allowed.
+     1 - mnemonic: String. BIP39 word list.
+   @return CommandResponse
+      - restore status to the UI.
+      - `/restore {status}` to the client. Status is `1` if restore is successful, `0` otherwhise.
+*/
 CommandResponse executeRestore(String commandData) {
   int spacePos = commandData.indexOf(" ");
   String password = commandData.substring(0, spacePos);
