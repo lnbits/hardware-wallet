@@ -38,7 +38,7 @@ CommandResponse showSeedWordAtPosition(String positionStr) {
   }
 
   String word = getWordAtPosition(global.mnemonic, position - 1);
-  serialSendCommand(COMMAND_SEED, positionStr + " " + word);
+  sendCommandOutput(COMMAND_SEED, positionStr + " " + word);
   printMnemonicWord(positionStr, word);
 
   EventData event = awaitEvent();

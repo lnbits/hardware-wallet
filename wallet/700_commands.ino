@@ -113,7 +113,7 @@ HwwInitData initHww(String password, String mnemonic, String passphrase, bool pe
   return {passwordHash, mnemonic, true};
 }
 
-void serialSendCommand(String command, String commandData) {
+void sendCommandOutput(String command, String commandData) {
   commandOutToFile(command + " " + commandData);
   serialPrintlnSecure(command + " " + commandData);
 }

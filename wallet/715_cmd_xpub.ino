@@ -34,12 +34,12 @@ CommandResponse executeXpub(String commandData) {
 
   HDPrivateKey hd(global.mnemonic, global.passphrase, network);
   if (!hd) {
-    serialSendCommand(COMMAND_XPUB, "0 invalid_mnemonic");
+    sendCommandOutput(COMMAND_XPUB, "0 invalid_mnemonic");
     return {"Invalid Mnemonic", ""};
   }
   HDPrivateKey account = hd.derive(path);
   String xpub = account.xpub();
-  serialSendCommand(COMMAND_XPUB, "1 " + xpub + " " + hd.fingerprint());
+  sendCommandOutput(COMMAND_XPUB, "1 " + xpub + " " + hd.fingerprint());
 
   EventData event = toggleDatanAndQR(xpub, true);
 
