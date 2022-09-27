@@ -1,12 +1,12 @@
 CommandResponse executeWhipeHww(String password) {
-  if (password == "") {
+  if (isEmptyParam(password)) {
     return { "Enter new password", "8 numbers/letters"};
   }
 
   showMessage("Resetting...", "");
   delay(2000);
 
-  HwwInitData data = initHww(password, "", "");
+  HwwInitData data = initHww(password, "", "", true);
   delay(DELAY_MS);
   global.authenticated = data.success;
 
