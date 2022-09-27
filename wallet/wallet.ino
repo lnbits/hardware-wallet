@@ -144,7 +144,7 @@ void logInfo(const String msg) {
 void logInfoFile(const String msg) {
   if (global.hasCommandsFile == true) {
     Serial.println("/log logInfoFile: " + global.commandsLogFileName + " msg: " + msg);
-    appendFile(SD, global.commandsLogFileName.c_str(), msg);
+    appendFile(SD, global.commandsLogFileName.c_str(), msg + "\n");
   }
 }
 

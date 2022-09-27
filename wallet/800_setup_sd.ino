@@ -13,6 +13,7 @@ void setupSD() {
     showMessage("SD Card", "Commands file found");
     global.hasCommandsFile = true;
     global.commands = fd.data;
+    initCommandsFile();
   } else {
     showMessage("SD Card", "Commands file not found");
     global.hasCommandsFile = false;
@@ -22,4 +23,9 @@ void setupSD() {
 
   delay(2000);
 
+}
+
+void initCommandsFile() {
+  writeFile(SD, global.commandsLogFileName.c_str(),  "#### commands file found ####\n");
+  writeFile(SD, global.commandsOutFileName.c_str(),  "#### commands output ####\n");
 }
