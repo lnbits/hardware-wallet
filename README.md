@@ -48,11 +48,25 @@ The documentation for each command can be found in the linked `.ino` file
  - `/password-clear` [714_cmd_password_clear.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/714_cmd_password_clear.ino)
  - `/restore` [717_cmd_restore.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/717_cmd_restore.ino)
  - `/wipe` [716_cmd_wipe_hww.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/716_cmd_wipe_hww.ino)
- - `/sign` [718_cmd_sign_psbt](https://github.com/lnbits/hardware-wallet/blob/main/wallet/718_cmd_sign_psbt.ino)
+ - `/psbt` [718_cmd_sign_psbt](https://github.com/lnbits/hardware-wallet/blob/main/wallet/718_cmd_sign_psbt.ino)
  - `/seed` [719_show_seed](https://github.com/lnbits/hardware-wallet/blob/main/wallet/719_show_seed.ino)
  - `/xpub` [715_cmd_xpub.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/715_cmd_xpub.ino)
  - `/address` [722_show_address](https://github.com/lnbits/hardware-wallet/blob/main/wallet/722_show_address.ino)
  - `/help` [711_cmd_help](https://github.com/lnbits/hardware-wallet/blob/main/wallet/711_cmd_help.ino)
+
+
+ ## Run from SD Card (air-gapped)
+ Note: it is not fully airgapped when other communication mediums are enabled (wifi, bluetooth, serial-port)
+ In order to run from an SD Card one must:
+  - mount the SD Card into a computer
+  - create a file named `commands.in.txt` on the top level directory (no parent directory) of the SD Card
+  - add the commands to the file. See sample files in `examples/sd-card`
+  - mount the SD Card into the hardware device
+  - reboot the device. On reboot the device will detect the `commands.in.txt` on the SD Card and will start executing them
+  - wait for the device to complete execution
+  - mount the SD Card into the computer. Two new files should be present:
+     - `commands.out.txt` - contains the outputs of the commands. Here you will find the relevant data (like the signed PSBT)
+     - `commands.log.txt` - contains the logs
 ## How to use
 // Guide to go here
 
