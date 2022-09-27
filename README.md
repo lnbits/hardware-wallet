@@ -30,7 +30,7 @@ Data is sent to/from the **Hardware Wallet** over webdev Serial, not the most se
 - Upload to device
 
 ## Device Commands
-The client (OnchainWallet extension or anyother one) communicates with the device using strings of this form:
+The client (OnchainWallet extension or anyother one) communicates with the device using strings (called commands) of this form:
 `/command-name {param1} {param2} ... {paramn}`
  - the order of the parametes is relevant (the position gives its meaning)
  - if no the value is specified then the minus (`-`) character should be used at the respective position
@@ -39,15 +39,11 @@ The client (OnchainWallet extension or anyother one) communicates with the devic
  The device (HWW) can respond (not mandatory) with a string of the same form: 
   - `/command-name {resp1} {resp2} ... {respn}`
 
-Below all the commands are listed
+The documentation for each command can be found in the lninked `.ino` file
 
-### /ping
-
-
-### /pair
-
-
-### /check-paring
+ - `/ping` [720_ping.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/720_ping.ino)
+ - `/pair` [712_cmd_pair.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/712_cmd_pair.ino)
+ - `/check_pairing` [721_check_pairing.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/721_check_pairing.ino)
 
 ## How to use
 // Guide to go here
