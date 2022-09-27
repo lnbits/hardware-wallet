@@ -47,19 +47,19 @@ void printFeeDetails(uint64_t fee) {
 }
 
 bool isChangeAddress(HDPrivateKey hd, PSBTOutputMetadata txOutMeta, TxOut txOut) {
-  logSerial("### isChangeAddress IN " );
+  logInfo("### isChangeAddress IN " );
   if (txOutMeta.derivationsLen > 0) { // there is derivation path
-    logSerial("### isChangeAddress address1 " + txOut.address());
-    logSerial("### isChangeAddress derivationsLen " + String(txOutMeta.derivationsLen));
+    logInfo("### isChangeAddress address1 " + txOut.address());
+    logInfo("### isChangeAddress derivationsLen " + String(txOutMeta.derivationsLen));
     // considering only single key for simplicity
     PSBTDerivation der = txOutMeta.derivations[0];
-    // logSerial("### isChangeAddress der " + String(der.derivation));
+    // logInfo("### isChangeAddress der " + String(der.derivation));
     HDPublicKey pub = hd.derive(der.derivation, der.derivationLen).xpub();
-    logSerial("### isChangeAddress pub " + pub.xpub());
-    logSerial("### isChangeAddress address 2" +  pub.address() + " " + txOut.address() );
+    logInfo("### isChangeAddress pub " + pub.xpub());
+    logInfo("### isChangeAddress address 2" +  pub.address() + " " + txOut.address() );
     return pub.address() == txOut.address();
   }
-  logSerial("### isChangeAddress OUT " );
+  logInfo("### isChangeAddress OUT " );
   return false;
 }
 

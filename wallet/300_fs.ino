@@ -5,18 +5,19 @@
 
 
 FileData readFile(fs::FS &fs, const char * path) {
-  logSerial("Reading file:" + String(path));
+  logInfo("Reading file: " + String(path));
   struct FileData fd = {false, ""};
-  File file = fs.open(path);
+  File file = fs.open(path, FILE_READ);
   if (!file || file.isDirectory()) {
-    logSerial("- failed to open file for reading");
+    logInfo("Failed to open file for reading: " + String(path));
     return fd;
   }
 
 
-  while (file.available())
-    fd.data += (char)file.read();
-
+  while (file.available()) {
+    char c = (char)file.read();
+    fd.data += c;
+  }
 
   file.close();
   fd.success = true;
@@ -24,25 +25,37 @@ FileData readFile(fs::FS &fs, const char * path) {
 }
 
 void writeFile(fs::FS &fs, const char * path, String message) {
-  logSerial("Writing file: " + String(path));
+  logInfoSerial("Writing file: " + String(path));
   File file = fs.open(path, FILE_WRITE);
   if (!file) {
-    logSerial("- failed to open file for writing");
+    logInfoSerial("Failed to open file for writing: " + String(path));
     return;
   }
   if (file.print(message)) {
-    logSerial("- file written");
+    logInfoSerial("File written: " + String(path));
   } else {
-    logSerial("- write failed");
+    logInfoSerial("Write failed: " + String(path));
+  }
+  file.close();
+}
+
+void appendFile(fs::FS &fs, const char * path, String message) {
+  File file = fs.open(path, FILE_APPEND);
+  if (!file) {
+    logInfoSerial("Failed to open file for appending: " + String(path));
+    return;
+  }
+  if (!file.print(message)) {
+    logInfoSerial("Append failed: " + String(path));
   }
   file.close();
 }
 
 void deleteFile(fs::FS &fs, const char * path) {
-  logSerial("Deleting file: " + String(path));
+  logInfo("Deleting file: " + String(path));
   if (fs.remove(path)) {
-    logSerial("- file deleted");
+    logInfo("- file deleted");
   } else {
-    logSerial("- delete failed");
+    logInfo("- delete failed");
   }
 }

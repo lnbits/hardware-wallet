@@ -15,6 +15,7 @@ void listenForCommands() {
   if (isNotCommandEvent(event.type)) {
     event = awaitEvent();
   }
+  logInfo("Event: " + event.type + ": " + event.data);
 
   if (isNotCommandEvent(event.type)) return;
 
@@ -25,7 +26,7 @@ void listenForCommands() {
     c = decryptAndExtractCommand(data);
   }
   // Do not remove this log line. Flushes stale data from buffer.
-  logSerial("received command: " + c.cmd);
+  logInfo("received command: " + c.cmd);
   cmdRes = executeCommand(c);
 
   delay(DELAY_MS);
@@ -92,9 +93,29 @@ CommandResponse executeCommand(Command c) {
 
 int button1State = HIGH;
 int button2State = HIGH;
+int lineNumber = 0;
+
 
 
 EventData awaitEvent() {
+  if (global.hasCommandsFile == true) {
+    return awaitFileEvent();
+  }
+  return awaitSerialEvent();
+}
+
+EventData awaitFileEvent() {
+  String line = "";
+  do {
+    line = getLineAtPosition(global.commands, lineNumber);
+    lineNumber++;
+  } while (line.startsWith("#") || line == ""); // todo end loop
+
+  delay(500);
+  return { EVENT_INTERNAL_COMMAND, line };
+}
+
+EventData awaitSerialEvent() {
   unsigned long  waitTime = millis();
   bool idle = true;
   while (Serial.available() == 0) {
@@ -126,14 +147,14 @@ EventData awaitEvent() {
 EventData checkButtonsState() {
   int button1NewState = digitalRead(global.button1Pin);
   if (button1NewState != button1State) {
-    logSerial("button 1: " + String(button1NewState));
+    logInfo("button 1: " + String(button1NewState));
     button1State = button1NewState;
     return { EVENT_BUTTON_ACTION, "1 " + String(button1NewState)};
   }
 
   int button2NewState = digitalRead(global.button2Pin);
   if (button2NewState != button2State) {
-    logSerial("button 2: " + String(button2NewState));
+    logInfo("button 2: " + String(button2NewState));
     button2State = button2NewState;
     return { EVENT_BUTTON_ACTION, "2 " + String(button2NewState)};
   }
@@ -164,12 +185,20 @@ HwwInitData initHww(String password, String mnemonic, String passphrase) {
 }
 
 void serialSendCommand(String command, String commandData) {
+  commandOutToFile(command + " " + commandData);
   serialPrintlnSecure(command + " " + commandData);
 }
 
 void serialPrintlnSecure(String msg) {
   String encryptedHex = encryptDataWithIv(global.dhe_shared_secret, msg);
   Serial.println(encryptedHex);
+}
+
+void commandOutToFile(const String msg) {
+  if (global.hasCommandsFile == true) {
+    Serial.println("/log commantOutToFile: " + global.commandsOutFileName + " msg: " + msg);
+    appendFile(SD, global.commandsOutFileName.c_str(), msg + "\n");
+  }
 }
 
 Command decryptAndExtractCommand(String ecryptedData) {

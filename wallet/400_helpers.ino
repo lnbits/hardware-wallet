@@ -46,16 +46,24 @@ String int64ToString(uint64_t value) {
 }
 
 String getWordAtPosition(String str, int position) {
+  return getTokenAtPosition(str, " ", position);
+}
+
+String getLineAtPosition(String str, int position) {
+  return getTokenAtPosition(str, "\n", position);
+}
+
+String getTokenAtPosition(String str, String separator, int position) {
   String s = str.substring(0);
-  int spacePos = 0;
+  int separatorPos = 0;
   int i = 0;
-  while (spacePos != -1) {
-    spacePos = s.indexOf(" ");
+  while (separatorPos != -1) {
+    separatorPos = s.indexOf(separator);
     if (i == position) {
-      if (spacePos == -1) return s;
-      return s.substring(0, spacePos);
+      if (separatorPos == -1) return s;
+      return s.substring(0, separatorPos);
     }
-    s = s.substring(spacePos + 1);
+    s = s.substring(separatorPos + 1);
     i++;
   }
 

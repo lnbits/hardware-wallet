@@ -4,6 +4,7 @@ CommandResponse executeSignPsbt(String commandData) {
   }
 
   showMessage("Please wait", "Parsing PSBT...");
+  // todo: use word at position
   int spacePos = commandData.indexOf(" ");
   String networkName = commandData.substring(0, spacePos);
   String psbtBase64 = commandData.substring(spacePos + 1, commandData.length() );
@@ -19,7 +20,7 @@ CommandResponse executeSignPsbt(String commandData) {
 
   PSBT psbt = parseBase64Psbt(psbtBase64);
   if (!psbt) {
-    logSerial("Failed psbt: " + psbtBase64);
+    logInfo("Failed psbt: " + psbtBase64);
     serialSendCommand(COMMAND_SEND_PSBT, "psbt_parse_failed");
     return {"Failed parsing",  "Send PSBT again"};
   }
@@ -34,25 +35,85 @@ CommandResponse executeSignPsbt(String commandData) {
   serialSendCommand(COMMAND_SEND_PSBT, "1");
 
   for (int i = 0; i < psbt.tx.outputsNumber; i++) {
-    printOutputDetails(psbt, hd, i, network);
-
-    EventData event = awaitEvent();
-    if (event.type != EVENT_SERIAL_DATA) {
-      return {"Operation Canceled", "button pressed" };
-    };
-    String data = event.data;
-
-    Command c = decryptAndExtractCommand(data);
-    if (c.cmd == COMMAND_CANCEL) {
-      return {"Operation Canceled", "`/help` for details" };
-    }
-    if (c.cmd != COMMAND_CONFIRM_NEXT) {
-      return executeUnknown("Expected: " + COMMAND_CONFIRM_NEXT);
-    }
+    CommandResponse outRes = confirmOutputDetails(psbt, hd, i, network);
+    if (outRes.message != "") return outRes;
   }
 
-  printFeeDetails(psbt.fee());
+  confirmFeeDetails(psbt.fee());
 
+  return signPsbt(psbt, hd);
+
+}
+
+
+CommandResponse confirmOutputDetails(PSBT psbt, HDPrivateKey hd, int index, const Network * network) {
+  if (global.hasCommandsFile == true) {
+    return writeOutputToFile(psbt, hd, index, network);
+  }
+  return showOutputForConfirmation(psbt, hd, index, network);
+}
+
+CommandResponse showOutputForConfirmation(PSBT psbt, HDPrivateKey hd, int index, const Network * network) {
+  printOutputDetails(psbt, hd, index, network);
+
+  EventData event = awaitEvent();
+  if (event.type != EVENT_SERIAL_DATA) {
+    return {"Operation Canceled", "button pressed" };
+  };
+  String data = event.data;
+
+  Command c = decryptAndExtractCommand(data);
+  if (c.cmd == COMMAND_CANCEL) {
+    return {"Operation Canceled", "`/help` for details" };
+  }
+  if (c.cmd != COMMAND_CONFIRM_NEXT) {
+    return executeUnknown("Expected: " + COMMAND_CONFIRM_NEXT);
+  }
+  return {"", ""};
+}
+
+CommandResponse writeOutputToFile(PSBT psbt, HDPrivateKey hd, int index, const Network * network) {
+  String sats = int64ToString(psbt.tx.txOuts[index].amount);
+  String output = "Output " + String(index) + "\n" +
+                  "Address: " + psbt.tx.txOuts[index].address(network) + "\n" +
+                  "Amount: " + sats + " sat";
+
+  commandOutToFile(output);
+  return {"", ""};
+}
+
+void confirmFeeDetails(uint64_t fee) {
+  if (global.hasCommandsFile == true) {
+    writeFeeToFile(fee);
+  } else {
+    printFeeDetails(fee);
+  }
+
+}
+
+void writeFeeToFile(uint64_t fee) {
+  String sats = int64ToString(fee);
+  commandOutToFile("Fee: " + sats + " sat");
+}
+
+CommandResponse signPsbt(PSBT psbt, HDPrivateKey hd) {
+  if (global.hasCommandsFile == true) {
+    return signPsbtToFile(psbt, hd);
+  }
+  return confirmAndSignPsbt(psbt, hd);
+}
+
+CommandResponse signPsbtToFile(PSBT psbt, HDPrivateKey hd) {
+  showMessage("Please wait", "Signing PSBT...");
+  delay(500);
+
+  uint8_t signedInputCount = psbt.sign(hd);
+  serialSendCommand(COMMAND_SIGN_PSBT,  String(signedInputCount) + " " + psbt.toBase64());
+
+  return { "Signed inputs:", String(signedInputCount) };
+}
+
+CommandResponse confirmAndSignPsbt(PSBT psbt, HDPrivateKey hd) {
   EventData event = awaitEvent();
   if (event.type != EVENT_SERIAL_DATA) {
     return {"Operation Canceled", "`/help` for details" };
