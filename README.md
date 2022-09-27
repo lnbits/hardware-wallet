@@ -39,7 +39,7 @@ The client (OnchainWallet extension or anyother one) communicates with the devic
  The device (HWW) can respond (not mandatory) with a string of the same form: 
   - `/command-name {resp1} {resp2} ... {respn}`
 
-The documentation for each command can be found in the lninked `.ino` file
+The documentation for each command can be found in the linked `.ino` file
 
  - `/ping` [720_ping.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/720_ping.ino)
  - `/pair` [712_cmd_pair.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/712_cmd_pair.ino)
