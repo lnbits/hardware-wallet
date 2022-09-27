@@ -33,7 +33,7 @@ Data is sent to/from the **Hardware Wallet** over webdev Serial, not the most se
 The client (OnchainWallet extension or anyother one) communicates with the device using strings of this form:
 `/command-name {param1} {param2} ... {paramn}`
  - the order of the parametes is relevant (the position gives its meaning)
- - if the value is specified then the minus (`-`) character should be used
+ - if no the value is specified then the minus (`-`) character should be used at the respective position
  - eg: `/password my-password-1`
 
  The device (HWW) can respond (not mandatory) with a string of the same form: 
