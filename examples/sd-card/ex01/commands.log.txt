@@ -1,0 +1,20 @@
+#### commands file found ####
+Welcome
+Row, row, row your boat
+received command: /pair
+Pairing
+Not encrypted
+received command: /restore
+Restore successful
+/seed` to view word list
+received command: /password
+Password correct!
+Ready to sign sir!
+received command: /xpub
+received command: /psbt
+Please wait
+Parsing PSBT...
+Please wait
+Signing PSBT...
+Signed inputs:
+2

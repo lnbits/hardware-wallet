@@ -1,0 +1,23 @@
+#### commands file found ####
+Welcome
+Row, row, row your boat
+received command: /password
+Password correct!
+Ready to sign sir!
+received command: /xpub
+received command: /address
+Address cannot be validated. Path: m/84'/1'/0'/0/3 address: tb1qhqukj3ug5lavl22z4s7nyn46zk9gysmsv4vamq
+tb1qhqukj3ug5lavl22z4s7nyn46zk9gysmsv4vamq
+
+received command: /psbt
+Please wait
+Parsing PSBT...
+Please wait
+Signing PSBT...
+Signed inputs:
+2
+received command: /password-clear
+Logging out...
+
+Logged out
+Enter password

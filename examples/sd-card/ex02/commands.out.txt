@@ -1,7 +1,7 @@
 #### commands output ####
-/restore 1
 /password 1
 /xpub 1 vpub5YXnnXQcawUCY4Pr9jZrm15sfAGAP2PnW8n2PskF48JSBwkvrjiGYiHrSvGkcBJg5gkhVkoiVf8DBTaigiiURi5Kt6hKEFYUmY3Kr5MWRCk 7f8e0fe9
+/address 1 tb1qhqukj3ug5lavl22z4s7nyn46zk9gysmsv4vamq
 /psbt 1
 Output 0
 Address: tb1qjhuzcuuaegtw3r9q7wjaaje66dfr4lvtrkjldf
@@ -11,3 +11,4 @@ Address: tb1ql6c0e6qxl3g8meh53jtmh7gl0af9405rcxjfdr
 Amount: 334455 sat
 Fee: 209 sat
 /sign 2 cHNidP8BAJoCAAAAAs71rmzxARRlZvlQbOgiR/rCTWyOOIdlLuVgS/36AHCsAAAAAAD/////8YmlhTl0kGsGtoVU0OqC6dV4/4G3BLLuS6VlCT6is0kAAAAAAP////8CubwOAAAAAAAWABSV+CxzncoW6Iyg86XeyzrTUjr9i3caBQAAAAAAFgAU/rD86Ab8UH3m9IyXu/kff1JavoMAAAAAACICAqanSBZ6t7mL6J6v4qk3f4OWHbTTK3sbGGAJgZn7nhIYSDBFAiEAg0KlALz2v/W0huGnFrwPnsUbfRV70hkn4A3Ho+ykPTMCIBG4JSvpws2fzFWLcQViWLZdgT3KzkLmtdsEhF6iRm7zAQAiAgJHlpinlDdocyntdnyoqjRd40+ibqgeNhAb2epwIQKg4kcwRAIgArvfmRQ7zT7lFpnX1RZSxMoMd8vnbigfDGqEHYkZLAECIEQ9Ir/TXp7flHz1rzmENmmCCXeazhtLR2mS8KtqhmRzAQAAAA==
+/password-clear 1
