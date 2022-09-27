@@ -19,7 +19,7 @@ void setupSD() {
     global.hasCommandsFile = false;
     global.commands = "";
   }
-  
+
 
   delay(2000);
 
