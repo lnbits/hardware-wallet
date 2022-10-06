@@ -3,7 +3,7 @@
 //========================================================================//
 
 void logo(int counter) {
-  String title = "LNbitsHWW";
+  String title = "LNbits HWW";
   String subTitle = "LNbits/ubitcoin HWW";
   if (counter > 0) {
     title = title + " " + String(counter);
