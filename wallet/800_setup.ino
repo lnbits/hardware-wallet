@@ -1,6 +1,9 @@
 #define FORMAT_ON_FAIL true
 
 void setup() {
+#if (USE_M5_STACK)
+  M5.begin();
+#endif
   Serial.begin(9600);
 
   // load screen

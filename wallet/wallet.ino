@@ -1,23 +1,31 @@
 /**
-   Very cheap little bitcoin HWW for use with lilygo TDisplay
-   although with little tinkering any ESP32 will work
+  Very cheap little bitcoin HWW for use with lilygo TDisplay
+  although with little tinkering any ESP32 will work
 
-   Join us!
-   https://t.me/lnbits
-   https://t.me/makerbits
+  Join us!
+  https://t.me/lnbits
+  https://t.me/makerbits
 
 */
+
+// Set to `1` if it shouldbe compiled for an M5Stack device
+#define USE_M5_STACK 1
+
+#if (USE_M5_STACK)
+#include <M5Core2.h>
+#else
+#include <TFT_eSPI.h>
+#include "qrcoded.h"
+#endif
 
 #include <FS.h>
 #include <SPIFFS.h>
 
 #include <Wire.h>
-#include <TFT_eSPI.h>
 #include <Hash.h>
 #include <ArduinoJson.h>
 #include "Bitcoin.h"
 #include "PSBT.h"
-#include "qrcoded.h"
 
 #include <aes.h>
 

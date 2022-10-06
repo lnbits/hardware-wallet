@@ -3,7 +3,7 @@
 //========================================================================//
 
 void logo(int counter) {
-  String title = "Signer";
+  String title = "LNbitsHWW";
   String subTitle = "LNbits/ubitcoin HWW";
   if (counter > 0) {
     title = title + " " + String(counter);
@@ -65,9 +65,17 @@ int squareSizeFromStringLength(int stringLength) {
   return 3;
 }
 
+#if (USE_M5_STACK)
+void showQRCode(String s) {
+  int version = qrVersionFromStringLength(s.length());
+  M5.Lcd.clear(BLACK);
+  M5.Lcd.qrcode(s, 0, 0, 150, version);
+}
+#else
 void showQRCode(String s) {
   int version = qrVersionFromStringLength(s.length());
   int px = squareSizeFromStringLength(s.length());
+
   QRCode qrcode;
   uint8_t qrcodeData[qrcode_getBufferSize(version)];
   qrcode_initText(&qrcode, qrcodeData, version, 0, s.c_str());
@@ -83,3 +91,4 @@ void showQRCode(String s) {
     }
   }
 }
+#endif

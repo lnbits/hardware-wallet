@@ -64,18 +64,42 @@ EventData awaitSerialEvent() {
 }
 
 EventData checkButtonsState() {
-  int button1NewState = digitalRead(global.button1Pin);
+  initButtonState();
+  int button1NewState = readButton1State();
+
   if (button1NewState != button1State) {
     logInfo("button 1: " + String(button1NewState));
     button1State = button1NewState;
     return { EVENT_BUTTON_ACTION, "1 " + String(button1NewState)};
   }
 
-  int button2NewState = digitalRead(global.button2Pin);
+  int button2NewState = readButton2State();
   if (button2NewState != button2State) {
     logInfo("button 2: " + String(button2NewState));
     button2State = button2NewState;
     return { EVENT_BUTTON_ACTION, "2 " + String(button2NewState)};
   }
   return {"", ""};
+}
+
+void initButtonState() {
+#if (USE_M5_STACK)
+  M5.update();
+#endif
+}
+
+int readButton1State() {
+#if (USE_M5_STACK)
+  return (int)M5.BtnA.read(true);
+#else
+  return digitalRead(global.button1Pin);
+#endif
+}
+
+int readButton2State() {
+#if (USE_M5_STACK)
+  return (int)M5.BtnB.read(true);
+#else
+  return digitalRead(global.button2Pin);
+#endif
 }
