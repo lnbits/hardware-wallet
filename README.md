@@ -22,7 +22,7 @@ Data is sent to/from the **Hardware Wallet** over webdev Serial, not the most se
 
 - Buy a Lilygo <a href="https://www.aliexpress.com/item/33048962331.html">Tdisplay</a> (although with a little tinkering any ESP32 will do) 
 - Install <a href="https://www.arduino.cc/en/software">Arduino IDE 1.8.19</a>
-- Install ESP32 boards, using <a href="https://docs.espressif.com/projects/arduino-esp32/en/latest/installing.html#installing-using-boards-manager">boards manager</a>
+- Install ESP32 boards, using <a href="https://docs.espressif.com/projects/arduino-esp32/en/latest/installing.html#installing-using-boards-manager">boards manager</a> (<a href="https://docs.m5stack.com/en/arduino/arduino_development">m5stack</a>)
 - Download this repo
 - Copy these <a href="libraries">libraries</a> into your Arduino install "libraries" folder
 - Open this <a href="wallet/wallet.ino">wallet.ino</a> file in the Arduino IDE
