@@ -6,26 +6,31 @@
 */
 CommandResponse executeSharedSecret(String publicKeyHex) {
   // python: #### shared_secret ca0653175f9069b104c5d929866a7cccd4002c7a9a21e1cb053a42fd311fb2db
-  // arduimo: /log /shared-message: 83d07a79496f4cbdc50ca585741a79a2df1fd938cfa449f0fccb0ab7352115dd
-  logInfo("executeSharedSecret!!");
+  // arduimo: bbe91483b639859885ccbd67aa307a21dea00cc075618be118e3416b407444a2
+  logInfo("executeSharedSecret!! 100");
   String privateKeyHex = "4c89c4e0db793a7fac4881f7b6f209ab2c039d88ca64600537f3a94e855478ab";
   int byteSize =  32;
   byte privateKeyBytes[byteSize];
   fromHex(privateKeyHex, privateKeyBytes, byteSize);
   PrivateKey privateKey(privateKeyBytes);
-  PublicKey dhPublicKey = privateKey.publicKey();
+  // PublicKey dhPublicKey = privateKey.publicKey();
 
+  logInfo("executeSharedSecret!! 110");
 
   byte sharedSecret[32];
 
-  byte publicKeyBin[64];
-  fromHex(publicKeyHex, publicKeyBin, 64);
-  PublicKey otherPublicKey(publicKeyBin, false);
+  byte publicKeyBin[33];
+  fromHex("02" + publicKeyHex, publicKeyBin, 33);
+  PublicKey otherPublicKey(publicKeyBin, true);
   privateKey.ecdh(otherPublicKey, sharedSecret, false);
+
+  logInfo("executeSharedSecret!! 120");
 
   String sharedSecretHex = toHex(sharedSecret, 32);
   logInfo("sharedSecretHex: " + sharedSecretHex);
   sendCommandOutput(COMMAND_SHARED_SECRET, sharedSecretHex);
+
+  logInfo("executeSharedSecret!! 130");
 
   // logInfo("xxxx: " + toHex(dhPublicKey.point, sizeof(dhPublicKey.point)));
   // todo: wait for button click
