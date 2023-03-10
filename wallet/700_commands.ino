@@ -42,6 +42,10 @@ CommandResponse executeCommand(Command c) {
   if (c.cmd == COMMAND_SIGN_MESSAGE)
     return executeSignMessage(c.data);
 
+  if (c.cmd == COMMAND_PUBLIC_KEY)
+    return executePublicKey(c.data);
+
+
   if (c.cmd == COMMAND_SHARED_SECRET)
     return executeSharedSecret(c.data);
 
