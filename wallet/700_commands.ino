@@ -83,14 +83,9 @@ HwwInitData initHww(String password, String mnemonic, String passphrase, bool pe
 }
 
 void sendCommandOutput(String command, String commandData) {
-  commandOutToFile(command + " " + commandData);
-  serialPrintlnSecure(command + " " + commandData);
+  Serial.println(command + " " + commandData);
 }
 
-void serialPrintlnSecure(String msg) {
-  String encryptedHex = encryptDataWithIv(global.dhe_shared_secret, msg);
-  Serial.println(encryptedHex);
-}
 
 void commandOutToFile(const String msg) {
   if (global.hasCommandsFile == true) {
