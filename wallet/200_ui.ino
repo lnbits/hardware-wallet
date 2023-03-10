@@ -2,24 +2,21 @@
 //===============================UI STUFF=================================//
 //========================================================================//
 
-void logo(int counter) {
-  String title = "Signer";
-  String subTitle = "LNbits/ubitcoin HWW";
-  if (counter > 0) {
-    title = title + " " + String(counter);
-    subTitle = "Open for pairing";
-  }
+void logo() {
+  String title = "SNSD";
+  String subTitle = "Simple Nostr Signing Device";
+
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
   tft.setTextSize(4);
-  tft.setCursor(0, 30);
+  tft.setCursor(0, 20);
   tft.print(title);
   tft.setTextSize(2);
-  tft.setCursor(0, 80);
+  tft.setCursor(0, 70);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.print(subTitle);
   tft.setTextSize(1);
-  tft.setCursor(0, 100);
+  tft.setCursor(0, 150);
   tft.print("version: " + env.version);
 }
 

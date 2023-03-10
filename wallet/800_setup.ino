@@ -12,7 +12,7 @@ void setup() {
   FlashFS.begin(FORMAT_ON_FAIL);
   SPIFFS.begin(true);
 
-  logInfo("HWW: waiting for commands");
+  logInfo("SNSD: waiting for commands");
 
   if (loadFiles() == false)
     showMessage("Failed to open files",  "Reset or 'help'");
