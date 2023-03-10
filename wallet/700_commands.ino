@@ -39,14 +39,18 @@ bool isNotCommandEvent(String type) {
 
 
 CommandResponse executeCommand(Command c) {
+  if (c.cmd == COMMAND_SIGN_MESSAGE)
+    return executeSignMessage(c.data);
+
+  if (c.cmd == COMMAND_SEED)
+    return executeShowSeed(c.data);
+
   if (c.cmd == COMMAND_PING)
     return executePing(c.data);
 
   if (c.cmd == COMMAND_HELP)
     return executeHelp(c.data);
 
-  if (c.cmd == COMMAND_SEED)
-    return executeShowSeed(c.data);
 
   return executeUnknown(c.cmd + ": " + c.data);
 

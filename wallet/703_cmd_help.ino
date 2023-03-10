@@ -26,7 +26,7 @@ void help()
 
   logInfo("Commands");
   logInfo("'/help' show available commands");
-  logInfo("'/sign' sign a random message");
+  logInfo("'/sign-message' sign a random message");
   logInfo("'/shared-secret' build a shared secret using an external public key");
   logInfo("'/seed' will show the seed on the device display");
 
