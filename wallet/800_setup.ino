@@ -13,14 +13,10 @@ void setup() {
   SPIFFS.begin(true);
 
   logInfo("HWW: waiting for commands");
-  // In case of forced reboot, tell the client to logout.
-  // Secure connection not established yet. Sendin in clear text.
-  Serial.println(COMMAND_PASSWORD_CLEAR +  " 1");
 
   if (loadFiles() == false)
     showMessage("Failed to open files",  "Reset or 'help'");
   updateDeviceConfig();
-  setupSD();
 }
 
 bool loadFiles() {

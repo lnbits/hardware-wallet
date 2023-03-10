@@ -2,7 +2,7 @@
 //================================COMMANDS================================//
 //========================================================================//
 
-CommandResponse cmdRes = {"Welcome", "Row, row, row your boat"};
+CommandResponse cmdRes = {"Welcome", ""};
 
 
 void listenForCommands() {
@@ -21,20 +21,12 @@ void listenForCommands() {
   String data = event.data;
 
   Command c = extractCommand(data);
-  if (isEncryptedCommand(c.cmd) && isNotInternalCommand(event.type)) {
-    c = decryptAndExtractCommand(data);
-  }
+
   // Do not remove this log line. Flushes stale data from buffer.
   logInfo("received command: " + c.cmd);
   cmdRes = executeCommand(c);
 
   delay(DELAY_MS);
-}
-
-bool isEncryptedCommand(String cmd) {
-  return cmd != COMMAND_PAIR &&
-         cmd != COMMAND_CHECK_PAIRING &&
-         cmd != COMMAND_PING;
 }
 
 bool isNotInternalCommand(String type) {
@@ -50,38 +42,11 @@ CommandResponse executeCommand(Command c) {
   if (c.cmd == COMMAND_PING)
     return executePing(c.data);
 
-  if (c.cmd == COMMAND_CHECK_PAIRING)
-    return executeCheckPairing(c.data);
-
-  if (c.cmd == COMMAND_PAIR)
-    return executePair(c.data);
-
   if (c.cmd == COMMAND_HELP)
     return executeHelp(c.data);
 
-  if (c.cmd == COMMAND_WIPE)
-    return executeWhipeHww(c.data);
-
-  if (c.cmd == COMMAND_PASSWORD)
-    return executePasswordCheck(c.data);
-
-  if (c.cmd == COMMAND_PASSWORD_CLEAR)
-    return executePasswordClear(c.data);
-
-  if (c.cmd == COMMAND_ADDRESS)
-    return executeShowAddress(c.data);
-
   if (c.cmd == COMMAND_SEED)
     return executeShowSeed(c.data);
-
-  if (c.cmd == COMMAND_SEND_PSBT)
-    return executeSignPsbt(c.data);
-
-  if (c.cmd == COMMAND_RESTORE)
-    return executeRestore(c.data);
-
-  if (c.cmd == COMMAND_XPUB)
-    return executeXpub(c.data);
 
   return executeUnknown(c.cmd + ": " + c.data);
 
@@ -129,10 +94,6 @@ void commandOutToFile(const String msg) {
   }
 }
 
-Command decryptAndExtractCommand(String ecryptedData) {
-  String data = decryptDataWithIv(global.dhe_shared_secret, ecryptedData);
-  return extractCommand(data);
-}
 
 EventData toggleDatanAndQR(String data, bool showQR) {
   String dataUpper = data + "";
