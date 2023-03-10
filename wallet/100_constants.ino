@@ -7,6 +7,7 @@ const String COMMAND_PING = "/ping";
 
 const String COMMAND_SEED = "/seed";
 const String COMMAND_SIGN_MESSAGE = "/sign-message";
+const String COMMAND_SHARED_SECRET = "/shared-secret";
 
 
 // data received over the serial port
