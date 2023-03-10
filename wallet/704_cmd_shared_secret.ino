@@ -5,6 +5,7 @@
    @return CommandResponse
 */
 CommandResponse executeSharedSecret(String publicKeyHex) {
+  // pubkey hex: c1415f950a1e3431de2bc5ee35144639e2f514cf158279abff9ed77d50118796404466b433cd01fb26757a9cf65b1ba4407ef3d293feebd4a0658060d9eb491f
   // python: #### shared_secret ca0653175f9069b104c5d929866a7cccd4002c7a9a21e1cb053a42fd311fb2db
   // arduimo: bbe91483b639859885ccbd67aa307a21dea00cc075618be118e3416b407444a2
   logInfo("executeSharedSecret!! 100");
@@ -19,8 +20,8 @@ CommandResponse executeSharedSecret(String publicKeyHex) {
 
   byte sharedSecret[32];
 
-  byte publicKeyBin[33];
-  fromHex("02" + publicKeyHex, publicKeyBin, 33);
+  byte publicKeyBin[64];
+  fromHex("02" + publicKeyHex, publicKeyBin, 64);
   PublicKey otherPublicKey(publicKeyBin, true);
   privateKey.ecdh(otherPublicKey, sharedSecret, false);
 

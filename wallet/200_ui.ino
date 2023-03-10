@@ -4,7 +4,7 @@
 
 void logo() {
   String title = "SNSD";
-  String subTitle = "Simple Nostr Signing Device";
+  String subTitle = "Nostr Signing Device";
 
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
