@@ -8,16 +8,17 @@
 
 <img style="width:500px;" src="https://user-images.githubusercontent.com/33088785/180316957-4f99d7e9-9820-4302-9dde-ba555cb04729.png">
 
-For use with LNbits Legend OnchainWallet extension, but can other wallet applications can easily be built
+For use with LNbits OnchainWallet extension, but other wallet applications can easily be built on top of it
 
 Join us <a href="https://t.me/lnbits">t.me/lnbits</a>, <a href="https://t.me/makerbits">t.me/makerbits</a>
 
-This very cheap off the shelf hardware wallet is designed to work with Lilygos <a href="https://www.aliexpress.com/item/33048962331.html">Tdisplay</a>, but you can easily make work with any ESP32.
+This very cheap off the shelf hardware wallet is designed to work with Lilygos <a href="https://www.aliexpress.com/item/33048962331.html">Tdisplay</a>, but you can easily make it work with any other version of an ESP32.
 
-Data is sent to/from the **Hardware Wallet** over webdev Serial, not the most secure data transmission method, but fine for handling small-medium sized amounts of funds. You can use LNbits OnchainWallet extension, or any other serial monitor.
+Data is sent to/from the **Hardware Wallet** over webdev serial. It is not the most secure data transmission method, but fine for handling small-medium sized amounts of funds or if you need a hardware wallet for a small period of time like e.g. on a vacation. 
+You can use LNbits OnchainWallet extension, your terminal or any other serial monitor.
 
 ## Install instructions
-- Flash the hardware-wallet firmware directly from the browser using the [installer](https://lnbits.github.io/hardware-wallet)
+- Flash the hardware-wallet´s firmware directly from chrome/chromium browser using the [installer](https://lnbits.github.io/hardware-wallet)
 ## Build instructions
 
 - Buy a Lilygo <a href="https://www.aliexpress.com/item/33048962331.html">Tdisplay</a> (although with a little tinkering any ESP32 will do) 
