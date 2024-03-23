@@ -1,25 +1,33 @@
-# DIY Bitcoin Hardware Wallet (powered by <a href="https://www.arduino.cc/reference/en/libraries/ubitcoin/">uBitcoin</a>)
-## This HWW is in BETA, use with TESTNET only, or with an amount of funds you are willing to lose 
 
-## Use a world of microcontrollers to contruct your own bitcoin hardware wallet
+![Group 156 (1)](https://github.com/arbadacarbaYK/hardware-wallet/assets/63317640/6136bcf2-ddcb-4507-a0dd-2b388f89a69c)
 
+# WALLY, the Bitcoin Hardware Wallet 
 
-## Flash here https://lnbits.github.io/hardware-wallet
+Check out this [video tutorial](https://www.youtube.com/watch?v=uMg598-3wIk) on the Makerbits channel.
 
-<img style="width:500px;" src="https://user-images.githubusercontent.com/33088785/180316957-4f99d7e9-9820-4302-9dde-ba555cb04729.png">
+<img src="https://github.com/lnbits/hardware-wallet/assets/63317640/a9942720-b3e0-45a0-8f39-7211c4969cb5" alt="HWW_front" width="200">
+<img src="https://github.com/lnbits/hardware-wallet/assets/63317640/8dc3dc21-2820-4fcd-a12c-7f0e2d96943c" alt="HWW_back" width="200">
 
-For use with LNbits OnchainWallet extension, but other wallet applications can easily be built on top of it
-
-Join us <a href="https://t.me/lnbits">t.me/lnbits</a>, <a href="https://t.me/makerbits">t.me/makerbits</a>
-
-This very cheap off the shelf hardware wallet is designed to work with Lilygos <a href="https://www.aliexpress.com/item/33048962331.html">Tdisplay</a>, but you can easily make it work with any other version of an ESP32.
+## Flash and configure via webinstaller https://lnbits.github.io/hardware-wallet
 
 Data is sent to/from the **Hardware Wallet** over webdev serial. It is not the most secure data transmission method, but fine for handling small-medium sized amounts of funds or if you need a hardware wallet for a small period of time like e.g. on a vacation. 
 You can use LNbits OnchainWallet extension, your terminal or any other serial monitor.
 
-## Install instructions
-- Flash the hardware-wallet´s firmware directly from chrome/chromium browser using the [installer](https://lnbits.github.io/hardware-wallet)
-## Build instructions
+
+### Wally is in BETA, use with TESTNET only, or with an amount of funds you are willing to lose 
+
+## What you need
+- Lilygo TTGO/Tdisplay or any other ESP32 version
+- Optional: a case
+=> or get the kit in the [LNbits shop](https://shop.lnbits.com/product-category/hardware/hardware-wallets)
+- Data Cable
+- Desktop PC and Chrome/Chromium/Brave Browser
+- LNbits Onchain Extension
+
+Got questions ? Join us <a href="https://t.me/lnbits">t.me/lnbits</a>, <a href="https://t.me/makerbits">t.me/makerbits</a>
+
+
+## Manual Install instructions (without webinstaller)
 
 - Buy a Lilygo <a href="https://www.aliexpress.com/item/33048962331.html">Tdisplay</a> (although with a little tinkering any ESP32 will do) 
 - Install <a href="https://www.arduino.cc/en/software">Arduino IDE 1.8.19</a>
@@ -29,6 +37,8 @@ You can use LNbits OnchainWallet extension, your terminal or any other serial mo
 - Open this <a href="wallet/wallet.ino">wallet.ino</a> file in the Arduino IDE
 - Select "TTGO-LoRa32-OLED-V1" from tools>board
 - Upload to device
+
+<img style="width:500px;" src="https://user-images.githubusercontent.com/33088785/180316957-4f99d7e9-9820-4302-9dde-ba555cb04729.png">
 
 ## Device Commands
 The client (OnchainWallet extension or anyother one) communicates with the device using strings (called commands) of this form:
@@ -40,7 +50,7 @@ The client (OnchainWallet extension or anyother one) communicates with the devic
  The device (HWW) can respond (not mandatory) with a string of the same form: 
   - `/command-name {resp1} {resp2} ... {respn}`
 
-The documentation for each command can be found in the linked `.ino` file
+The documentation for each command can be found in the linked `.ino` file so you can build on top of it.
 
  - `/ping` [720_ping.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/720_ping.ino)
  - `/pair` [712_cmd_pair.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/712_cmd_pair.ino)
@@ -74,3 +84,5 @@ The documentation for each command can be found in the linked `.ino` file
 
 > _Note: If using MacOS, you will need the CP210x USB to UART Bridge VCP Drivers available here https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers_
 > If you are using **MacOS Big Sur or an Mac with M1 chip**, you might encounter the issue `A fatal error occurred: Failed to write to target RAM (result was 0107)`, this is related to the chipsest used by TTGO, you can find the correct driver and more info in this <a href="https://github.com/Xinyuan-LilyGO/LilyGo-T-Call-SIM800/issues/139#issuecomment-904390716">GitHub issue</a>
+
+This repo is powered by the <a href="https://www.arduino.cc/reference/en/libraries/ubitcoin/">uBitcoin</a> library.
