@@ -108,3 +108,10 @@ Command extractCommand(String s) {
   String commandData = s.substring(spacePos + 1, s.length());
   return {command, commandData};
 }
+
+void logInfoFile(const String msg) {
+  if (global.hasCommandsFile == true) {
+    Serial.println("/log logInfoFile: " + String(FILE_COMMANDSLOG) + " msg: " + msg);
+    appendFile(SD, FILE_COMMANDSLOG, msg + "\n");
+  }
+}

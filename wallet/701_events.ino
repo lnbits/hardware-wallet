@@ -64,14 +64,14 @@ EventData awaitSerialEvent() {
 }
 
 EventData checkButtonsState() {
-  int button1NewState = digitalRead(global.button1Pin);
+  int button1NewState = digitalRead(BTN_1);
   if (button1NewState != button1State) {
     logInfo("button 1: " + String(button1NewState));
     button1State = button1NewState;
     return { EVENT_BUTTON_ACTION, "1 " + String(button1NewState)};
   }
 
-  int button2NewState = digitalRead(global.button2Pin);
+  int button2NewState = digitalRead(BTN_2);
   if (button2NewState != button2State) {
     logInfo("button 2: " + String(button2NewState));
     button2State = button2NewState;

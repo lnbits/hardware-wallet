@@ -20,7 +20,7 @@ void logo(int counter) {
   tft.print(subTitle);
   tft.setTextSize(1);
   tft.setCursor(0, 100);
-  tft.print("version: " + env.version);
+  tft.print("version: " + String(VERSION));
 }
 
 void showMessage(String message, String additional)

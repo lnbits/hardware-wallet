@@ -17,7 +17,8 @@
 */
 CommandResponse executePair(String data) {
   if ((millis() - global.startTime) > 10 * 1000) {
-    Serial.println(COMMAND_PAIR + " 1 " + " connection_period_expired");
+    Serial.print(COMMAND_PAIR);
+    Serial.println(" 1 connection_period_expired");
     return {"Connection Refused", "10 secs from reboot passed"};
   }
 
@@ -50,11 +51,12 @@ CommandResponse pair(String publicKeyHex, String button1Pin, String button2Pin) 
   PublicKey otherDhPublicKey(publicKeyBin, false);
   dhPrivateKey.ecdh(otherDhPublicKey, global.dhe_shared_secret, false);
 
-  Serial.println(COMMAND_PAIR + " 0 " + toHex(dhPublicKey.point, sizeof(dhPublicKey.point)));
+  Serial.print(COMMAND_PAIR);
+  Serial.println(" 0 " + toHex(dhPublicKey.point, sizeof(dhPublicKey.point)));
 
   String sharedSecretHex =  toHex(global.dhe_shared_secret, sizeof(global.dhe_shared_secret));
-  deleteFile(SPIFFS, global.sharedSecretFileName.c_str());
-  writeFile(SPIFFS, global.sharedSecretFileName.c_str(), sharedSecretHex);
+  deleteFile(SPIFFS, FILE_SHAREDSECRET);
+  writeFile(SPIFFS, FILE_SHAREDSECRET, sharedSecretHex);
 
   updateDeviceConfig(button1Pin, button2Pin);
 
@@ -65,16 +67,15 @@ CommandResponse pair(String publicKeyHex, String button1Pin, String button2Pin) 
 
 void updateDeviceConfig(String button1Pin, String button2Pin) {
   String deviceConfig = global.deviceId;
-  if (isNotEmptyParam(button1Pin)) {
-    global.button1Pin = button1Pin.toInt();
-    deviceConfig = deviceConfig + " " + button1Pin;
-  }
+  // if (isNotEmptyParam(button1Pin)) {
+  //   global.button1Pin = button1Pin.toInt();
+  //   deviceConfig = deviceConfig + " " + button1Pin;
+  // }
 
-  if (isNotEmptyParam(button2Pin)) {
-    global.button2Pin = button2Pin.toInt();
-    deviceConfig = deviceConfig + " " + button2Pin;
-  }
+  // if (isNotEmptyParam(button2Pin)) {
+  //   deviceConfig = deviceConfig + " " + String(BTN_2);
+  // }
 
   // update device config
-  writeFile(SPIFFS, global.deviceMetaFileName.c_str(), deviceConfig);
+  writeFile(SPIFFS, FILE_DEVICEMETA, deviceConfig);
 }

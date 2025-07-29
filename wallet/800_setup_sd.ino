@@ -8,7 +8,7 @@ void setupSD() {
   showMessage("SDCard Size: ",  String(cardSize) + "MB");
   delay(1000);
 
-  FileData fd = readFile(SD, global.commandsInFileName.c_str());
+  FileData fd = readFile(SD, FILE_COMMANDSIN);
   if (fd.success == true) {
     showMessage("SD Card", "Commands file found");
     global.hasCommandsFile = true;
@@ -26,6 +26,6 @@ void setupSD() {
 }
 
 void initCommandsFile() {
-  writeFile(SD, global.commandsLogFileName.c_str(),  "#### commands file found ####\n");
-  writeFile(SD, global.commandsOutFileName.c_str(),  "#### commands output ####\n");
+  writeFile(SD, FILE_COMMANDSLOG,  "#### commands file found ####\n");
+  writeFile(SD, FILE_COMMANDSOUT,  "#### commands output ####\n");
 }

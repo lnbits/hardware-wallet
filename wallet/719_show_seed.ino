@@ -53,11 +53,11 @@ EventData handleButtonDownEvent(EventData buttonEvent, int position) {
   String buttonState = getWordAtPosition(buttonEvent.data, 1);
   if (buttonState == "1") {
     // on button up, just show the word again
-    return {EVENT_INTERNAL_COMMAND, COMMAND_SEED + " " + String(position)};
+    return {EVENT_INTERNAL_COMMAND, String(COMMAND_SEED) + " " + String(position)};
   }
 
   String buttonNumber = getWordAtPosition(buttonEvent.data, 0);
   if (buttonNumber == "1")
-    return {EVENT_INTERNAL_COMMAND, COMMAND_SEED + " " + String(position - 1)};
-  return {EVENT_INTERNAL_COMMAND, COMMAND_SEED + " " + String(position + 1) };
+    return {EVENT_INTERNAL_COMMAND, String(COMMAND_SEED) + " " + String(position - 1)};
+  return {EVENT_INTERNAL_COMMAND, String(COMMAND_SEED) + " " + String(position + 1) };
 }

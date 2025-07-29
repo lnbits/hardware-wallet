@@ -1,0 +1,67 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+    contents: write
+    pages: write
+    id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: update version in repo
+        env:
+          tag: ${{ github.ref_name }}
+        run: |
+          tmp=$(mktemp)
+          jq --arg version $tag '.versions |= [$version] + .' versions.json > "$tmp" && mv "$tmp" versions.json
+          sed -i "/define VERSION/c\#define VERSION \"$tag\"" wallet/100_constants.ino
+          git config --global user.name 'Alan Bits'
+          git config --global user.email 'alan@lnbits.com'
+          git commit -am "[CHORE] update version to $tag"
+          git push
+          git push --delete origin $tag
+          git tag -fa $tag -m "update via workflow"
+          git push --tags
+
+      - name: Install Arduino CLI
+        uses: arduino/setup-arduino-cli@v1
+
+      - name: build sketch with arduino cli
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
+        run: |
+          sh install.sh
+          devices=$(jq '.devices[]' versions.json -r)
+          for device in $devices; do
+              sh build.sh $device
+              mv build/wallet.ino.bin ./build/wallet-$device.ino.bin
+              mv build/wallet.ino.partitions.bin ./build/wallet-$device.ino.partitions.bin
+              mv build/wallet.ino.bootloader.bin ./build/wallet-$device.ino.bootloader.bin
+          done
+
+      - name: Create github release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
+        run: |
+          devices=$(jq '.devices[]' versions.json -r)
+          uploads=""
+          for device in $devices; do
+              uploads="$uploads ./build/wallet-$device.ino.bin"
+              uploads="$uploads ./build/wallet-$device.ino.partitions.bin"
+              uploads="$uploads ./build/wallet-$device.ino.bootloader.bin"
+          done
+          gh release create "$tag" --generate-notes $uploads

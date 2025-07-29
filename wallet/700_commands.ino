@@ -99,15 +99,15 @@ HwwInitData initHww(String password, String mnemonic, String passphrase, bool pe
   String passwordHash  = hashStringData(password);
 
   if (persistSecrets == true) {
-    deleteFile(SPIFFS, global.mnemonicFileName.c_str());
-    deleteFile(SPIFFS, global.passwordFileName.c_str());
-    writeFile(SPIFFS, global.passwordFileName.c_str(), passwordHash);
+    deleteFile(SPIFFS, FILE_MNEMONIC);
+    deleteFile(SPIFFS, FILE_PASSWORD);
+    writeFile(SPIFFS, FILE_PASSWORD, passwordHash);
 
     int byteSize =  passwordHash.length() / 2;
     byte encryptionKey[byteSize];
     fromHex(passwordHash, encryptionKey, byteSize);
 
-    writeFile(SPIFFS, global.mnemonicFileName.c_str(), encryptDataWithIv(encryptionKey, mnemonic));
+    writeFile(SPIFFS, FILE_MNEMONIC, encryptDataWithIv(encryptionKey, mnemonic));
   }
 
   return {passwordHash, mnemonic, true};
@@ -125,7 +125,7 @@ void serialPrintlnSecure(String msg) {
 
 void commandOutToFile(const String msg) {
   if (global.hasCommandsFile == true) {
-    appendFile(SD, global.commandsOutFileName.c_str(), msg + "\n");
+    appendFile(SD, FILE_COMMANDSOUT, msg + "\n");
   }
 }
 

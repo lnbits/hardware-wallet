@@ -1,0 +1,9 @@
+{
+  "name": "wallet",
+  "devices": [
+    "tdisplay"
+  ],
+  "versions": [
+    "v0.4"
+  ]
+}

@@ -83,7 +83,7 @@ CommandResponse showOutputForConfirmation(PSBT psbt, HDPrivateKey hd, int index,
     return {"Operation Canceled", "`/help` for details" };
   }
   if (c.cmd != COMMAND_CONFIRM_NEXT) {
-    return executeUnknown("Expected: " + COMMAND_CONFIRM_NEXT);
+    return executeUnknown("Expected: " + String(COMMAND_CONFIRM_NEXT));
   }
   return {"", ""};
 }
@@ -154,5 +154,5 @@ CommandResponse confirmAndSignPsbt(PSBT psbt, HDPrivateKey hd) {
   if (c.cmd = COMMAND_CANCEL) {
     return { "Operation Canceled",  "`/help` for details" };
   }
-  return  executeUnknown("Expected: " + COMMAND_SIGN_PSBT);
+  return  executeUnknown("Expected: " + String(COMMAND_SIGN_PSBT));
 }

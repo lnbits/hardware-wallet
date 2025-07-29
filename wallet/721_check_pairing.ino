@@ -12,9 +12,11 @@ CommandResponse executeCheckPairing(String encryptedData) {
   }
   String data = decryptDataWithIv(global.dhe_shared_secret, encryptedData);
   if (data == PAIRING_CONTROL_TEXT) {
-    Serial.println(COMMAND_CHECK_PAIRING + " 0 " + encryptDataWithIv(global.dhe_shared_secret, PAIRING_CONTROL_TEXT));
+    Serial.print(COMMAND_CHECK_PAIRING);
+    Serial.println(" 0 " + encryptDataWithIv(global.dhe_shared_secret, PAIRING_CONTROL_TEXT));
     return {"Paired", "Encrypted connection"};
   }
-  Serial.println(COMMAND_CHECK_PAIRING + " 1 must_repair");
+  Serial.print(COMMAND_CHECK_PAIRING);
+  Serial.println(" 1 must_repair");
   return {"Must re-pair", "Restart device"};
 }

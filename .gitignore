@@ -1,1 +1,6 @@
-.vscode
+node_modules
+firmware
+build*
+src/config.js
+!build-webinstaller.sh
+!build.sh
