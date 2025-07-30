@@ -26,8 +26,7 @@ jobs:
             - name: ArduinoJson
             - name: TFT_eSPI
             - name: uBitcoin
-            - source-path: ./libraries/QRCode
-            - source-path: ./libraries/tiny-AES-c
+            - name: QRCodeGenerator
 
       - uses: actions/upload-artifact@v4
         with:

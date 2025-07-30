@@ -13,8 +13,6 @@ if [ -f "$tft_config_file" ]; then
     tft_config=" -DTFT=1 -DUSER_SETUP_LOADED=1 -D${user_tft_config} ${tft_font} -DSPI_FREQUENCY=27000000 -DSPI_READ_FREQUENCY=20000000"
 fi
 arduino-cli compile \
-    --library ./libraries/QRCode \
-    --library ./libraries/tiny-AES-c \
     --build-property "build.partitions=min_spiffs" \
     --build-property "upload.maximum_size=1966080" \
     --build-property "build.extra_flags.esp32=-D${device_name}${tft_config}" \

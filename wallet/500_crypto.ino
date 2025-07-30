@@ -18,12 +18,15 @@ String encryptData(byte key[32], byte iv[16], String msg) {
   byte messageBin[byteSize];
   data.getBytes(messageBin, byteSize);
 
-  AES_ctx ctx;
-  AES_init_ctx_iv(&ctx, key, iv);
+  byte outputBuffer[byteSize];
 
-  AES_CBC_encrypt_buffer(&ctx, messageBin, sizeof(messageBin));
+  mbedtls_aes_context aes;
+  mbedtls_aes_init(&aes);
+  mbedtls_aes_setkey_enc(&aes, key, 256); // AES-256 requires a 32-byte key
+  mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_ENCRYPT, byteSize, iv, messageBin, outputBuffer);
+  mbedtls_aes_free(&aes);
 
-  return toHex(messageBin, sizeof(messageBin));
+  return toHex(outputBuffer, sizeof(outputBuffer));
 }
 
 String encryptDataWithIv(byte key[32], String msg) {
@@ -47,12 +50,15 @@ String decryptData(byte key[32], byte iv[16], String messageHex) {
   byte messageBin[byteSize];
   fromHex(messageHex, messageBin, byteSize);
 
+  byte outputBuffer[byteSize];
 
-  AES_ctx ctx;
-  AES_init_ctx_iv(&ctx, key, iv);
-  AES_CBC_decrypt_buffer(&ctx, messageBin, sizeof(messageBin));
+  mbedtls_aes_context aes;
+  mbedtls_aes_init(&aes);
+  mbedtls_aes_setkey_dec(&aes, key, 256);
+  mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_DECRYPT, byteSize, iv, messageBin, outputBuffer);
+  mbedtls_aes_free(&aes);
 
-  return String((char *)messageBin).substring(0, byteSize);
+  return String((char *)outputBuffer).substring(0, byteSize);
 }
 
 String decryptDataWithIv(byte key[32], String messageWithIvHex) {

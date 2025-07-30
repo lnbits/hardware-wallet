@@ -15,11 +15,11 @@
 #include <TFT_eSPI.h>
 #include <Hash.h>
 #include <ArduinoJson.h>
-#include "Bitcoin.h"
-#include "PSBT.h"
-#include "qrcoded.h"
+#include <Bitcoin.h>
+#include <PSBT.h>
+#include <QRCodeGenerator.h>
 
-#include <aes.h>
+#include <mbedtls/aes.h>
 
 #include <FS.h>
 #include <SPIFFS.h>
