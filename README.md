@@ -132,6 +132,16 @@ previous `/pair` command disabled persistence for SD restores. The existing
 `/seed` command writes the seed to the microSD card and should not be used when
 the goal is to keep the seed exclusively on the device and paper backup.
 
+## Entropy lines (the important bit)
+
+- uBitcoin obtains random words from the ESP32 hardware RNG through
+  [`esp_random()`](libraries/uBitcoin/src/utility/trezor/rand.c#L30-L36).
+- The wallet adds 32 bytes directly from the ESP32 hardware RNG through
+  [`esp_fill_random()`](wallet/400_helpers.ino#L73-L86).
+- Dice wallet creation hashes the exact 100-character dice-roll buffer with
+  SHA-256, then passes the resulting 32 bytes directly as BIP39 entropy to
+  [`mnemonicFromEntropy()`](wallet/723_cmd_create.ino#L30-L44).
+
 ## Troubleshooting
 
 - If the device does not appear as a serial port, install the

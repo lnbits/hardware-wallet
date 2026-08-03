@@ -11,10 +11,10 @@ void logo(int counter) {
   }
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
-  tft.setTextSize(4);
+  tft.setTextSize(3);
   tft.setCursor(0, 30);
   tft.print(title);
-  tft.setTextSize(2);
+  tft.setTextSize(counter > 0 ? 2 : 1);
   tft.setCursor(0, 80);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.print(subTitle);

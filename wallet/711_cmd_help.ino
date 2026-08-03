@@ -28,7 +28,7 @@ void help()
   tft.println("'/seed' will show the seed on the hww display");
   tft.println("'/psbt' will parse valid psbt and show its outputs and fee");
   tft.println("'/sign' will sign valid psbt");
-  tft.println("'/xpub' will return the XPub for a provided derivation path");
+  tft.println("'/xpub' defaults to Mainnet BIP84 account");
 
   logInfo("Commands");
   logInfo("'/help' show available commands");
@@ -40,6 +40,6 @@ void help()
   logInfo("'/seed' will show the seed on the hww display");
   logInfo("'/psbt' will parse valid psbt and show its outputs and fee");
   logInfo("'/sign' will sign valid psbt");
-  logInfo("'/xpub' will return the XPub for a provided derivation path");
+  logInfo("'/xpub' defaults to Mainnet m/84'/0'/0'");
   delay(10000);
 }

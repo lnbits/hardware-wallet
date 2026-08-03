@@ -31,6 +31,9 @@ String getNextFileCommand() {
   do {
     line = getLineAtPosition(global.commands, lineNumber);
     lineNumber++;
+    // Accept command files written with either Unix (LF) or Windows (CRLF)
+    // line endings, and ignore whitespace-only lines.
+    line.trim();
   } while (line.startsWith("#") || line == "");
   return line;
 }
