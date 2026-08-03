@@ -30,13 +30,20 @@ String encryptDataWithIv(byte key[32], String msg) {
   String data = String(msg.length()) + " " + msg;
 
   // create random initialization vector
-  int ivSize = 16;
-  uint8_t iv[ivSize];
-  String tempMnemonic = generateStrongerMnemonic(24);
-  mnemonicToEntropy(tempMnemonic, iv, ivSize);
+  const int ivSize = 16;
+  uint8_t iv[ivSize] = {0};
+  String tempMnemonic = generateStrongerMnemonic(12);
+  if (
+    tempMnemonic == "" ||
+    mnemonicToEntropy(tempMnemonic, iv, ivSize) != ivSize
+  ) {
+    clearSensitiveBytes(iv, sizeof(iv));
+    return "";
+  }
   String ivHex = toHex(iv, ivSize);
 
   String messageHex = encryptData(key, iv, data);
+  clearSensitiveBytes(iv, sizeof(iv));
 
   return messageHex + ivHex;
 }

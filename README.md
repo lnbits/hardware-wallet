@@ -136,8 +136,11 @@ the goal is to keep the seed exclusively on the device and paper backup.
 
 - uBitcoin obtains random words from the ESP32 hardware RNG through
   [`esp_random()`](libraries/uBitcoin/src/utility/trezor/rand.c#L30-L36).
+- Before using that RNG, the wallet checks its conditioned output for stuck
+  values, stuck bit positions, repeated words, and gross bit imbalance in
+  [`hardwareRngPassesHealthCheck()`](wallet/400_helpers.ino#L73-L113).
 - The wallet adds 32 bytes directly from the ESP32 hardware RNG through
-  [`esp_fill_random()`](wallet/400_helpers.ino#L73-L86).
+  [`esp_fill_random()`](wallet/400_helpers.ino#L115-L139).
 - Dice wallet creation hashes the exact 100-character dice-roll buffer with
   SHA-256, then passes the resulting 32 bytes directly as BIP39 entropy to
   [`mnemonicFromEntropy()`](wallet/723_cmd_create.ino#L30-L44).

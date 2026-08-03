@@ -39,10 +39,18 @@ CommandResponse executePair(String data) {
 
 CommandResponse pair(String publicKeyHex, String button1Pin, String button2Pin) {
   String tempMnemonic = generateStrongerMnemonic(24);
-  byte dhe_secret[32];
-  mnemonicToEntropy(tempMnemonic, dhe_secret, sizeof(dhe_secret));
+  byte dhe_secret[32] = {0};
+  if (
+    tempMnemonic == "" ||
+    mnemonicToEntropy(tempMnemonic, dhe_secret, sizeof(dhe_secret)) != sizeof(dhe_secret)
+  ) {
+    clearSensitiveBytes(dhe_secret, sizeof(dhe_secret));
+    Serial.println(COMMAND_PAIR + " 1 rng_failure");
+    return {"RNG failure", "Pairing aborted"};
+  }
 
   PrivateKey dhPrivateKey(dhe_secret);
+  clearSensitiveBytes(dhe_secret, sizeof(dhe_secret));
   PublicKey dhPublicKey = dhPrivateKey.publicKey();
 
   byte publicKeyBin[64];

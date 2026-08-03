@@ -62,11 +62,19 @@ void updateDeviceConfig() {
     }
   } else {
     // create random unique ID
-    int uuidSize = 32;
-    uint8_t uuid[uuidSize];
+    const int uuidSize = 32;
+    uint8_t uuid[uuidSize] = {0};
     String tempMnemonic = generateStrongerMnemonic(24);
-    mnemonicToEntropy(tempMnemonic, uuid, uuidSize);
+    if (
+      tempMnemonic == "" ||
+      mnemonicToEntropy(tempMnemonic, uuid, uuidSize) != uuidSize
+    ) {
+      clearSensitiveBytes(uuid, sizeof(uuid));
+      logInfo("Device ID creation aborted: RNG health check failed");
+      return;
+    }
     global.deviceId = toHex(uuid, uuidSize);
+    clearSensitiveBytes(uuid, sizeof(uuid));
     writeFile(SPIFFS, global.deviceMetaFileName.c_str(), global.deviceId);
   }
 

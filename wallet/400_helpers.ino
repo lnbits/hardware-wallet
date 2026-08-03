@@ -70,10 +70,63 @@ String getTokenAtPosition(String str, String separator, int position) {
   return "";
 }
 
+bool hardwareRngPassesHealthCheck() {
+  // This checks conditioned ESP RNG output for gross failures. It does not
+  // measure the entropy of the underlying physical noise source.
+  const size_t sampleCount = 64;
+  const size_t totalBits = sampleCount * 32;
+  uint32_t samples[sampleCount];
+  esp_fill_random(samples, sizeof(samples));
+
+  uint32_t onesSeen = 0;
+  uint32_t zerosSeen = 0;
+  size_t oneBitCount = 0;
+  size_t repeatedWords = 1;
+  size_t longestRepeat = 1;
+
+  for (size_t i = 0; i < sampleCount; i++) {
+    uint32_t sample = samples[i];
+    onesSeen |= sample;
+    zerosSeen |= ~sample;
+
+    while (sample != 0) {
+      oneBitCount++;
+      sample &= sample - 1;
+    }
+
+    if (i > 0 && samples[i] == samples[i - 1]) {
+      repeatedWords++;
+      if (repeatedWords > longestRepeat) longestRepeat = repeatedWords;
+    } else {
+      repeatedWords = 1;
+    }
+  }
+
+  bool allBitsChanged = onesSeen == UINT32_MAX && zerosSeen == UINT32_MAX;
+  bool noStuckOutput = longestRepeat < 3;
+  bool plausibleBitBalance =
+    oneBitCount >= (totalBits * 2) / 5 &&
+    oneBitCount <= (totalBits * 3) / 5;
+
+  clearSensitiveBytes((uint8_t *)samples, sizeof(samples));
+  return allBitsChanged && noStuckOutput && plausibleBitBalance;
+}
+
 String generateExtraEtropy() {
   bootloader_random_enable();
 
+  if (hardwareRngPassesHealthCheck() == false) {
+    bootloader_random_disable();
+    logInfo("Hardware RNG health check failed");
+    return "";
+  }
+
   String uBitcoinEntropy = generateMnemonic(24);
+  if (uBitcoinEntropy == "") {
+    bootloader_random_disable();
+    logInfo("Hardware RNG mnemonic generation failed");
+    return "";
+  }
 
   byte espEntropy[32];
   esp_fill_random(espEntropy, 32);
@@ -88,7 +141,11 @@ String generateExtraEtropy() {
 
 String generateStrongerMnemonic(int wordCount) {
   String extraEtropy = generateExtraEtropy();
-  return generateMnemonic(wordCount, extraEtropy);
+  if (extraEtropy == "") return "";
+
+  const char *mnemonic = generateMnemonic(wordCount, extraEtropy);
+  if (mnemonic == NULL) return "";
+  return String(mnemonic);
 }
 
 bool isNotEmptyParam(String paramValue) {
