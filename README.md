@@ -24,7 +24,15 @@ Use the [LNbits Hardware Wallet web installer](https://lnbits.github.io/hardware
 
 ### Build from source with Arduino CLI (tinfoil)
 
-Install [Arduino CLI](https://arduino.github.io/arduino-cli/1.5/installation).
+Install [Arduino CLI](https://arduino.github.io/arduino-cli/1.5/installation)
+using the normal method for your operating system.
+
+Install pyserial
+
+```bash
+# Install pyserial
+sudo pip3 install pyserial
+```
 
 Then clone and build the firmware:
 
@@ -32,11 +40,12 @@ Then clone and build the firmware:
 git clone https://github.com/lnbits/hardware-wallet
 cd hardware-wallet
 
-# Install ESP32 board support.
+# Install the exact ESP32 core version used by this project.
 arduino-cli config add board_manager.additional_urls \
   https://espressif.github.io/arduino-esp32/package_esp32_index.json
 arduino-cli core update-index
-arduino-cli core install esp32:esp32
+arduino-cli core install esp32:esp32@2.0.17
+arduino-cli core list
 
 # Connect the device and identify its serial port.
 arduino-cli board list
@@ -45,7 +54,7 @@ arduino-cli board list
 HWW_PORT=/dev/ttyACM0
 
 # Compile and upload for the LILYGO T-Display.
-arduino-cli compile --verbose --upload \
+arduino-cli compile --clean --upload \
   --fqbn esp32:esp32:lilygo_t_display \
   --port "$HWW_PORT" \
   --libraries "$PWD/libraries" \
