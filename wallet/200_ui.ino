@@ -4,7 +4,7 @@
 
 void logo(int counter) {
   String title = "Signer";
-  String subTitle = "LNbits/ubitcoin HWW";
+  String subTitle = "Bowser HWW";
   if (counter > 0) {
     title = title + " " + String(counter);
     subTitle = "Open for pairing";
