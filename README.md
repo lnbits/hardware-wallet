@@ -58,6 +58,7 @@ The documentation for each command can be found in the linked `.ino` file so you
  - `/password` [713_cmd_password_check.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/713_cmd_password_check.ino)
  - `/password-clear` [714_cmd_password_clear.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/714_cmd_password_clear.ino)
  - `/restore` [717_cmd_restore.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/717_cmd_restore.ino)
+ - `/create` [723_cmd_create.ino](wallet/723_cmd_create.ino)
  - `/wipe` [716_cmd_wipe_hww.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/716_cmd_wipe_hww.ino)
  - `/psbt` [718_cmd_sign_psbt](https://github.com/lnbits/hardware-wallet/blob/main/wallet/718_cmd_sign_psbt.ino)
  - `/seed` [719_show_seed](https://github.com/lnbits/hardware-wallet/blob/main/wallet/719_show_seed.ino)
@@ -79,6 +80,35 @@ The documentation for each command can be found in the linked `.ino` file so you
   - mount the SD Card into the computer. Two new files should be present:
      - `commands.out.txt` - contains the outputs of the commands. Here you will find the relevant data (like the signed PSBT)
      - `commands.log.txt` - contains the logs
+
+### Create a wallet from dice rolls
+
+The air-gapped T-Display Keyboard Module can create a 24-word BIP39 wallet
+using a physical six-sided die:
+
+1. Put `/create your-password` in `commands.in.txt`. The password must contain
+   at least 8 characters and cannot contain spaces.
+2. Insert the SD card and reboot the device.
+3. Roll a fair six-sided die 100 times, entering each result with keypad keys
+   `1` through `6`. Press `*` to remove the most recent entry.
+4. At `100/100`, press `#` to create the wallet.
+5. Write down each seed word shown on the device. Press `#` for the next word
+   and `*` for the previous word. Press `#` on word 24 to finish.
+
+The keypad matrix uses columns GPIO 33, 32, and 25 and rows GPIO 21, 27, 26,
+and 22. The firmware hashes the exact 100 ASCII dice digits with SHA-256 and
+uses the resulting 256 bits directly as BIP39 entropy. This makes the process
+reproducible for recovery and provides more than 256 bits of input entropy when
+the die is fair.
+
+Neither the dice sequence nor the seed words are written to the SD card by
+`/create`; `commands.out.txt` only receives `/create 1` on success. Protect or
+remove `commands.in.txt`, because it contains the wallet password. The wallet
+is persisted in the device's existing password-encrypted storage even if a
+previous `/pair` command disabled persistence for SD restores. The existing
+`/seed` command does write the seed to the SD card and should not be used when
+the goal is to keep the seed exclusively on the device and paper backup.
+
 ## How to use
 // Guide to go here
 

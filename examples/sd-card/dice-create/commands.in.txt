@@ -1,0 +1,5 @@
+# Create and unlock a persistent 24-word wallet from 100 keypad-entered d6 rolls.
+/create replace-with-a-strong-password
+
+# Example follow-up command; the newly created wallet is already authenticated.
+/xpub Testnet m/84'/1'/0'

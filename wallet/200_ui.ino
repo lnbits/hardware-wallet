@@ -51,6 +51,49 @@ void printMnemonicWord(String position, String word) {
   tft.println(word);
 }
 
+void showDiceRollProgress(int rollCount, char latestRoll) {
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setTextSize(2);
+  tft.setCursor(0, 0);
+  tft.println("Dice wallet");
+  tft.println("Enter rolls 1-6");
+  tft.println(String(rollCount) + "/" + String(DICE_ROLL_COUNT));
+
+  if (rollCount == DICE_ROLL_COUNT) {
+    tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    tft.println("Press # to create");
+  } else {
+    if (latestRoll != 0) {
+      tft.println("Last roll: " + String(latestRoll));
+    } else {
+      tft.println("");
+    }
+    tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    tft.println("* removes last");
+  }
+}
+
+void showDiceMnemonicWord(int position, String word) {
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setTextSize(2);
+  tft.setCursor(0, 0);
+  tft.println("Write down word " + String(position));
+  tft.println("");
+  tft.setTextColor(TFT_GREEN, TFT_BLACK);
+  tft.setTextSize(3);
+  tft.println(word);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setTextSize(1);
+  tft.println("");
+  if (position == 24) {
+    tft.println("* back    # finish");
+  } else {
+    tft.println("* back    # next");
+  }
+}
+
 int qrVersionFromStringLength(int stringLength) {
   if (stringLength <= 17) return 1;
   if (stringLength <= 32) return 2;

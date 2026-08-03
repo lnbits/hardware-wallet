@@ -80,6 +80,9 @@ CommandResponse executeCommand(Command c) {
   if (c.cmd == COMMAND_RESTORE)
     return executeRestore(c.data);
 
+  if (c.cmd == COMMAND_CREATE)
+    return executeCreate(c.data);
+
   if (c.cmd == COMMAND_XPUB)
     return executeXpub(c.data);
 

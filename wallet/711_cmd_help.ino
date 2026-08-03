@@ -21,6 +21,7 @@ void help()
 
   tft.println("'/help' show available commands");
   tft.println("'/restore <BIP39 seed words seperated by space>' will restore from seed");
+  tft.println("'/create <password>' creates a 24-word seed from 100 dice rolls (SD + keypad only)");
   tft.println("'/wipe' will completely wipe device and creat a new wallet");
   tft.println("'/password' login by providing a password");
   tft.println("'/password-clear' logout");
@@ -32,6 +33,7 @@ void help()
   logInfo("Commands");
   logInfo("'/help' show available commands");
   logInfo("'/restore <BIP39 seed words seperated by space>' will restore from seed");
+  logInfo("'/create <password>' creates a 24-word seed from 100 dice rolls (SD + keypad only)");
   logInfo("'/wipe' will completely wipe device and creat a new wallet");
   logInfo("'/password' login by providing a password");
   logInfo("'/password-clear' logout");
