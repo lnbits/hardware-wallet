@@ -1,5 +1,5 @@
 
-![Group 156 (1)](https://github.com/arbadacarbaYK/hardware-wallet/assets/63317640/6136bcf2-ddcb-4507-a0dd-2b388f89a69c)
+# LNbits Hardware Wallet
 
 Can be used over webdev serial (using LNbits OnchainWallet extension) or air-gapped via SD card.
 
