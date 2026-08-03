@@ -23,6 +23,9 @@ void setup() {
     showMessage("Failed to open files",  "Reset or 'help'");
   updateDeviceConfig();
   setupSD();
+
+  // Give WebSerial the full pairing window after device setup is complete.
+  global.startTime = millis();
 }
 
 bool loadFiles() {
@@ -39,7 +42,7 @@ bool loadFiles() {
 
   FileData sharedSecretFile = readFile(SPIFFS, global.sharedSecretFileName.c_str());
   if (sharedSecretFile.success) {
-    fromHex(sharedSecretFile.data, global.dhe_shared_secret, sizeof(global.dhe_shared_secret));
+    deleteFile(SPIFFS, global.sharedSecretFileName.c_str());
   }
 
   return mnFile.success && pwdFile.success;

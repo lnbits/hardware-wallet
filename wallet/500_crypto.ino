@@ -51,13 +51,14 @@ String encryptDataWithIv(byte key[32], String msg) {
 
 String decryptData(byte key[32], byte iv[16], String messageHex) {
   int byteSize =  messageHex.length() / 2;
-  byte messageBin[byteSize];
+  byte messageBin[byteSize + 1];
   fromHex(messageHex, messageBin, byteSize);
 
 
   AES_ctx ctx;
   AES_init_ctx_iv(&ctx, key, iv);
-  AES_CBC_decrypt_buffer(&ctx, messageBin, sizeof(messageBin));
+  AES_CBC_decrypt_buffer(&ctx, messageBin, byteSize);
+  messageBin[byteSize] = '\0';
 
   return String((char *)messageBin).substring(0, byteSize);
 }

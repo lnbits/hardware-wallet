@@ -61,8 +61,6 @@ CommandResponse pair(String publicKeyHex, String button1Pin, String button2Pin) 
   Serial.println(COMMAND_PAIR + " 0 " + toHex(dhPublicKey.point, sizeof(dhPublicKey.point)));
 
   String sharedSecretHex =  toHex(global.dhe_shared_secret, sizeof(global.dhe_shared_secret));
-  deleteFile(SPIFFS, global.sharedSecretFileName.c_str());
-  writeFile(SPIFFS, global.sharedSecretFileName.c_str(), sharedSecretHex);
 
   updateDeviceConfig(button1Pin, button2Pin);
 
