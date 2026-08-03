@@ -44,10 +44,9 @@ arduino-cli board list
 # Set this to the port shown above. Common Linux ports are ttyACM0 and ttyUSB0.
 HWW_PORT=/dev/ttyACM0
 
-# Compile and upload. This project uses the compatible TTGO LoRa32-OLED V1
-# build profile for the LILYGO T-Display's classic ESP32 chip.
+# Compile and upload for the LILYGO T-Display.
 arduino-cli compile --upload \
-  --fqbn esp32:esp32:ttgo-lora32-v1 \
+  --fqbn esp32:esp32:lilygo_t_display \
   --port "$HWW_PORT" \
   --libraries "$PWD/libraries" \
   "$PWD/wallet"

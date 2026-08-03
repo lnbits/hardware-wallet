@@ -3,24 +3,38 @@
 //========================================================================//
 
 void logo(int counter) {
-  String title = "Signer";
-  String subTitle = "LNbits/ubitcoin HWW";
-  if (counter > 0) {
-    title = title + " " + String(counter);
-    subTitle = "Open for pairing";
-  }
   tft.fillScreen(TFT_BLACK);
-  tft.setTextColor(TFT_GREEN, TFT_BLACK);
-  tft.setTextSize(4);
-  tft.setCursor(0, 30);
-  tft.print(title);
-  tft.setTextSize(2);
-  tft.setCursor(0, 80);
+  drawBowserLogo(16);
+
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.print(subTitle);
   tft.setTextSize(1);
-  tft.setCursor(0, 100);
+  tft.setCursor(0, 92);
+  if (counter > 0) {
+    tft.println("Open for pairing: " + String(counter));
+  } else {
+    tft.println("Ready");
+  }
+  tft.setCursor(0, 112);
   tft.print("version: " + env.version);
+}
+
+void showBootLogo() {
+  tft.fillScreen(TFT_BLACK);
+  drawBowserLogo((tft.height() - BOWSER_LOGO_HEIGHT) / 2);
+}
+
+void drawBowserLogo(int y) {
+  int x = (tft.width() - BOWSER_LOGO_WIDTH) / 2;
+  bool previousSwapBytes = tft.getSwapBytes();
+  tft.setSwapBytes(true);
+  tft.pushImage(
+    x,
+    y,
+    BOWSER_LOGO_WIDTH,
+    BOWSER_LOGO_HEIGHT,
+    BOWSER_LOGO_PIXELS
+  );
+  tft.setSwapBytes(previousSwapBytes);
 }
 
 void showMessage(String message, String additional)

@@ -7,6 +7,8 @@ void setup() {
   tft.init();
   tft.setRotation(1);
   tft.invertDisplay(true);
+  showBootLogo();
+  delay(1500);
 
   h.begin();
   FlashFS.begin(FORMAT_ON_FAIL);
