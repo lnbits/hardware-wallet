@@ -1,23 +1,18 @@
 
 ![Group 156 (1)](https://github.com/arbadacarbaYK/hardware-wallet/assets/63317640/6136bcf2-ddcb-4507-a0dd-2b388f89a69c)
 
-# WALLY, the Bitcoin Hardware Wallet 
+Can be used over webdev serial (using LNbits OnchainWallet extension) or air-gapped via SD card.
 
-Check out this [video tutorial](https://www.youtube.com/watch?v=uMg598-3wIk) on the Makerbits channel.
-
-<img src="https://github.com/lnbits/hardware-wallet/assets/63317640/a9942720-b3e0-45a0-8f39-7211c4969cb5" alt="HWW_front" width="200">
-<img src="https://github.com/lnbits/hardware-wallet/assets/63317640/8dc3dc21-2820-4fcd-a12c-7f0e2d96943c" alt="HWW_back" width="200">
-
-Data is sent to/from the **Hardware Wallet** over webdev serial. It is not the most secure data transmission method, but fine for handling small-medium sized amounts of funds or if you need a hardware wallet for a small period of time like e.g. on a vacation. 
-You can use LNbits OnchainWallet extension, your terminal or any other serial monitor.
-
-
-### Installation
+### Easy installation
 Use the webinstaller https://lnbits.github.io/hardware-wallet
 
-Or install <a href="https://arduino.github.io/arduino-cli/1.5/installation">arduino-cli</a> and compile/upload manually.
+### Tinfoil-hat installation
+Install <a href="https://arduino.github.io/arduino-cli/1.5/installation">arduino-cli</a> and compile/upload manually.
 
 ```
+git clone https://github.com/lnbits/hardware-wallet
+cd hardware-wallet
+
 # Install boards
 arduino-cli config add board_manager.additional_urls \
   https://espressif.github.io/arduino-esp32/package_esp32_index.json
@@ -27,14 +22,16 @@ arduino-cli core install esp32:esp32
 # Connect and check your board is available 
 arduino-cli board list
 
+# Set this to the port shown above.
+HWW_PORT=/dev/ttyACM0 # Usually port is ttyACM0, ttyUSB0
+
 #Compile and upload
 arduino-cli compile --upload \
   --fqbn esp32:esp32:ttgo-lora32-v1 \
-  --port /dev/<CHANGE THIS USUALLY ITS ttyUSB0> \
+  --port "$HWW_PORT" \
   --libraries "$PWD/libraries" \
   "$PWD/wallet"
 ```
-
 
 ## What you need
 - Lilygo TTGO/Tdisplay or any other ESP32 version
