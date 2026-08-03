@@ -3,8 +3,8 @@
 //========================================================================//
 
 void logo(int counter) {
-  String title = "Signer";
-  String subTitle = "Bowser HWW";
+  String title = "Bowser HWW";
+  String subTitle = "ubitcoin powered signer";
   if (counter > 0) {
     title = title + " " + String(counter);
     subTitle = "Open for pairing";
