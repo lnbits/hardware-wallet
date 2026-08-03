@@ -1,11 +1,5 @@
 ![Bowser Wallet banner](assets/bowser.png)
 
-# LNbits Hardware Wallet
-
-> [!WARNING]
-> This hardware wallet is experimental. Test it on testnet first and only store
-> funds you are prepared to lose.
-
 The wallet can be used over Web Serial with the LNbits OnchainWallet extension,
 or air-gapped with the optional keypad and microSD card.
 
@@ -58,18 +52,6 @@ arduino-cli compile --upload \
   --libraries "$PWD/libraries" \
   "$PWD/wallet"
 ```
-
-### Build from source with Arduino IDE
-
-1. Install the current [Arduino IDE](https://www.arduino.cc/en/software).
-2. Install ESP32 board support using the
-   [Boards Manager instructions](https://docs.espressif.com/projects/arduino-esp32/en/latest/installing.html#installing-using-boards-manager).
-3. Download this repository.
-4. Copy the bundled [libraries](libraries) into the Arduino sketchbook's
-   `libraries` directory.
-5. Open [wallet/wallet.ino](wallet/wallet.ino) in the Arduino IDE.
-6. Select **TTGO LoRa32-OLED V1** as the compatible ESP32 build profile.
-7. Select the device's serial port and upload the sketch.
 
 <img style="width:500px;" src="https://user-images.githubusercontent.com/33088785/180316957-4f99d7e9-9820-4302-9dde-ba555cb04729.png" alt="Arduino IDE board selection">
 
