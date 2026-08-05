@@ -14,12 +14,21 @@ CommandResponse executePasswordCheck(String commandData) {
   if (isEmptyParam(commandData)) {
     return { "Enter password",  "8 numbers/letters"};
   }
-  String password = getWordAtPosition(commandData, 0);
+  int separator = commandData.indexOf(" ");
+  String password = separator == -1
+                    ? commandData
+                    : commandData.substring(0, separator);
+  // The password cannot contain spaces, so the complete remainder is the
+  // BIP39 passphrase. Preserve embedded spaces instead of truncating it to
+  // the first word.
+  String passphrase = separator == -1
+                      ? ""
+                      : commandData.substring(separator + 1);
 
   String hash = hashStringData(password);
   if (global.passwordHash == hash) {
     global.authenticated = true;
-    global.passphrase = getWordAtPosition(commandData, 1);;
+    global.passphrase = passphrase;
     sendCommandOutput(COMMAND_PASSWORD, String(global.authenticated));
     return {"Password correct!",   "Ready to sign sir!" };
   }

@@ -1,88 +1,166 @@
+![Bowser Wallet banner](assets/bowser.png)
 
-![Group 156 (1)](https://github.com/arbadacarbaYK/hardware-wallet/assets/63317640/6136bcf2-ddcb-4507-a0dd-2b388f89a69c)
-
-# WALLY, the Bitcoin Hardware Wallet 
-
-Check out this [video tutorial](https://www.youtube.com/watch?v=uMg598-3wIk) on the Makerbits channel.
-
-<img src="https://github.com/lnbits/hardware-wallet/assets/63317640/a9942720-b3e0-45a0-8f39-7211c4969cb5" alt="HWW_front" width="200">
-<img src="https://github.com/lnbits/hardware-wallet/assets/63317640/8dc3dc21-2820-4fcd-a12c-7f0e2d96943c" alt="HWW_back" width="200">
-
-## Flash and configure via webinstaller https://lnbits.github.io/hardware-wallet
-
-Data is sent to/from the **Hardware Wallet** over webdev serial. It is not the most secure data transmission method, but fine for handling small-medium sized amounts of funds or if you need a hardware wallet for a small period of time like e.g. on a vacation. 
-You can use LNbits OnchainWallet extension, your terminal or any other serial monitor.
-
-
-### Wally is in BETA, use with TESTNET only, or with an amount of funds you are willing to lose 
+The wallet can be used over Web Serial with the LNbits OnchainWallet extension,
+or air-gapped with the optional keypad and microSD card.
 
 ## What you need
-- Lilygo TTGO/Tdisplay or any other ESP32 version
-- Optional: a case
-=> or get the kit in the [LNbits shop](https://shop.lnbits.com/product-category/hardware/hardware-wallets)
-- Data Cable
-- Desktop PC and Chrome/Chromium/Brave Browser
-- LNbits Onchain Extension
 
-Got questions ? Join us <a href="https://t.me/lnbits">t.me/lnbits</a>, <a href="https://t.me/makerbits">t.me/makerbits</a>
+- A LILYGO TTGO T-Display ESP32
+- A USB data cable for flashing and connected operation
+- A computer with one of the following:
+  - Chrome, Chromium, or Brave for the web installer and Web Serial
+  - Arduino CLI or Arduino IDE for compiling and flashing manually
+- Optional: the LILYGO T-Display Keyboard Module and a microSD card for
+  air-gapped commands and dice-roll wallet creation
+- Optional: the LNbits OnchainWallet extension for connected wallet operation
+- Optional: a case, or a complete kit from the
+  [LNbits shop](https://shop.lnbits.com/product-category/hardware/hardware-wallets)
 
+## For use with
 
-## Manual Install instructions (without webinstaller)
+The LNbits [WatchOnly Extension](https://github.com/lnbits/watchonly)
 
-- Buy a Lilygo <a href="https://www.aliexpress.com/item/33048962331.html">Tdisplay</a> (although with a little tinkering any ESP32 will do) 
-- Install <a href="https://www.arduino.cc/en/software">Arduino IDE 1.8.19</a>
-- Install ESP32 boards, using <a href="https://docs.espressif.com/projects/arduino-esp32/en/latest/installing.html#installing-using-boards-manager">boards manager</a>
-- Download this repo
-- Copy these <a href="libraries">libraries</a> into your Arduino install "libraries" folder
-- Open this <a href="wallet/wallet.ino">wallet.ino</a> file in the Arduino IDE
-- Select "TTGO-LoRa32-OLED-V1" from tools>board
-- Upload to device
+The standalone [Bowser Wallet webapp](https://lnbits.github.io/hardware-wallet/webapp/)
 
-<img style="width:500px;" src="https://user-images.githubusercontent.com/33088785/180316957-4f99d7e9-9820-4302-9dde-ba555cb04729.png">
+## Installation
 
-## Device Commands
-The client (OnchainWallet extension or anyother one) communicates with the device using strings (called commands) of this form:
-`/command-name {param1} {param2} ... {paramn}`
- - the order of the parametes is relevant (the position gives its meaning)
- - if no the value is specified then the minus (`-`) character should be used at the respective position
- - eg: `/password my-password-1`
+### Web installer (easy)
 
- The device (HWW) can respond (not mandatory) with a string of the same form: 
-  - `/command-name {resp1} {resp2} ... {respn}`
+Use the [LNbits Hardware Wallet web installer](https://lnbits.github.io/hardware-wallet).
 
-The documentation for each command can be found in the linked `.ino` file so you can build on top of it.
+### Build from source with Arduino CLI (tinfoil)
 
- - `/ping` [720_ping.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/720_ping.ino)
- - `/pair` [712_cmd_pair.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/712_cmd_pair.ino)
- - `/check_pairing` [721_check_pairing.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/721_check_pairing.ino)
- - `/password` [713_cmd_password_check.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/713_cmd_password_check.ino)
- - `/password-clear` [714_cmd_password_clear.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/714_cmd_password_clear.ino)
- - `/restore` [717_cmd_restore.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/717_cmd_restore.ino)
- - `/wipe` [716_cmd_wipe_hww.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/716_cmd_wipe_hww.ino)
- - `/psbt` [718_cmd_sign_psbt](https://github.com/lnbits/hardware-wallet/blob/main/wallet/718_cmd_sign_psbt.ino)
- - `/seed` [719_show_seed](https://github.com/lnbits/hardware-wallet/blob/main/wallet/719_show_seed.ino)
- - `/xpub` [715_cmd_xpub.ino](https://github.com/lnbits/hardware-wallet/blob/main/wallet/715_cmd_xpub.ino)
- - `/address` [722_show_address](https://github.com/lnbits/hardware-wallet/blob/main/wallet/722_show_address.ino)
- - `/help` [711_cmd_help](https://github.com/lnbits/hardware-wallet/blob/main/wallet/711_cmd_help.ino)
+Install [Arduino CLI](https://arduino.github.io/arduino-cli/1.5/installation)
+using the normal method for your operating system.
 
+Install pyserial
 
- ## Run from SD Card (air-gapped)
- **Note**: the device is not fully airgapped when other communication mediums are enabled (wifi, bluetooth, serial-port, etc).
+```bash
+# Install pyserial
+sudo pip3 install pyserial
+```
 
- In order to run from an SD Card one must:
-  - mount the SD Card into a computer
-  - create a file named `commands.in.txt` on the top level directory (no parent directory) of the SD Card
-  - add the commands to the file. See sample files in [examples/sd-card](https://github.com/lnbits/hardware-wallet/tree/main/examples/sd-card)
-  - mount the SD Card into the hardware device
-  - reboot the device. On reboot the device will detect the `commands.in.txt` on the SD Card and will start executing the commands
-  - wait for the device to complete execution
-  - mount the SD Card into the computer. Two new files should be present:
-     - `commands.out.txt` - contains the outputs of the commands. Here you will find the relevant data (like the signed PSBT)
-     - `commands.log.txt` - contains the logs
-## How to use
-// Guide to go here
+Then clone and build the firmware:
 
-> _Note: If using MacOS, you will need the CP210x USB to UART Bridge VCP Drivers available here https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers_
-> If you are using **MacOS Big Sur or an Mac with M1 chip**, you might encounter the issue `A fatal error occurred: Failed to write to target RAM (result was 0107)`, this is related to the chipsest used by TTGO, you can find the correct driver and more info in this <a href="https://github.com/Xinyuan-LilyGO/LilyGo-T-Call-SIM800/issues/139#issuecomment-904390716">GitHub issue</a>
+```bash
+git clone https://github.com/lnbits/hardware-wallet
+cd hardware-wallet
 
-This repo is powered by the <a href="https://www.arduino.cc/reference/en/libraries/ubitcoin/">uBitcoin</a> library.
+# Install the exact ESP32 core version used by this project.
+arduino-cli config add board_manager.additional_urls \
+  https://espressif.github.io/arduino-esp32/package_esp32_index.json
+arduino-cli core update-index
+arduino-cli core install esp32:esp32@2.0.17
+arduino-cli core list
+
+# Connect the device and identify its serial port.
+arduino-cli board list
+
+# Set this to the port shown above. Common Linux ports are ttyACM0 and ttyUSB0.
+HWW_PORT=/dev/ttyACM0
+
+# Compile and upload for the LILYGO T-Display.
+arduino-cli compile --clean --upload \
+  --fqbn esp32:esp32:ttgo-lora32 \
+  --port "$HWW_PORT" \
+  --libraries "$PWD/libraries" \
+  "$PWD/wallet"
+```
+
+## Device commands
+
+The LNbits OnchainWallet extension or another client communicates with the
+device using commands in this form:
+
+`/command-name {param1} {param2} ... {paramN}`
+
+- Parameter order is significant.
+- Use a minus (`-`) when an optional positional value is omitted.
+- Example: `/password my-password-1`
+
+The device can respond with a string in the same form:
+
+`/command-name {response1} {response2} ... {responseN}`
+
+Each command is documented in its implementation file:
+
+- `/ping` — [720_ping.ino](wallet/720_ping.ino)
+- `/pair` — [712_cmd_pair.ino](wallet/712_cmd_pair.ino)
+- `/check-pairing` — [721_check_pairing.ino](wallet/721_check_pairing.ino)
+- `/password` — [713_cmd_password_check.ino](wallet/713_cmd_password_check.ino)
+- `/password-clear` — [714_cmd_password_clear.ino](wallet/714_cmd_password_clear.ino)
+- `/restore` — [717_cmd_restore.ino](wallet/717_cmd_restore.ino)
+- `/create` — [723_cmd_create.ino](wallet/723_cmd_create.ino)
+- `/wipe` — [716_cmd_wipe_hww.ino](wallet/716_cmd_wipe_hww.ino)
+- `/psbt` — [718_cmd_sign_psbt.ino](wallet/718_cmd_sign_psbt.ino)
+- `/seed` — [719_show_seed.ino](wallet/719_show_seed.ino)
+- `/xpub` — [715_cmd_xpub.ino](wallet/715_cmd_xpub.ino)
+- `/address` — [722_show_address.ino](wallet/722_show_address.ino)
+- `/help` — [711_cmd_help.ino](wallet/711_cmd_help.ino)
+
+## Run from a microSD card (air-gapped)
+
+1. Mount the microSD card on a computer.
+2. Create `commands.in.txt` in the card's root directory.
+3. Add commands to the file. See the [SD-card examples](examples/sd-card).
+4. Safely eject the card and insert it into the hardware wallet.
+5. Reboot the device. It will detect and execute `commands.in.txt`.
+6. Wait for command execution to finish, then return the card to the computer.
+7. Read the generated files:
+   - `commands.out.txt` contains command results such as signed PSBTs.
+   - `commands.log.txt` contains diagnostic logs.
+
+### Create a wallet from dice rolls
+
+The air-gapped T-Display Keyboard Module can create a 24-word BIP39 wallet
+using a physical six-sided die:
+
+1. Put `/create your-password` in `commands.in.txt`. The password must contain
+   at least 8 characters and cannot contain spaces.
+2. Insert the microSD card and reboot the device.
+3. Roll a fair six-sided die 100 times, entering each result with keypad keys
+   `1` through `6`. Press `*` to remove the most recent entry.
+4. At `100/100`, press `#` to create the wallet.
+5. Write down each seed word shown on the device. Press `#` for the next word
+   and `*` for the previous word. Press `#` on word 24 to finish.
+
+The keypad matrix uses columns GPIO 33, 32, and 25 and rows GPIO 21, 27, 26,
+and 22. The firmware hashes the exact 100 ASCII dice digits with SHA-256 and
+uses the resulting 256 bits directly as BIP39 entropy. This makes the process
+reproducible for recovery and provides more than 256 bits of input entropy when
+the die is fair.
+
+Neither the dice sequence nor the seed words are written to the microSD card by
+`/create`; `commands.out.txt` only receives `/create 1` on success. Protect or
+remove `commands.in.txt`, because it contains the wallet password. The wallet
+is persisted in the device's existing password-encrypted storage even if a
+previous `/pair` command disabled persistence for SD restores. The existing
+`/seed` command writes the seed to the microSD card and should not be used when
+the goal is to keep the seed exclusively on the device and paper backup.
+
+## Entropy lines (the important bit)
+
+- uBitcoin obtains random words from the ESP32 hardware RNG through
+  [`esp_random()`](libraries/uBitcoin/src/utility/trezor/rand.c#L30-L36).
+- Before using that RNG, the wallet checks its conditioned output for stuck
+  values, stuck bit positions, repeated words, and gross bit imbalance in
+  [`hardwareRngPassesHealthCheck()`](wallet/400_helpers.ino#L73-L113).
+- The wallet adds 32 bytes directly from the ESP32 hardware RNG through
+  [`esp_fill_random()`](wallet/400_helpers.ino#L115-L139).
+- Dice wallet creation hashes the exact 100-character dice-roll buffer with
+  SHA-256, then passes the resulting 32 bytes directly as BIP39 entropy to
+  [`mnemonicFromEntropy()`](wallet/723_cmd_create.ino#L30-L44).
+
+## Troubleshooting
+
+- If the device does not appear as a serial port, install the
+  [CP210x USB-to-UART driver](https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers).
+- If uploading stalls at `Connecting...`, hold the device's **BOOT** button
+  while the connection starts, then release it.
+- On Linux, ensure your user has permission to access the serial device.
+
+Questions? Join the [LNbits Telegram group](https://t.me/lnbits) or the
+[MakerBits Telegram group](https://t.me/makerbits).
+
+This project uses the
+[uBitcoin library](https://www.arduino.cc/reference/en/libraries/ubitcoin/).

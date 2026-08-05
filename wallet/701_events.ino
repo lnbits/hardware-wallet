@@ -31,6 +31,9 @@ String getNextFileCommand() {
   do {
     line = getLineAtPosition(global.commands, lineNumber);
     lineNumber++;
+    // Accept command files written with either Unix (LF) or Windows (CRLF)
+    // line endings, and ignore whitespace-only lines.
+    line.trim();
   } while (line.startsWith("#") || line == "");
   return line;
 }
@@ -38,29 +41,32 @@ String getNextFileCommand() {
 EventData awaitSerialEvent() {
   unsigned long  waitTime = millis();
   bool idle = true;
-  while (Serial.available() == 0) {
-    // check if ok for pairing or if idle
-    if (idle == true) {
-      if  ((millis() - waitTime) > 60 * 1000) {
-        idle = false;
-        logo(0);
-      } else if  (counter > 0 && ((millis() - lastTickTime) > 1000)) {
-        counter--;
-        lastTickTime = millis();
-        logo(counter);
-      } else if (counter == 0) {
-        logo(counter);
-        counter--;
+  while (true) {
+    while (Serial.available() == 0) {
+      // check if ok for pairing or if idle
+      if (idle == true) {
+        if  ((millis() - waitTime) > 60 * 1000) {
+          idle = false;
+          logo(0);
+        } else if  (counter > 0 && ((millis() - lastTickTime) > 1000)) {
+          counter--;
+          lastTickTime = millis();
+          logo(counter);
+        } else if (counter == 0) {
+          logo(counter);
+          counter--;
+        }
       }
+
+      EventData buttonEvent = checkButtonsState();
+      if (buttonEvent.type == EVENT_BUTTON_ACTION) return buttonEvent;
+
     }
-
-    EventData buttonEvent = checkButtonsState();
-    if (buttonEvent.type == EVENT_BUTTON_ACTION) return buttonEvent;
-
+    counter = -1;
+    String data = Serial.readStringUntil('\n');
+    data.trim();
+    if (data != "") return { EVENT_SERIAL_DATA, data };
   }
-  counter = -1;
-  String data = Serial.readStringUntil('\n');
-  return { EVENT_SERIAL_DATA, data };
 }
 
 EventData checkButtonsState() {

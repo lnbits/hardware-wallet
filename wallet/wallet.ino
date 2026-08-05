@@ -18,6 +18,7 @@
 #include "Bitcoin.h"
 #include "PSBT.h"
 #include "qrcoded.h"
+#include "bowser_logo.h"
 
 #include <aes.h>
 

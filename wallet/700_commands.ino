@@ -80,10 +80,15 @@ CommandResponse executeCommand(Command c) {
   if (c.cmd == COMMAND_RESTORE)
     return executeRestore(c.data);
 
+  if (c.cmd == COMMAND_CREATE)
+    return executeCreate(c.data);
+
   if (c.cmd == COMMAND_XPUB)
     return executeXpub(c.data);
 
-  return executeUnknown(c.cmd + ": " + c.data);
+  // Never echo decrypted command arguments into serial or SD diagnostics.
+  // A typo in a password/restore command must not turn its secret into a log.
+  return executeUnknown(c.cmd);
 
 }
 
@@ -94,20 +99,24 @@ HwwInitData initHww(String password, String mnemonic, String passphrase, bool pe
 
   if (mnemonic == "") {
     mnemonic = generateStrongerMnemonic(24); // todo: allow 12 also
+    if (mnemonic == "") return {"", "", false};
   }
 
   String passwordHash  = hashStringData(password);
 
   if (persistSecrets == true) {
-    deleteFile(SPIFFS, global.mnemonicFileName.c_str());
-    deleteFile(SPIFFS, global.passwordFileName.c_str());
-    writeFile(SPIFFS, global.passwordFileName.c_str(), passwordHash);
-
     int byteSize =  passwordHash.length() / 2;
     byte encryptionKey[byteSize];
     fromHex(passwordHash, encryptionKey, byteSize);
 
-    writeFile(SPIFFS, global.mnemonicFileName.c_str(), encryptDataWithIv(encryptionKey, mnemonic));
+    String encryptedMnemonic = encryptDataWithIv(encryptionKey, mnemonic);
+    clearSensitiveBytes(encryptionKey, sizeof(encryptionKey));
+    if (encryptedMnemonic == "") return {"", "", false};
+
+    deleteFile(SPIFFS, global.mnemonicFileName.c_str());
+    deleteFile(SPIFFS, global.passwordFileName.c_str());
+    writeFile(SPIFFS, global.passwordFileName.c_str(), passwordHash);
+    writeFile(SPIFFS, global.mnemonicFileName.c_str(), encryptedMnemonic);
   }
 
   return {passwordHash, mnemonic, true};
@@ -120,6 +129,10 @@ void sendCommandOutput(String command, String commandData) {
 
 void serialPrintlnSecure(String msg) {
   String encryptedHex = encryptDataWithIv(global.dhe_shared_secret, msg);
+  if (encryptedHex == "") {
+    logInfo("Secure output aborted: RNG health check failed");
+    return;
+  }
   Serial.println(encryptedHex);
 }
 

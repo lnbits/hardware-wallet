@@ -1,7 +1,8 @@
 /**
    @brief
 
-   @param data: String. Space separated values. Use minus (`-`) to skip the value.
+   @param commandData: String. Space separated values. If empty, defaults to
+    `Mainnet m/84'/0'/0'`.
     Value significance by position:
      0 - networkName: String. Can be `Testnet` or `Mainnet`.
      1 - path: String. The BIP32 full for  the `xpub`. Eg: `m/84'/1'/0'`.
@@ -15,9 +16,13 @@ CommandResponse executeXpub(String commandData) {
     return {"Enter password!", "8 numbers/letters"};
   }
 
-  int spacePos = commandData.indexOf(" ");
   String networkName = getWordAtPosition(commandData, 0);
   String path = getWordAtPosition(commandData, 1);
+
+  if (commandData.length() == 0) {
+    networkName = "Mainnet";
+    path = "m/84'/0'/0'";
+  }
 
   const Network * network;
   if (networkName == "Mainnet") {

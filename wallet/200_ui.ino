@@ -3,24 +3,43 @@
 //========================================================================//
 
 void logo(int counter) {
-  String title = "Signer";
-  String subTitle = "LNbits/ubitcoin HWW";
+  String title = "Bowser HWW";
+  String subTitle = "ubitcoin powered signer";
   if (counter > 0) {
     title = title + " " + String(counter);
     subTitle = "Open for pairing";
   }
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
-  tft.setTextSize(4);
+  tft.setTextSize(3);
   tft.setCursor(0, 30);
   tft.print(title);
-  tft.setTextSize(2);
+  tft.setTextSize(counter > 0 ? 2 : 1);
   tft.setCursor(0, 80);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.print(subTitle);
   tft.setTextSize(1);
   tft.setCursor(0, 100);
   tft.print("version: " + env.version);
+}
+
+void showBootLogo() {
+  tft.fillScreen(TFT_BLACK);
+  drawBowserLogo((tft.height() - BOWSER_LOGO_HEIGHT) / 2);
+}
+
+void drawBowserLogo(int y) {
+  int x = (tft.width() - BOWSER_LOGO_WIDTH) / 2;
+  bool previousSwapBytes = tft.getSwapBytes();
+  tft.setSwapBytes(true);
+  tft.pushImage(
+    x,
+    y,
+    BOWSER_LOGO_WIDTH,
+    BOWSER_LOGO_HEIGHT,
+    BOWSER_LOGO_PIXELS
+  );
+  tft.setSwapBytes(previousSwapBytes);
 }
 
 void showMessage(String message, String additional)
@@ -49,6 +68,49 @@ void printMnemonicWord(String position, String word) {
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
   tft.setTextSize(3);
   tft.println(word);
+}
+
+void showDiceRollProgress(int rollCount, char latestRoll) {
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setTextSize(2);
+  tft.setCursor(0, 0);
+  tft.println("Dice wallet");
+  tft.println("Enter rolls 1-6");
+  tft.println(String(rollCount) + "/" + String(DICE_ROLL_COUNT));
+
+  if (rollCount == DICE_ROLL_COUNT) {
+    tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    tft.println("Press # to create");
+  } else {
+    if (latestRoll != 0) {
+      tft.println("Last roll: " + String(latestRoll));
+    } else {
+      tft.println("");
+    }
+    tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    tft.println("* removes last");
+  }
+}
+
+void showDiceMnemonicWord(int position, String word) {
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setTextSize(2);
+  tft.setCursor(0, 0);
+  tft.println("Write down word " + String(position));
+  tft.println("");
+  tft.setTextColor(TFT_GREEN, TFT_BLACK);
+  tft.setTextSize(3);
+  tft.println(word);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setTextSize(1);
+  tft.println("");
+  if (position == 24) {
+    tft.println("* back    # finish");
+  } else {
+    tft.println("* back    # next");
+  }
 }
 
 int qrVersionFromStringLength(int stringLength) {

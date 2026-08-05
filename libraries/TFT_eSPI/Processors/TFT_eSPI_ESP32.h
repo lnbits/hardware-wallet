@@ -10,6 +10,7 @@
 
 // Include processor specific header
 #include "soc/spi_reg.h"
+#include "soc/gpio_struct.h"
 #include "driver/spi_master.h"
 
 // Processor specific code used by SPI bus transaction startWrite and endWrite functions

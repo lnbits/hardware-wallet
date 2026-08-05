@@ -36,7 +36,7 @@ CommandResponse executeSignPsbt(String commandData) {
 
   PSBT psbt = parseBase64Psbt(psbtBase64);
   if (!psbt) {
-    logInfo("Failed psbt: " + psbtBase64);
+    logInfo("Failed to parse PSBT");
     sendCommandOutput(COMMAND_SEND_PSBT, "psbt_parse_failed");
     return {"Failed parsing",  "Send PSBT again"};
   }

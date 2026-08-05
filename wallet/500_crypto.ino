@@ -2,7 +2,9 @@ String hashStringData(String key) {
   byte hash[64] = { 0 };
   int hashLen = 0;
   hashLen = sha256(key, hash);
-  return toHex(hash, hashLen);
+  String result = toHex(hash, hashLen);
+  clearSensitiveBytes(hash, sizeof(hash));
+  return result;
 }
 
 String encryptData(byte key[32], byte iv[16], String msg) {
@@ -23,20 +25,29 @@ String encryptData(byte key[32], byte iv[16], String msg) {
 
   AES_CBC_encrypt_buffer(&ctx, messageBin, sizeof(messageBin));
 
-  return toHex(messageBin, sizeof(messageBin));
+  String result = toHex(messageBin, sizeof(messageBin));
+  clearSensitiveBytes(messageBin, sizeof(messageBin));
+  return result;
 }
 
 String encryptDataWithIv(byte key[32], String msg) {
   String data = String(msg.length()) + " " + msg;
 
   // create random initialization vector
-  int ivSize = 16;
-  uint8_t iv[ivSize];
-  String tempMnemonic = generateStrongerMnemonic(24);
-  mnemonicToEntropy(tempMnemonic, iv, ivSize);
+  const int ivSize = 16;
+  uint8_t iv[ivSize] = {0};
+  String tempMnemonic = generateStrongerMnemonic(12);
+  if (
+    tempMnemonic == "" ||
+    mnemonicToEntropy(tempMnemonic, iv, ivSize) != ivSize
+  ) {
+    clearSensitiveBytes(iv, sizeof(iv));
+    return "";
+  }
   String ivHex = toHex(iv, ivSize);
 
   String messageHex = encryptData(key, iv, data);
+  clearSensitiveBytes(iv, sizeof(iv));
 
   return messageHex + ivHex;
 }
@@ -44,15 +55,18 @@ String encryptDataWithIv(byte key[32], String msg) {
 
 String decryptData(byte key[32], byte iv[16], String messageHex) {
   int byteSize =  messageHex.length() / 2;
-  byte messageBin[byteSize];
+  byte messageBin[byteSize + 1];
   fromHex(messageHex, messageBin, byteSize);
 
 
   AES_ctx ctx;
   AES_init_ctx_iv(&ctx, key, iv);
-  AES_CBC_decrypt_buffer(&ctx, messageBin, sizeof(messageBin));
+  AES_CBC_decrypt_buffer(&ctx, messageBin, byteSize);
+  messageBin[byteSize] = '\0';
 
-  return String((char *)messageBin).substring(0, byteSize);
+  String result = String((char *)messageBin).substring(0, byteSize);
+  clearSensitiveBytes(messageBin, sizeof(messageBin));
+  return result;
 }
 
 String decryptDataWithIv(byte key[32], String messageWithIvHex) {
@@ -63,6 +77,7 @@ String decryptDataWithIv(byte key[32], String messageWithIvHex) {
   uint8_t iv[ivSize];
   fromHex(ivHex, iv, ivSize);
   String decryptedData = decryptData(key, iv, messageHex);
+  clearSensitiveBytes(iv, sizeof(iv));
 
   Command c = extractCommand(decryptedData);
   int commandLength = c.cmd.toInt();

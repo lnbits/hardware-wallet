@@ -7,6 +7,8 @@ void setup() {
   tft.init();
   tft.setRotation(1);
   tft.invertDisplay(true);
+  showBootLogo();
+  delay(1500);
 
   h.begin();
   FlashFS.begin(FORMAT_ON_FAIL);
@@ -21,6 +23,9 @@ void setup() {
     showMessage("Failed to open files",  "Reset or 'help'");
   updateDeviceConfig();
   setupSD();
+
+  // Give WebSerial the full pairing window after device setup is complete.
+  global.startTime = millis();
 }
 
 bool loadFiles() {
@@ -33,11 +38,12 @@ bool loadFiles() {
 
   FileData mnFile = readFile(SPIFFS, global.mnemonicFileName.c_str());
   global.mnemonic = decryptDataWithIv(passwordHashBin, mnFile.data);
+  clearSensitiveBytes(passwordHashBin, sizeof(passwordHashBin));
   global.passwordHash = passwordHash;
 
   FileData sharedSecretFile = readFile(SPIFFS, global.sharedSecretFileName.c_str());
   if (sharedSecretFile.success) {
-    fromHex(sharedSecretFile.data, global.dhe_shared_secret, sizeof(global.dhe_shared_secret));
+    deleteFile(SPIFFS, global.sharedSecretFileName.c_str());
   }
 
   return mnFile.success && pwdFile.success;
@@ -60,11 +66,19 @@ void updateDeviceConfig() {
     }
   } else {
     // create random unique ID
-    int uuidSize = 32;
-    uint8_t uuid[uuidSize];
+    const int uuidSize = 32;
+    uint8_t uuid[uuidSize] = {0};
     String tempMnemonic = generateStrongerMnemonic(24);
-    mnemonicToEntropy(tempMnemonic, uuid, uuidSize);
+    if (
+      tempMnemonic == "" ||
+      mnemonicToEntropy(tempMnemonic, uuid, uuidSize) != uuidSize
+    ) {
+      clearSensitiveBytes(uuid, sizeof(uuid));
+      logInfo("Device ID creation aborted: RNG health check failed");
+      return;
+    }
     global.deviceId = toHex(uuid, uuidSize);
+    clearSensitiveBytes(uuid, sizeof(uuid));
     writeFile(SPIFFS, global.deviceMetaFileName.c_str(), global.deviceId);
   }
 
