@@ -1,0 +1,65 @@
+#### ALL POSSIBLE COMMANDS ####
+
+# SD-card command reference. Every example is commented out so this file is
+# safe to browse. Copy it to the SD card root as commands.in.txt, replace all
+# <placeholders>, and uncomment only the commands you intend to run.
+# Commands execute from top to bottom. Lines beginning with # are ignored.
+
+# Show the command help screen. This pauses execution for 10 seconds.
+# /help
+
+# Do not persist a mnemonic supplied by a later /restore command.
+# Keep this before /restore when the mnemonic should exist only on the SD card
+# and in RAM for the current session. It does not affect /create or /wipe.
+# /pair - - - false
+
+# Create and persist a new 24-word wallet from exactly 100 physical d6 rolls.
+# Requires the T-Display Keyboard Module. This replaces the current wallet.
+# /create <new-password-of-at-least-8-characters>
+
+# Restore a BIP39 wallet. Accepted lengths: 12, 15, 18, 21, or 24 words.
+# This replaces the current wallet. The password cannot contain spaces.
+# /restore <new-password-of-at-least-8-characters> <word-1> <word-2> ... <final-word>
+
+# Replace the current wallet with one generated from the hardware RNG.
+# This persists the new wallet and cannot be undone without a seed backup.
+# /wipe <new-password-of-at-least-8-characters>
+
+# Unlock the wallet. Everything after the first space following the password
+# is used as the optional BIP39 passphrase, including embedded spaces.
+# /password <password>
+# /password <password> <optional-BIP39-passphrase>
+
+# Clear the current authentication and BIP39 passphrase from RAM.
+# /password-clear
+
+# Export an account extended public key and master fingerprint.
+# With no arguments, /xpub defaults to Mainnet m/84'/0'/0'.
+# /xpub
+# /xpub Mainnet m/84'/0'/0'
+# /xpub Testnet m/84'/1'/0'
+
+# Derive an address. Supplying <expected-address> also verifies that address.
+# /address Mainnet <full-derivation-path>
+# /address Mainnet <full-derivation-path> <expected-address>
+# /address Testnet <full-derivation-path>
+# /address Testnet <full-derivation-path> <expected-address>
+
+# Write the complete mnemonic to commands.out.txt.
+# WARNING: this puts the wallet seed on the SD card in plain text.
+# /seed
+
+# Parse, review, and sign a base64 PSBT. In SD mode, output review and signing
+# happen as one operation; do not add a separate /sign command.
+# /psbt Mainnet <base64-PSBT>
+# /psbt Testnet <base64-PSBT>
+
+# WebSerial protocol commands, not commands to place in an SD-card job:
+# /ping <client-name>
+# /check-pairing <encrypted-control-value>
+# /confirm-next
+# /sign
+# /cancel
+
+# SECURITY: commands.in.txt can contain passwords, passphrases, mnemonics, and
+# PSBT data. Remove it from the card or erase it securely after use.

@@ -111,7 +111,10 @@ Each command is documented in its implementation file:
 
 1. Mount the microSD card on a computer.
 2. Create `commands.in.txt` in the card's root directory.
-3. Add commands to the file. See the [SD-card examples](examples/sd-card).
+3. Add commands to the file. Start with the commented
+   [complete command template](examples/sd-card/commands.in.txt), consult the
+   [output reference](examples/sd-card/commands.out.txt), or see the
+   [worked examples](examples/sd-card).
 4. Safely eject the card and insert it into the hardware wallet.
 5. Reboot the device. It will detect and execute `commands.in.txt`.
 6. Wait for command execution to finish, then return the card to the computer.

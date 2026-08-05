@@ -1,0 +1,46 @@
+#### ALL POSSIBLE COMMANDS ####
+
+# SD-card output reference. Do not rely on edits to this file: the device
+# recreates commands.out.txt at startup whenever commands.in.txt is detected.
+# Only responses that can be written by an SD-card command are shown below.
+# Angle-bracketed text is a placeholder; actual output contains real values.
+
+#### commands output ####
+
+# Wallet creation, restore, and replacement
+/create 1
+/create 0
+/restore 1
+/restore 0
+/wipe 1
+/wipe 0
+
+# Authentication
+/password 1
+/password 0
+/password-clear 1
+
+# Public wallet data
+/xpub 1 <extended-public-key> <master-fingerprint>
+/xpub 0 invalid_mnemonic
+/address 1 <derived-address>
+
+# WARNING: /seed emits the complete mnemonic in plain text.
+Seed: <word-1> <word-2> ... <final-word>
+
+# PSBT acceptance or failure
+/psbt 1
+/psbt psbt_parse_failed
+/psbt invalid_mnemonic
+
+# A successful /psbt then writes one block per transaction output, its fee,
+# and the signed PSBT. Output indexes start at 0.
+Output <index>
+Address: <address>
+Amount: <amount-in-satoshis> sat
+Fee: <fee-in-satoshis> sat
+/sign <signed-input-count> <signed-base64-PSBT>
+
+# /help and the SD configuration form of /pair do not write a response here.
+# Invalid or unauthenticated requests can also report errors only on-screen and
+# in commands.log.txt rather than adding a line to commands.out.txt.

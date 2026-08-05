@@ -44,7 +44,7 @@ CommandResponse executeSignPsbt(String commandData) {
   HDPrivateKey hd(global.mnemonic, global.passphrase, network);
   // check if it is valid
   if (!hd) {
-    sendCommandOutput(COMMAND_SEND_PSBT, "invalid_mnemonic'");
+    sendCommandOutput(COMMAND_SEND_PSBT, "invalid_mnemonic");
     return {"Invalid Mnemonic", ""};
   }
 
