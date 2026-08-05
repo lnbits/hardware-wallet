@@ -29,6 +29,18 @@ type MempoolTx = {
 const apiUrl = (endpoint: string, path: string) =>
   `${endpoint.replace(/\/+$/, '')}${path}`
 
+const REQUEST_INTERVAL_MS = 1_000
+const nextRequestAt = new Map<string, number>()
+
+const waitForRequestSlot = async (url: string) => {
+  const origin = new URL(url).origin
+  const now = Date.now()
+  const slot = Math.max(now, nextRequestAt.get(origin) || 0)
+  nextRequestAt.set(origin, slot + REQUEST_INTERVAL_MS)
+  if (slot > now)
+    await new Promise((resolve) => setTimeout(resolve, slot - now))
+}
+
 const fetchWithTimeout = async (
   url: string,
   options?: RequestInit,
@@ -54,33 +66,45 @@ const fetchWithTimeout = async (
 
 const get = async <T>(url: string, attempt = 0): Promise<T> => {
   try {
+    await waitForRequestSlot(url)
     const response = await fetchWithTimeout(url)
-    if (attempt < 3 && (response.status === 429 || response.status >= 500)) {
+    if (attempt < 2 && response.status === 429) {
       const retryAfterHeader = response.headers.get('retry-after')
       const retryAfter = retryAfterHeader
         ? Number(retryAfterHeader)
         : Number.NaN
       const delay = Number.isFinite(retryAfter)
         ? retryAfter * 1000
-        : 500 * 2 ** attempt
+        : 15_000 * 2 ** attempt
       await new Promise((resolve) =>
-        setTimeout(resolve, Math.min(delay, 30_000)),
+        setTimeout(resolve, Math.min(delay, 60_000)),
       )
+      return get<T>(url, attempt + 1)
+    }
+    if (attempt < 3 && response.status >= 500) {
+      await new Promise((resolve) => setTimeout(resolve, 1_000 * 2 ** attempt))
       return get<T>(url, attempt + 1)
     }
     if (!response.ok)
       throw new Error(`${response.status} ${response.statusText}`)
     return response.json() as Promise<T>
   } catch (error) {
-    if (
-      attempt < 3 &&
-      (error instanceof TypeError ||
-        (error instanceof DOMException &&
-          (error.name === 'AbortError' || error.name === 'TimeoutError')))
-    ) {
-      await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** attempt))
+    const browserNetworkFailure = error instanceof TypeError
+    const timedOut =
+      error instanceof DOMException &&
+      (error.name === 'AbortError' || error.name === 'TimeoutError')
+    if (browserNetworkFailure && attempt < 1) {
+      await new Promise((resolve) => setTimeout(resolve, 10_000))
       return get<T>(url, attempt + 1)
     }
+    if (timedOut && attempt < 2) {
+      await new Promise((resolve) => setTimeout(resolve, 2_000 * 2 ** attempt))
+      return get<T>(url, attempt + 1)
+    }
+    if (browserNetworkFailure)
+      throw new Error(
+        'Mempool request was blocked or unavailable; wait briefly and try again',
+      )
     throw error
   }
 }
