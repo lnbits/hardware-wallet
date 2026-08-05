@@ -18,6 +18,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -30,17 +31,12 @@ jobs:
           cache-dependency-path: webapp/package-lock.json
 
       - name: Configure Pages
-        uses: actions/configure-pages@v5
+        id: pages
+        uses: actions/configure-pages@v6
 
       - name: Configure base path
         shell: bash
-        run: |
-          repo_name="${GITHUB_REPOSITORY#*/}"
-          if [[ "$repo_name" == *.github.io ]]; then
-            echo "BASE_PATH=/webapp" >> "$GITHUB_ENV"
-          else
-            echo "BASE_PATH=/$repo_name/webapp" >> "$GITHUB_ENV"
-          fi
+        run: echo "BASE_PATH=${{ steps.pages.outputs.base_path }}/webapp" >> "$GITHUB_ENV"
 
       - name: Install dependencies
         working-directory: webapp
@@ -48,7 +44,7 @@ jobs:
 
       - name: Check webapp
         working-directory: webapp
-        run: npm run check
+        run: npm run lint
 
       - name: Test webapp
         working-directory: webapp
@@ -68,18 +64,28 @@ jobs:
           cp -R webapp/build/. pages/webapp/
           touch pages/.nojekyll
 
+      - name: Validate Pages site
+        shell: bash
+        run: |
+          test -f pages/index.html
+          test -f pages/installer/index.html
+          test -f pages/webapp/index.html
+          test -f pages/.nojekyll
+
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: pages
+          include-hidden-files: true
 
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: build
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
