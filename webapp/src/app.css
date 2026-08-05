@@ -28,6 +28,9 @@ body {
   min-height: 100vh;
   background: #0b0d0c;
 }
+.sveltekit-body {
+  display: contents;
+}
 button,
 input,
 select,

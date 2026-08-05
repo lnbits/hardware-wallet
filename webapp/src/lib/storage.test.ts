@@ -6,6 +6,8 @@ import {
   loadAccounts,
   loadAddresses,
   loadChainState,
+  loadSettings,
+  normalizeMempoolEndpoint,
   saveAccounts,
   saveAddresses,
   saveChainState,
@@ -188,5 +190,32 @@ describe('persistence allowlists', () => {
     expect(loadAddresses()).toEqual([address])
     expect(JSON.stringify(loadAccounts())).not.toContain('never-load-this')
     expect(JSON.stringify(loadAddresses())).not.toContain('never-load-this')
+  })
+
+  it('rejects endpoint URLs that could persist credentials or active URLs', () => {
+    expect(() =>
+      normalizeMempoolEndpoint('https://user:secret@example.com/api'),
+    ).toThrow('must not contain credentials')
+    expect(() => normalizeMempoolEndpoint('javascript:alert(1)')).toThrow(
+      'must use HTTP or HTTPS',
+    )
+    expect(() =>
+      normalizeMempoolEndpoint('https://example.com/api?token=secret'),
+    ).toThrow('must not contain a query or fragment')
+  })
+
+  it('replaces unsafe endpoints already present in browser storage', () => {
+    values.set(
+      'bowser-wallet.settings.v1',
+      JSON.stringify({
+        network: 'Testnet',
+        mempoolMainnet: 'javascript:alert(1)',
+        mempoolTestnet: 'https://user:secret@example.com/api',
+      }),
+    )
+
+    const settings = loadSettings()
+    expect(settings.mempoolMainnet).toBe('https://mempool.space/api')
+    expect(settings.mempoolTestnet).toBe('https://mempool.space/testnet/api')
   })
 })

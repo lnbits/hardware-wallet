@@ -16,6 +16,17 @@ MU_TEST(test_dice_rolls_produce_24_word_mnemonic) {
   uint8_t entropy[32];
   sha256(rolls, sizeof(rolls), entropy);
 
+  const uint8_t expectedEntropy[32] = {
+    0xe5, 0x64, 0x03, 0xe8, 0x52, 0x2d, 0xde, 0xae,
+    0x1b, 0x44, 0xa1, 0xe8, 0x14, 0x8b, 0x1b, 0xa4,
+    0xd3, 0xb4, 0xc6, 0x26, 0xcc, 0xf2, 0x09, 0x80,
+    0x05, 0x6e, 0xed, 0xcc, 0x7e, 0x0c, 0x0f, 0x35
+  };
+  mu_assert(
+    std::memcmp(entropy, expectedEntropy, sizeof(entropy)) == 0,
+    "all 100 dice digits must be hashed exactly"
+  );
+
   std::string mnemonic = mnemonicFromEntropy(entropy, sizeof(entropy));
   mu_assert(checkMnemonic(mnemonic), "dice mnemonic should pass BIP39 checksum");
 

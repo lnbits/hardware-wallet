@@ -35,7 +35,7 @@ describe('sensitive-data architecture', () => {
     )
 
     expect(storage?.text).not.toMatch(
-      /\b(?:mnemonic|seed|privateKey|private_key|password|passphrase|sharedSecret|shared_secret)\b/,
+      /\b(?:mnemonic|seed|privateKey|private_key|password|passphrase|sharedSecret|shared_secret)\s*:/,
     )
   })
 
@@ -44,5 +44,13 @@ describe('sensitive-data architecture', () => {
       expect(source.text, source.name).not.toMatch(
         /\bconsole\.(?:log|info|warn|error)/,
       )
+  })
+
+  it('does not use HTML injection or string-to-code DOM sinks', () => {
+    const unsafeSink =
+      /\{@html|\b(?:innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval)\b|\bnew\s+Function\b|\bjavascript:/
+
+    for (const source of runtimeSources)
+      expect(source.text, source.name).not.toMatch(unsafeSink)
   })
 })

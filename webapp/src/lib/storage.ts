@@ -12,6 +12,27 @@ const SETTINGS_KEY = 'bowser-wallet.settings.v1'
 const CHAIN_STATE_KEY = 'bowser-wallet.chain-state.v1'
 const MAX_CACHED_HISTORY = 1_000
 
+export const normalizeMempoolEndpoint = (value: string) => {
+  const url = new URL(value.trim())
+  if (!['http:', 'https:'].includes(url.protocol))
+    throw new Error('Blockchain endpoints must use HTTP or HTTPS')
+  if (url.username || url.password)
+    throw new Error('Blockchain endpoints must not contain credentials')
+  if (url.search || url.hash)
+    throw new Error('Blockchain endpoints must not contain a query or fragment')
+  return url.toString().replace(/\/$/, '')
+}
+
+const safeEndpoint = (value: unknown, fallback: string) => {
+  try {
+    return normalizeMempoolEndpoint(
+      typeof value === 'string' && value ? value : fallback,
+    )
+  } catch {
+    return fallback
+  }
+}
+
 const read = <T>(key: string, fallback: T): T => {
   try {
     return JSON.parse(localStorage.getItem(key) || '') as T
@@ -140,14 +161,14 @@ export const loadSettings = () => {
       stored.network === 'Mainnet' || stored.network === 'Testnet'
         ? stored.network
         : defaultSettings.network,
-    mempoolMainnet:
-      typeof stored.mempoolMainnet === 'string' && stored.mempoolMainnet
-        ? stored.mempoolMainnet
-        : defaultSettings.mempoolMainnet,
-    mempoolTestnet:
-      typeof stored.mempoolTestnet === 'string' && stored.mempoolTestnet
-        ? stored.mempoolTestnet
-        : defaultSettings.mempoolTestnet,
+    mempoolMainnet: safeEndpoint(
+      stored.mempoolMainnet,
+      defaultSettings.mempoolMainnet,
+    ),
+    mempoolTestnet: safeEndpoint(
+      stored.mempoolTestnet,
+      defaultSettings.mempoolTestnet,
+    ),
     denomination:
       stored.denomination === 'btc' || stored.denomination === 'sats'
         ? stored.denomination
@@ -162,8 +183,8 @@ export const saveSettings = (settings: ReturnType<typeof loadSettings>) =>
     SETTINGS_KEY,
     JSON.stringify({
       network: settings.network,
-      mempoolMainnet: settings.mempoolMainnet,
-      mempoolTestnet: settings.mempoolTestnet,
+      mempoolMainnet: normalizeMempoolEndpoint(settings.mempoolMainnet),
+      mempoolTestnet: normalizeMempoolEndpoint(settings.mempoolTestnet),
       denomination: settings.denomination,
       receiveGap: settings.receiveGap,
       changeGap: settings.changeGap,

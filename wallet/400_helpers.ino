@@ -131,6 +131,7 @@ String generateExtraEtropy() {
   byte espEntropy[32];
   esp_fill_random(espEntropy, 32);
   String espHexEntropy = toHex(espEntropy, 32);
+  clearSensitiveBytes(espEntropy, sizeof(espEntropy));
 
   String clientEntropy = toHex(global.dhe_shared_secret, 32);
 

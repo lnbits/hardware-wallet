@@ -82,6 +82,7 @@
     loadAddresses,
     loadChainState,
     loadSettings,
+    normalizeMempoolEndpoint,
     saveAccounts,
     saveAddresses,
     saveChainState,
@@ -1480,13 +1481,8 @@
 
   function saveAppSettings() {
     try {
-      const mainnet = new URL(settings.mempoolMainnet.trim())
-      const testnet = new URL(settings.mempoolTestnet.trim())
-      if (
-        !['http:', 'https:'].includes(mainnet.protocol) ||
-        !['http:', 'https:'].includes(testnet.protocol)
-      )
-        throw new Error('Blockchain endpoints must use HTTP or HTTPS')
+      const mainnet = normalizeMempoolEndpoint(settings.mempoolMainnet)
+      const testnet = normalizeMempoolEndpoint(settings.mempoolTestnet)
       const receiveGap = Number(settings.receiveGap)
       const changeGap = Number(settings.changeGap)
       if (
@@ -1500,8 +1496,8 @@
         throw new Error('Gap limits must be whole numbers from 1 to 100')
       settings = {
         ...settings,
-        mempoolMainnet: mainnet.toString().replace(/\/$/, ''),
-        mempoolTestnet: testnet.toString().replace(/\/$/, ''),
+        mempoolMainnet: mainnet,
+        mempoolTestnet: testnet,
         receiveGap,
         changeGap,
       }
@@ -2011,7 +2007,7 @@
                       >{#each filteredHistory as item}<tr
                           ><td class="mono"
                             ><a
-                              href={`${endpoint.replace(/\/api$/, '')}/tx/${item.txid}`}
+                              href={`${endpoint.replace(/\/api$/, '')}/tx/${encodeURIComponent(item.txid)}`}
                               target="_blank"
                               rel="noreferrer">{short(item.txid, 11, 10)}</a
                             ></td
@@ -2663,7 +2659,7 @@
             class="btn ghost"
             onclick={() => copyWithNotify(signedTxHex, 'Transaction')}
           >
-            ><Copy size={15} /> Copy transaction</button
+            <Copy size={15} /> Copy transaction</button
           ><span class="spacer"></span><button
             class="btn primary"
             onclick={broadcast}

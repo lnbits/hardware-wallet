@@ -38,6 +38,7 @@ bool loadFiles() {
 
   FileData mnFile = readFile(SPIFFS, global.mnemonicFileName.c_str());
   global.mnemonic = decryptDataWithIv(passwordHashBin, mnFile.data);
+  clearSensitiveBytes(passwordHashBin, sizeof(passwordHashBin));
   global.passwordHash = passwordHash;
 
   FileData sharedSecretFile = readFile(SPIFFS, global.sharedSecretFileName.c_str());
