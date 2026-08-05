@@ -190,8 +190,11 @@
   let addressWatcher: AddressWatcher | null = null
   let addressWatcherKey = ''
   let liveScanTimer: ReturnType<typeof setTimeout> | null = null
+  let scheduledScanForced = false
   let lastScanAt = 0
   let chainCacheWarningShown = false
+
+  const AUTO_SCAN_FRESH_MS = 5 * 60_000
 
   let recipients: RecipientForm[] = [
     { id: randomId(), address: '', amount: '' },
@@ -277,7 +280,16 @@
     restoreCachedChainState(network)
     ready = true
     syncAddressWatcher()
-    return stopAddressWatcher
+    const refreshWhenActive = () => {
+      if (document.visibilityState === 'visible') scheduleWalletScan()
+    }
+    document.addEventListener('visibilitychange', refreshWhenActive)
+    window.addEventListener('online', refreshWhenActive)
+    return () => {
+      document.removeEventListener('visibilitychange', refreshWhenActive)
+      window.removeEventListener('online', refreshWhenActive)
+      stopAddressWatcher()
+    }
   })
 
   function notify(
@@ -393,16 +405,30 @@
     addressWatcherKey = ''
     if (liveScanTimer) clearTimeout(liveScanTimer)
     liveScanTimer = null
+    scheduledScanForced = false
   }
 
-  function scheduleLiveScan() {
+  function scheduleWalletScan(force = false) {
+    scheduledScanForced ||= force
     if (liveScanTimer) clearTimeout(liveScanTimer)
     liveScanTimer = setTimeout(() => {
       liveScanTimer = null
-      if (busy) {
-        scheduleLiveScan()
+      const forceScan = scheduledScanForced
+      if (!entered || !networkAccounts.length) {
+        scheduledScanForced = false
         return
       }
+      if (busy) {
+        scheduleWalletScan(forceScan)
+        return
+      }
+      scheduledScanForced = false
+      if (
+        !forceScan &&
+        lastScanAt &&
+        Date.now() - lastScanAt < AUTO_SCAN_FRESH_MS
+      )
+        return
       void scanWallet()
     }, 1_000)
   }
@@ -432,7 +458,7 @@
     addressWatcher = watchMempoolAddresses({
       endpoint: watchEndpoint,
       addresses: tracked,
-      onchange: scheduleLiveScan,
+      onchange: () => scheduleWalletScan(true),
     })
   }
 
@@ -550,6 +576,12 @@
     saveAddresses(addresses)
   }
 
+  function enterWatchOnly() {
+    entered = true
+    view = networkAccounts.length ? 'overview' : 'accounts'
+    scheduleWalletScan()
+  }
+
   async function connect() {
     if (busy) return
     serialLog = []
@@ -586,6 +618,7 @@
       deviceRevision += 1
       entered = true
       view = networkAccounts.length ? 'overview' : 'accounts'
+      scheduleWalletScan()
       notify('Bowser HWW connected', 'success')
     } catch (error) {
       device = null
@@ -631,6 +664,7 @@
     receiveAccountId = ''
     changeAccountId = ''
     syncAddressWatcher()
+    scheduleWalletScan()
   }
 
   function openAccountDialog(source: 'manual' | 'device' = 'manual') {
@@ -717,7 +751,12 @@
       receiveAccountId ||= account.id
       changeAccountId ||= account.id
       showAccount = false
-      notify('Watch-only account added', 'success')
+      scheduleWalletScan(true)
+      notify(
+        'Watch-only account added',
+        'success',
+        'Scanning its address gap automatically.',
+      )
     } catch (error) {
       notify(
         'Could not add account',
@@ -813,10 +852,12 @@
       syncAddressWatcher()
       notify('Blockchain scan complete', 'success')
     } catch (error) {
+      const stoppedAt = scanProgress
+      const detail = error instanceof Error ? error.message : String(error)
       notify(
         'Blockchain scan stopped',
         'error',
-        error instanceof Error ? error.message : String(error),
+        stoppedAt ? `${detail} · ${stoppedAt}` : detail,
       )
     } finally {
       busy = ''
@@ -1503,6 +1544,7 @@
       }
       saveSettings(settings)
       syncAddressWatcher()
+      scheduleWalletScan(true)
       notify('Settings saved', 'success')
     } catch (error) {
       notify(
@@ -1544,7 +1586,7 @@
     <LoaderCircle class="spin" size={32} /> Loading Bowser Wallet…
   </div>
 {:else if !entered}
-  <Landing onconnect={connect} onwatch={() => (entered = true)} />
+  <Landing onconnect={connect} onwatch={enterWatchOnly} />
 {:else}
   <div class="app-shell">
     <Header

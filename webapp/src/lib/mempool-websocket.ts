@@ -16,7 +16,9 @@ export const isWalletAddressEvent = (data: unknown) => {
     if (!message || typeof message !== 'object') return false
     return (
       Object.hasOwn(message, 'address-transactions') ||
-      Object.hasOwn(message, 'block-transactions')
+      Object.hasOwn(message, 'address-removed-transactions') ||
+      Object.hasOwn(message, 'block-transactions') ||
+      Object.hasOwn(message, 'multi-address-transactions')
     )
   } catch {
     return false

@@ -69,7 +69,7 @@ arduino-cli board list
 HWW_PORT=/dev/ttyACM0
 
 # Compile and upload for the LILYGO T-Display.
-arduino-cli compile --clean --upload \
+arduino-cli compile --verbose --clean --upload \
   --fqbn esp32:esp32:ttgo-lora32 \
   --port "$HWW_PORT" \
   --libraries "$PWD/libraries" \

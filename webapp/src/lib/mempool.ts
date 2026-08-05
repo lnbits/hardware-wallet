@@ -35,7 +35,16 @@ const fetchWithTimeout = async (
   timeout = 20_000,
 ) => {
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeout)
+  const timer = setTimeout(
+    () =>
+      controller.abort(
+        new DOMException(
+          `Mempool request timed out after ${Math.round(timeout / 1000)} seconds`,
+          'TimeoutError',
+        ),
+      ),
+    timeout,
+  )
   try {
     return await fetch(url, { ...options, signal: controller.signal })
   } finally {
@@ -47,11 +56,16 @@ const get = async <T>(url: string, attempt = 0): Promise<T> => {
   try {
     const response = await fetchWithTimeout(url)
     if (attempt < 3 && (response.status === 429 || response.status >= 500)) {
-      const retryAfter = Number(response.headers.get('retry-after'))
+      const retryAfterHeader = response.headers.get('retry-after')
+      const retryAfter = retryAfterHeader
+        ? Number(retryAfterHeader)
+        : Number.NaN
       const delay = Number.isFinite(retryAfter)
         ? retryAfter * 1000
         : 500 * 2 ** attempt
-      await new Promise((resolve) => setTimeout(resolve, Math.min(delay, 5000)))
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.min(delay, 30_000)),
+      )
       return get<T>(url, attempt + 1)
     }
     if (!response.ok)
@@ -61,7 +75,8 @@ const get = async <T>(url: string, attempt = 0): Promise<T> => {
     if (
       attempt < 3 &&
       (error instanceof TypeError ||
-        (error instanceof DOMException && error.name === 'AbortError'))
+        (error instanceof DOMException &&
+          (error.name === 'AbortError' || error.name === 'TimeoutError')))
     ) {
       await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** attempt))
       return get<T>(url, attempt + 1)

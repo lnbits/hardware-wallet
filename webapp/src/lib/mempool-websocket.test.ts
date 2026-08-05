@@ -16,7 +16,17 @@ describe('mempool address websocket', () => {
 
   it('recognizes only wallet address update messages', () => {
     expect(isWalletAddressEvent('{"address-transactions":[]}')).toBe(true)
+    expect(isWalletAddressEvent({ 'address-removed-transactions': [] })).toBe(
+      true,
+    )
     expect(isWalletAddressEvent({ 'block-transactions': [] })).toBe(true)
+    expect(
+      isWalletAddressEvent({
+        'multi-address-transactions': {
+          bc1qtest: { mempool: [], confirmed: [], removed: [] },
+        },
+      }),
+    ).toBe(true)
     expect(isWalletAddressEvent('{"mempool-blocks":[]}')).toBe(false)
     expect(isWalletAddressEvent('invalid JSON')).toBe(false)
   })
