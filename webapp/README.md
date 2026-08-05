@@ -50,6 +50,9 @@ npm run build
 
 ## GitHub Pages
 
-Enable **Settings → Pages → Source → GitHub Actions**. Pushing a tag matching `v*` builds and deploys the static site. The workflow automatically configures the repository-name base path.
+Enable **Settings → Pages → Source → GitHub Actions**. Pushing a tag matching
+`v*` builds one static Pages site containing the existing installer at
+`/installer/` and this app at `/webapp/`. The workflow automatically configures
+the repository-name base paths.
 
 You can also run the workflow manually from the Actions tab.

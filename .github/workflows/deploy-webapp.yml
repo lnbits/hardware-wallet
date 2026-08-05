@@ -1,4 +1,4 @@
-name: Deploy Bowser Wallet webapp
+name: Deploy installer and Bowser Wallet webapp
 
 on:
   push:
@@ -37,9 +37,9 @@ jobs:
         run: |
           repo_name="${GITHUB_REPOSITORY#*/}"
           if [[ "$repo_name" == *.github.io ]]; then
-            echo "BASE_PATH=" >> "$GITHUB_ENV"
+            echo "BASE_PATH=/webapp" >> "$GITHUB_ENV"
           else
-            echo "BASE_PATH=/$repo_name" >> "$GITHUB_ENV"
+            echo "BASE_PATH=/$repo_name/webapp" >> "$GITHUB_ENV"
           fi
 
       - name: Install dependencies
@@ -58,10 +58,20 @@ jobs:
         working-directory: webapp
         run: npm run build
 
+      - name: Assemble Pages site
+        shell: bash
+        run: |
+          mkdir -p pages/webapp
+          cp index.html pages/index.html
+          cp -R assets pages/assets
+          cp -R installer pages/installer
+          cp -R webapp/build/. pages/webapp/
+          touch pages/.nojekyll
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: webapp/build
+          path: pages
 
   deploy:
     environment:

@@ -16,6 +16,12 @@ or air-gapped with the optional keypad and microSD card.
 - Optional: a case, or a complete kit from the
   [LNbits shop](https://shop.lnbits.com/product-category/hardware/hardware-wallets)
 
+## For use with
+
+The LNbits [WatchOnly Extension](https://github.com/lnbits/watchonly)
+
+The standalone [Bowser Wallet webapp](https://lnbits.github.io/hardware-wallet/webapp/)
+
 ## Installation
 
 ### Web installer (easy)
