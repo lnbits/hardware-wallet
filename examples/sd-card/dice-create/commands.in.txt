@@ -1,4 +1,5 @@
 # Create and unlock a persistent 24-word wallet from 100 keypad-entered d6 rolls.
+# The new wallet password must be at least 8 characters.
 /create replace-with-a-strong-password
 
 # Example follow-up command; the newly created wallet is already authenticated.
