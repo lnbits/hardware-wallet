@@ -28,6 +28,30 @@ void showBootLogo() {
   drawBowserLogo((tft.height() - BOWSER_LOGO_HEIGHT) / 2);
 }
 
+void showFirmwareHash(String firmwareHash) {
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setTextSize(1);
+  tft.setCursor(0, 4);
+  tft.println("Firmware v" + env.version + " SHA-256");
+  tft.println("");
+
+  if (firmwareHash.length() == 64) {
+    tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    for (int offset = 0; offset < 64; offset += 16) {
+      tft.println(firmwareHash.substring(offset, offset + 16));
+    }
+  } else {
+    tft.setTextColor(TFT_RED, TFT_BLACK);
+    tft.println("Hash unavailable");
+  }
+
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.println("");
+  tft.println("Compare with GitHub release");
+  tft.println("Press # to continue");
+}
+
 void drawBowserLogo(int y) {
   int x = (tft.width() - BOWSER_LOGO_WIDTH) / 2;
   bool previousSwapBytes = tft.getSwapBytes();

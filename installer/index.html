@@ -106,18 +106,9 @@
                                     </a>
                                 </div>
                                 <div class="col">
-                                    <select id="binVersionOption" class="ud-main-btn ud-white-btn">
-                                        <option value="v0.4">Stable Version</option>
-                                        <option value="v0.1">Version 0.1</option>
-                                        <option value="v0.2">Version 0.2</option>
-                                        <option value="v0.3">Version 0.3</option>
-                                        <option value="v0.4">Version 0.4</option>
-                                    </select>
-                                </div>
-                                <div class="col">
-                                    <esp-web-install-button id="espInstallButton" manifest="./firmware/esp32/v0.4/manifest.json">
+                                    <esp-web-install-button manifest="./firmware/esp32/v0.5/manifest.json">
                                         <button slot="activate" class="ud-main-btn ud-white-btn" data-toggle="tooltip"
-                                            data-placement="bottom" title="Flasn">Flash</button>
+                                            data-placement="bottom" title="Flash">Flash</button>
                                     </esp-web-install-button>
 
                                 </div>
@@ -383,6 +374,85 @@
     <script src="../../assets/js/wow.min.js"></script>
     <script src="../../assets/js/main.js"></script>
     <script>
+        (() => {
+            const firmwareHash = fetch("./firmware/esp32/v0.5/ESP_IMAGE_SHA256.txt")
+                .then((response) => {
+                    if (!response.ok) throw new Error("Firmware hash unavailable");
+                    return response.text();
+                })
+                .then((value) => {
+                    const hash = value.trim().toLowerCase();
+                    if (!/^[0-9a-f]{64}$/.test(hash)) {
+                        throw new Error("Invalid firmware hash");
+                    }
+                    return hash;
+                });
+
+            const watchInstallDialog = (dialog) => {
+                let addingHash = false;
+
+                const addHashToSuccessView = async () => {
+                    const root = dialog.shadowRoot;
+                    if (!root || addingHash || root.querySelector("[data-bowser-firmware-hash]")) return;
+
+                    const complete = Array.from(root.querySelectorAll("ewt-page-message"))
+                        .find((message) => message.getAttribute("label") === "Installation complete!");
+                    if (!complete) return;
+
+                    addingHash = true;
+                    const panel = document.createElement("div");
+                    panel.dataset.bowserFirmwareHash = "";
+                    panel.style.margin = "16px 24px";
+                    panel.style.padding = "12px";
+                    panel.style.border = "1px solid #b8c2cc";
+                    panel.style.borderRadius = "8px";
+                    panel.style.textAlign = "left";
+
+                    const title = document.createElement("strong");
+                    title.textContent = "Firmware SHA-256";
+                    const value = document.createElement("code");
+                    value.style.display = "block";
+                    value.style.marginTop = "8px";
+                    value.style.fontSize = "12px";
+                    value.style.lineHeight = "1.5";
+                    value.style.overflowWrap = "anywhere";
+
+                    try {
+                        value.textContent = await firmwareHash;
+                    } catch {
+                        value.textContent = "Hash unavailable — check the GitHub release.";
+                    }
+                    panel.append(title, value);
+                    complete.insertAdjacentElement("afterend", panel);
+                    addingHash = false;
+                };
+
+                const observeRoot = () => {
+                    if (!dialog.shadowRoot) {
+                        requestAnimationFrame(observeRoot);
+                        return;
+                    }
+                    const observer = new MutationObserver(addHashToSuccessView);
+                    observer.observe(dialog.shadowRoot, { childList: true, subtree: true });
+                    dialog.addEventListener("closed", () => observer.disconnect(), { once: true });
+                    void addHashToSuccessView();
+                };
+                observeRoot();
+            };
+
+            const bodyObserver = new MutationObserver((mutations) => {
+                for (const mutation of mutations) {
+                    for (const node of mutation.addedNodes) {
+                        if (node instanceof HTMLElement && node.tagName === "EWT-INSTALL-DIALOG") {
+                            watchInstallDialog(node);
+                        }
+                    }
+                }
+            });
+            bodyObserver.observe(document.body, { childList: true });
+        })();
+    </script>
+    <script>
         // ==== for menu scroll
         const pageLink = document.querySelectorAll(".ud-menu-scroll");
 
@@ -426,15 +496,6 @@
         window.document.addEventListener("scroll", onScroll);
     </script>
 
-    <script>
-        const versionDropdown = document.getElementById("binVersionOption")
-        const espInstallButton = document.getElementById("espInstallButton")
-        versionDropdown.addEventListener("change", () => {
-            espInstallButton.manifest = `./firmware/esp32/${versionDropdown.value}/manifest.json`;
-        }
-        );
-
-    </script>
 </body>
 
 </html>

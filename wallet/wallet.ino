@@ -26,6 +26,8 @@
 #include <SPIFFS.h>
 
 #include "bootloader_random.h"
+#include "esp_ota_ops.h"
+#include "esp_partition.h"
 
 #include "SD.h"
 #include "SPI.h"
@@ -105,7 +107,7 @@ struct EnvironmentVarialbes {
 };
 
 EnvironmentVarialbes env = {
-  "0.4",
+  "0.5",
 };
 ////////////////////////////////           Env Vars End            ////////////////////////////////
 

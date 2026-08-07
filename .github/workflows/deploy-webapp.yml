@@ -3,7 +3,7 @@ name: Deploy installer and Bowser Wallet webapp
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
 permissions:
@@ -89,3 +89,70 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Prepare latest firmware release assets
+        id: firmware
+        shell: bash
+        run: |
+          firmware_version="$(find installer/firmware/esp32 -mindepth 1 -maxdepth 1 -type d -name 'v*' -printf '%f\n' | sort -V | tail -n 1)"
+          firmware_dir="installer/firmware/esp32/${firmware_version}"
+          firmware_bin="${firmware_dir}/wallet.ino.bin"
+          firmware_hash="$(python3 tools/esp_image_hash.py "${firmware_bin}")"
+          published_hash="$(tr -d '[:space:]' < "${firmware_dir}/ESP_IMAGE_SHA256.txt")"
+          test "${firmware_hash}" = "${published_hash}"
+
+          mkdir -p release-assets
+          cp "${firmware_bin}" "release-assets/Bowser-HWW-firmware-${firmware_version}.bin"
+          cp "${firmware_dir}/ESP_IMAGE_SHA256.txt" "release-assets/Bowser-HWW-firmware-${firmware_version}-ESP_IMAGE_SHA256.txt"
+          zip -j "release-assets/Bowser-HWW-firmware-${firmware_version}.zip" "${firmware_dir}"/*
+
+          echo "version=${firmware_version}" >> "${GITHUB_OUTPUT}"
+          echo "hash=${firmware_hash}" >> "${GITHUB_OUTPUT}"
+
+      - name: Write firmware verification notes
+        shell: bash
+        run: |
+          printf '%s\n' \
+            '<!-- bowser-firmware:start -->' \
+            "## Bowser HWW firmware ${{ steps.firmware.outputs.version }}" \
+            '' \
+            'ESP application image SHA-256:' \
+            '' \
+            '`${{ steps.firmware.outputs.hash }}`' \
+            '' \
+            'Compare this value with the SHA-256 shown on the device after installation.' \
+            '<!-- bowser-firmware:end -->' > release-firmware.md
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release view "${GITHUB_REF_NAME}" --json body --jq .body > release-body.md
+            awk '
+              /<!-- bowser-firmware:start -->/ { skip = 1 }
+              /<!-- bowser-firmware:end -->/ { skip = 0; next }
+              !skip { print }
+            ' release-body.md > release-body-without-firmware.md
+            printf '\n' >> release-body-without-firmware.md
+            cat release-firmware.md >> release-body-without-firmware.md
+            gh release edit "${GITHUB_REF_NAME}" --notes-file release-body-without-firmware.md
+            gh release upload "${GITHUB_REF_NAME}" release-assets/* --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" release-assets/* \
+              --verify-tag \
+              --generate-notes \
+              --notes "$(cat release-firmware.md)"
+          fi

@@ -37,6 +37,11 @@ The standalone [Bowser Wallet webapp](https://lnbits.github.io/hardware-wallet/w
 
 Use the [LNbits Hardware Wallet web installer](https://lnbits.github.io/hardware-wallet).
 
+After installation, the web installer and the device both show the SHA-256 of
+the installed application image. Compare all 64 characters with the firmware
+SHA-256 published in the corresponding GitHub release, then press `#` on the
+keypad to continue. A side button can be used on devices without a keypad.
+
 ### Build from source with Arduino CLI (tinfoil)
 
 Install [Arduino CLI](https://arduino.github.io/arduino-cli/1.5/installation)

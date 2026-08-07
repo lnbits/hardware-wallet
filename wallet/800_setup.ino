@@ -23,6 +23,7 @@ void setup() {
     showMessage("Failed to open files",  "Reset or 'help'");
   updateDeviceConfig();
   setupSD();
+  waitForFirmwareHashConfirmation();
 
   // Give WebSerial the full pairing window after device setup is complete.
   global.startTime = millis();
