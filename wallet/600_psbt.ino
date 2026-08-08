@@ -18,7 +18,9 @@ void printOutputDetails(PSBT psbt, HDPrivateKey hd, int index, const Network * n
   tft.println("Address:");
   tft.println("");
 
-  tft.setTextSize(2);
+  // A native SegWit address is too wide at size 2 and can otherwise push the
+  // amount underneath the physical review controls on the 240x135 display.
+  tft.setTextSize(1);
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
   tft.println(psbt.tx.txOuts[index].address(network));
   tft.setTextSize(1);
@@ -44,6 +46,13 @@ void printFeeDetails(uint64_t fee) {
   String sats = int64ToString(fee);
   printSats(sats, 2);
   tft.println(" sat");
+}
+
+void printSdReviewControls() {
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setTextSize(1);
+  tft.setCursor(0, 124);
+  tft.print("# / BTN1 accept   * / BTN2 cancel");
 }
 
 bool isChangeAddress(HDPrivateKey hd, PSBTOutputMetadata txOutMeta, TxOut txOut) {

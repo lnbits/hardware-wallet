@@ -106,7 +106,7 @@
                                     </a>
                                 </div>
                                 <div class="col">
-                                    <esp-web-install-button manifest="./firmware/esp32/v0.5/manifest.json">
+                                    <esp-web-install-button manifest="./firmware/esp32/current/manifest.json">
                                         <button slot="activate" class="ud-main-btn ud-white-btn" data-toggle="tooltip"
                                             data-placement="bottom" title="Flash">Flash</button>
                                     </esp-web-install-button>
@@ -375,7 +375,7 @@
     <script src="../../assets/js/main.js"></script>
     <script>
         (() => {
-            const firmwareHash = fetch("./firmware/esp32/v0.5/ESP_IMAGE_SHA256.txt")
+            const firmwareHash = fetch("./firmware/esp32/current/ESP_IMAGE_SHA256.txt")
                 .then((response) => {
                     if (!response.ok) throw new Error("Firmware hash unavailable");
                     return response.text();

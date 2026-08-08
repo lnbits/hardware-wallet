@@ -329,7 +329,12 @@ export class BowserDevice implements DeviceAdapter {
   }
 
   async login(password: string, passphrase = '') {
-    const response = await this.request('/password', [password, passphrase])
+    const response = await this.request(
+      '/password',
+      [password, passphrase],
+      true,
+      30_000,
+    )
     this.authenticated = response.trim() === '1'
     this.events.state()
     if (!this.authenticated) throw new Error('Incorrect wallet password')
@@ -363,16 +368,16 @@ export class BowserDevice implements DeviceAdapter {
 
   async showSeed(position: number) {
     const response = await this.request('/seed', [position])
-    const [index, word] = response.split(' ')
+    const [index, status] = response.split(' ')
     const parsedPosition = Number(index)
     if (
       !Number.isInteger(parsedPosition) ||
       parsedPosition < 1 ||
       parsedPosition > 24 ||
-      !word
+      status !== 'displayed'
     )
-      throw new Error('Bowser HWW returned an invalid seed position')
-    return { position: parsedPosition, word }
+      throw new Error('Bowser HWW did not confirm on-device seed display')
+    return { position: parsedPosition }
   }
 
   async restore(password: string, mnemonic: string) {

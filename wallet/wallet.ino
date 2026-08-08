@@ -19,6 +19,9 @@
 #include "PSBT.h"
 #include "qrcoded.h"
 #include "bowser_logo.h"
+extern "C" {
+#include "utility/trezor/pbkdf2.h"
+}
 
 #include <aes.h>
 
@@ -32,6 +35,7 @@
 #include "SD.h"
 #include "SPI.h"
 
+#define BOWSER_FIRMWARE_VERSION "0.6"
 
 fs::SPIFFSFS &FlashFS = SPIFFS;
 
@@ -57,13 +61,19 @@ struct GlobalState {
   String deviceId;
   bool authenticated;
   bool persistSecrets;
-  String passwordHash;
+  String passwordVerifier;
   String mnemonic;
   String passphrase;
+  String passwordSalt;
+  String encryptedMnemonic;
+  String mnemonicMac;
+  uint32_t passwordKdfIterations;
+  bool legacyWalletStorage;
   unsigned long startTime;
   const String passwordFileName;
   const String mnemonicFileName;
   const String sharedSecretFileName;
+  const String walletFileName;
   const String deviceMetaFileName;
   int button1Pin;
   int button2Pin;
@@ -84,10 +94,16 @@ GlobalState global = {
   "",
   "",
   "",
+  "",
+  "",
+  "",
+  0,
+  false,
   millis(),
   "/hash.txt",
   "/mn.txt",
   "/shared_secret.txt",
+  "/wallet.v2",
   "/device_meta.txt",
   button1PinNumber,
   button2PinNumber,
@@ -107,7 +123,7 @@ struct EnvironmentVarialbes {
 };
 
 EnvironmentVarialbes env = {
-  "0.5",
+  BOWSER_FIRMWARE_VERSION,
 };
 ////////////////////////////////           Env Vars End            ////////////////////////////////
 
@@ -134,7 +150,7 @@ struct CommandResponse {
 };
 
 struct HwwInitData {
-  String passwordHash;
+  String passwordVerifier;
   String mnemonic;
   bool success;
 };

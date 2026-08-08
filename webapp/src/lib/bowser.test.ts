@@ -67,6 +67,22 @@ describe('Bowser encrypted transport framing', () => {
     )
   })
 
+  it('accepts only an on-device seed-display acknowledgement', async () => {
+    const bowser = device()
+    const request = vi.fn().mockResolvedValue('7 displayed')
+    ;(
+      bowser as unknown as {
+        request: typeof request
+      }
+    ).request = request
+
+    await expect(bowser.showSeed(7)).resolves.toEqual({ position: 7 })
+    request.mockResolvedValue('7 sensitive-seed-word')
+    await expect(bowser.showSeed(7)).rejects.toThrow(
+      'did not confirm on-device seed display',
+    )
+  })
+
   it('logs command names but never incoming secure or firmware-log payloads', async () => {
     const log = vi.fn()
     const bowser = new BowserDevice({

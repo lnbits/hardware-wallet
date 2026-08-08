@@ -32,13 +32,41 @@ const apiUrl = (endpoint: string, path: string) =>
 const REQUEST_INTERVAL_MS = 1_000
 const nextRequestAt = new Map<string, number>()
 
-const waitForRequestSlot = async (url: string) => {
+const abortError = (signal?: AbortSignal) =>
+  signal?.reason instanceof Error
+    ? signal.reason
+    : new DOMException('Blockchain scan cancelled', 'AbortError')
+
+const throwIfAborted = (signal?: AbortSignal) => {
+  if (signal?.aborted) throw abortError(signal)
+}
+
+const wait = (milliseconds: number, signal?: AbortSignal) =>
+  new Promise<void>((resolve, reject) => {
+    throwIfAborted(signal)
+    const timer = setTimeout(done, milliseconds)
+    signal?.addEventListener('abort', cancelled, { once: true })
+
+    function cleanup() {
+      clearTimeout(timer)
+      signal?.removeEventListener('abort', cancelled)
+    }
+    function done() {
+      cleanup()
+      resolve()
+    }
+    function cancelled() {
+      cleanup()
+      reject(abortError(signal))
+    }
+  })
+
+const waitForRequestSlot = async (url: string, signal?: AbortSignal) => {
   const origin = new URL(url).origin
   const now = Date.now()
   const slot = Math.max(now, nextRequestAt.get(origin) || 0)
   nextRequestAt.set(origin, slot + REQUEST_INTERVAL_MS)
-  if (slot > now)
-    await new Promise((resolve) => setTimeout(resolve, slot - now))
+  if (slot > now) await wait(slot - now, signal)
 }
 
 const fetchWithTimeout = async (
@@ -47,6 +75,10 @@ const fetchWithTimeout = async (
   timeout = 20_000,
 ) => {
   const controller = new AbortController()
+  const upstreamSignal = options?.signal || undefined
+  const cancelFromUpstream = () => controller.abort(abortError(upstreamSignal))
+  throwIfAborted(upstreamSignal)
+  upstreamSignal?.addEventListener('abort', cancelFromUpstream, { once: true })
   const timer = setTimeout(
     () =>
       controller.abort(
@@ -61,13 +93,18 @@ const fetchWithTimeout = async (
     return await fetch(url, { ...options, signal: controller.signal })
   } finally {
     clearTimeout(timer)
+    upstreamSignal?.removeEventListener('abort', cancelFromUpstream)
   }
 }
 
-const get = async <T>(url: string, attempt = 0): Promise<T> => {
+const get = async <T>(
+  url: string,
+  signal?: AbortSignal,
+  attempt = 0,
+): Promise<T> => {
   try {
-    await waitForRequestSlot(url)
-    const response = await fetchWithTimeout(url)
+    await waitForRequestSlot(url, signal)
+    const response = await fetchWithTimeout(url, { signal })
     if (attempt < 2 && response.status === 429) {
       const retryAfterHeader = response.headers.get('retry-after')
       const retryAfter = retryAfterHeader
@@ -76,30 +113,29 @@ const get = async <T>(url: string, attempt = 0): Promise<T> => {
       const delay = Number.isFinite(retryAfter)
         ? retryAfter * 1000
         : 15_000 * 2 ** attempt
-      await new Promise((resolve) =>
-        setTimeout(resolve, Math.min(delay, 60_000)),
-      )
-      return get<T>(url, attempt + 1)
+      await wait(Math.min(delay, 60_000), signal)
+      return get<T>(url, signal, attempt + 1)
     }
     if (attempt < 3 && response.status >= 500) {
-      await new Promise((resolve) => setTimeout(resolve, 1_000 * 2 ** attempt))
-      return get<T>(url, attempt + 1)
+      await wait(1_000 * 2 ** attempt, signal)
+      return get<T>(url, signal, attempt + 1)
     }
     if (!response.ok)
       throw new Error(`${response.status} ${response.statusText}`)
     return response.json() as Promise<T>
   } catch (error) {
+    if (signal?.aborted) throw abortError(signal)
     const browserNetworkFailure = error instanceof TypeError
     const timedOut =
       error instanceof DOMException &&
       (error.name === 'AbortError' || error.name === 'TimeoutError')
     if (browserNetworkFailure && attempt < 1) {
-      await new Promise((resolve) => setTimeout(resolve, 10_000))
-      return get<T>(url, attempt + 1)
+      await wait(10_000, signal)
+      return get<T>(url, signal, attempt + 1)
     }
     if (timedOut && attempt < 2) {
-      await new Promise((resolve) => setTimeout(resolve, 2_000 * 2 ** attempt))
-      return get<T>(url, attempt + 1)
+      await wait(2_000 * 2 ** attempt, signal)
+      return get<T>(url, signal, attempt + 1)
     }
     if (browserNetworkFailure)
       throw new Error(
@@ -109,14 +145,20 @@ const get = async <T>(url: string, attempt = 0): Promise<T> => {
   }
 }
 
-export const getAddressSummary = async (endpoint: string, address: string) =>
+export const getAddressSummary = async (
+  endpoint: string,
+  address: string,
+  signal?: AbortSignal,
+) =>
   get<MempoolAddress>(
     apiUrl(endpoint, `/address/${encodeURIComponent(address)}`),
+    signal,
   )
 
 export const getAddressUtxos = async (
   endpoint: string,
   address: AddressRecord,
+  signal?: AbortSignal,
 ) => {
   const rows = await get<
     Array<{
@@ -125,16 +167,20 @@ export const getAddressUtxos = async (
       value: number
       status: { confirmed: boolean; block_height?: number; block_time?: number }
     }>
-  >(apiUrl(endpoint, `/address/${encodeURIComponent(address.address)}/utxo`))
+  >(
+    apiUrl(endpoint, `/address/${encodeURIComponent(address.address)}/utxo`),
+    signal,
+  )
   return rows.map((row) => ({ ...row, address: address.address }))
 }
 
 export const getAddressTransactions = async (
   endpoint: string,
   address: string,
+  signal?: AbortSignal,
 ) => {
   const root = `/address/${encodeURIComponent(address)}/txs`
-  const transactions = await get<MempoolTx[]>(apiUrl(endpoint, root))
+  const transactions = await get<MempoolTx[]>(apiUrl(endpoint, root), signal)
   const seen = new Set(transactions.map((transaction) => transaction.txid))
   let confirmed = transactions.filter(
     (transaction) => transaction.status.confirmed,
@@ -146,6 +192,7 @@ export const getAddressTransactions = async (
     if (!cursor) break
     const page = await get<MempoolTx[]>(
       apiUrl(endpoint, `${root}/chain/${encodeURIComponent(cursor)}`),
+      signal,
     )
     for (const transaction of page) {
       if (!seen.has(transaction.txid)) {
@@ -183,8 +230,12 @@ export const broadcastTransaction = async (endpoint: string, txHex: string) => {
   return text
 }
 
-export const scanAddress = async (endpoint: string, address: AddressRecord) => {
-  const summary = await getAddressSummary(endpoint, address.address)
+export const scanAddress = async (
+  endpoint: string,
+  address: AddressRecord,
+  signal?: AbortSignal,
+) => {
+  const summary = await getAddressSummary(endpoint, address.address, signal)
   const funded =
     summary.chain_stats.funded_txo_sum + summary.mempool_stats.funded_txo_sum
   const spent =
@@ -202,11 +253,12 @@ export const scanAddress = async (endpoint: string, address: AddressRecord) => {
 export const buildHistory = async (
   endpoint: string,
   addresses: AddressRecord[],
+  signal?: AbortSignal,
 ) => {
   const owned = new Set(addresses.map((address) => address.address))
   const transactions = new Map<string, MempoolTx>()
   for (const address of addresses.filter((item) => item.txCount > 0)) {
-    const rows = await getAddressTransactions(endpoint, address.address)
+    const rows = await getAddressTransactions(endpoint, address.address, signal)
     rows.forEach((tx) => transactions.set(tx.txid, tx))
   }
 
@@ -262,12 +314,13 @@ export const hydrateUtxos = async (
       type: UtxoRecord['accountType']
     }
   >,
+  signal?: AbortSignal,
 ) => {
   const result: UtxoRecord[] = []
   for (const address of addresses.filter((item) => item.amount > 0)) {
     const account = accountById.get(address.accountId)
     if (!account) continue
-    const rows = await getAddressUtxos(endpoint, address)
+    const rows = await getAddressUtxos(endpoint, address, signal)
     rows.forEach((row) =>
       result.push({
         id: `${row.txid}:${row.vout}`,

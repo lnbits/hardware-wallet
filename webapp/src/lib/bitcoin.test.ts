@@ -7,6 +7,7 @@ import {
   deriveAddress,
   dustThresholdForAddress,
   finalizePsbt,
+  validateXpub,
 } from './bitcoin'
 import type { AccountType, UtxoRecord, WalletAccount } from './types'
 import { bytesToHex } from './utils'
@@ -136,6 +137,13 @@ const buildForType = async (type: Exclude<AccountType, 'p2tr'>) => {
 }
 
 describe('Bitcoin transaction construction', () => {
+  it('rejects extended private keys before they can become wallet accounts', () => {
+    expect(() => validateXpub(accountNode.toBase58(), 'Mainnet')).toThrow(
+      'Extended private keys are not accepted',
+    )
+    expect(validateXpub(account.xpub, 'Mainnet')).toBe(account.xpub)
+  })
+
   it('derives deterministic external and internal addresses', () => {
     expect(deriveAddress(account, 0, 0).address).toBe(inputAddress.address)
     expect(changeAddress.path).toBe("m/84'/0'/0'/1/0")

@@ -55,7 +55,8 @@ CommandResponse executeSignPsbt(String commandData) {
     if (outRes.message != "") return outRes;
   }
 
-  confirmFeeDetails(psbt.fee());
+  CommandResponse feeRes = confirmFeeDetails(psbt.fee());
+  if (feeRes.message != "") return feeRes;
 
   return signPsbt(psbt, hd);
 
@@ -64,7 +65,14 @@ CommandResponse executeSignPsbt(String commandData) {
 
 CommandResponse confirmOutputDetails(PSBT psbt, HDPrivateKey hd, int index, const Network * network) {
   if (global.hasCommandsFile == true) {
-    return writeOutputToFile(psbt, hd, index, network);
+    CommandResponse result = writeOutputToFile(psbt, hd, index, network);
+    printOutputDetails(psbt, hd, index, network);
+    printSdReviewControls();
+    if (awaitPhysicalReviewApproval() == false) {
+      sendCommandOutput(COMMAND_SEND_PSBT, "review_rejected");
+      return {"Operation canceled", "Output rejected"};
+    }
+    return result;
   }
   return showOutputForConfirmation(psbt, hd, index, network);
 }
@@ -98,13 +106,19 @@ CommandResponse writeOutputToFile(PSBT psbt, HDPrivateKey hd, int index, const N
   return {"", ""};
 }
 
-void confirmFeeDetails(uint64_t fee) {
+CommandResponse confirmFeeDetails(uint64_t fee) {
   if (global.hasCommandsFile == true) {
     writeFeeToFile(fee);
+    printFeeDetails(fee);
+    printSdReviewControls();
+    if (awaitPhysicalReviewApproval() == false) {
+      sendCommandOutput(COMMAND_SEND_PSBT, "review_rejected");
+      return {"Operation canceled", "Fee rejected"};
+    }
   } else {
     printFeeDetails(fee);
   }
-
+  return {"", ""};
 }
 
 void writeFeeToFile(uint64_t fee) {
@@ -120,6 +134,12 @@ CommandResponse signPsbt(PSBT psbt, HDPrivateKey hd) {
 }
 
 CommandResponse signPsbtToFile(PSBT psbt, HDPrivateKey hd) {
+  showMessage("Sign reviewed PSBT?", "# / BTN1 yes, * / BTN2 no");
+  if (awaitPhysicalReviewApproval() == false) {
+    sendCommandOutput(COMMAND_SEND_PSBT, "review_rejected");
+    return {"Operation canceled", "Signing rejected"};
+  }
+
   showMessage("Please wait", "Signing PSBT...");
   delay(500);
 
@@ -151,7 +171,7 @@ CommandResponse confirmAndSignPsbt(PSBT psbt, HDPrivateKey hd) {
     sendCommandOutput(COMMAND_SIGN_PSBT,  String(signedInputCount) + " " + psbt.toBase64());
     return { "Signed inputs:", String(signedInputCount) };
   }
-  if (c.cmd = COMMAND_CANCEL) {
+  if (c.cmd == COMMAND_CANCEL) {
     return { "Operation Canceled",  "`/help` for details" };
   }
   return  executeUnknown("Expected: " + COMMAND_SIGN_PSBT);

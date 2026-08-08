@@ -1,11 +1,13 @@
 /**
    @brief Show the seed.
-   While in the "interactive" mode (communicating over wire with a client) only one word can be requested at a time.
+   While in interactive mode the client selects which word is shown, but the
+   word itself remains on the hardware display and is never returned over the
+   serial connection.
    In the "command file" mode all the seed words will be returned.
    @param positionStr: String (optional). Position of the word to be displayed.
    @return CommandResponse
-    - the seed word at the specified positon to the UI
-    - `/seed {position} {word}` to the client. Position is the postion of the word in the list.
+    - the seed word at the specified position to the hardware display
+    - `/seed {position} displayed` to acknowledge on-device display.
 */
 CommandResponse executeShowSeed(String positionStr) {
   if (global.authenticated == false) {
@@ -38,8 +40,9 @@ CommandResponse showSeedWordAtPosition(String positionStr) {
   }
 
   String word = getWordAtPosition(global.mnemonic, position - 1);
-  sendCommandOutput(COMMAND_SEED, positionStr + " " + word);
   printMnemonicWord(positionStr, word);
+  sendCommandOutput(COMMAND_SEED, positionStr + " displayed");
+  word = "";
 
   EventData event = awaitEvent();
   if (event.type == EVENT_BUTTON_ACTION) {

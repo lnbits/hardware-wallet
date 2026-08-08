@@ -9,6 +9,7 @@
 */
 CommandResponse executePasswordClear(String commandData) {
   global.authenticated = false;
+  global.mnemonic = "";
   global.passphrase = "";
 
   sendCommandOutput(COMMAND_PASSWORD_CLEAR, "1");

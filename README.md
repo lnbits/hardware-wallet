@@ -42,6 +42,41 @@ the installed application image. Compare all 64 characters with the firmware
 SHA-256 published in the corresponding GitHub release, then press `#` on the
 keypad to continue. A side button can be used on devices without a keypad.
 
+### Verify the firmware release hash
+
+Every tagged release compiles the firmware from that tag in GitHub Actions,
+then publishes that exact source-built image and its ESP application image hash
+in the GitHub release notes and as an `ESP_IMAGE_SHA256.txt` release asset. The
+same CI-built files are deployed to the web installer. The hash is also
+calculated from the running application partition by the device when it boots.
+Compare all three values; they should be identical.
+
+You can independently verify the firmware file included in this repository:
+
+```bash
+python3 tools/esp_image_hash.py \
+  installer/firmware/esp32/current/wallet.ino.bin
+```
+
+The command validates the SHA-256 embedded at the end of the ESP application
+image and prints its 64-character hexadecimal value. It exits with an error if
+the file is not an ESP application image or its embedded digest is invalid.
+
+This is deliberately not the same operation as running `sha256sum` over the
+whole `.bin` file: the ESP image digest covers the image content preceding the
+final 32-byte embedded digest. As a result, a whole-file SHA-256 is expected to
+be different.
+
+Matching hashes confirm that the application image on the device is byte-for-
+byte the image compiled from the tagged source and published for the release.
+Perform the comparison using a trusted copy of the GitHub release page; a hash
+displayed by the same potentially compromised source as the firmware does not
+independently prove authenticity. For the strongest verification, inspect the
+tagged source and the pinned release workflow, or build the tagged source
+yourself. Exact byte-for-byte reproducibility can also depend on matching the
+toolchain and build environment because ESP application metadata includes a
+hash of the build output.
+
 ### Build from source with Arduino CLI (tinfoil)
 
 Install [Arduino CLI](https://arduino.github.io/arduino-cli/1.5/installation)
@@ -126,6 +161,18 @@ Each command is documented in its implementation file:
 7. Read the generated files:
    - `commands.out.txt` contains command results such as signed PSBTs.
    - `commands.log.txt` contains diagnostic logs.
+
+When signing an SD-card PSBT, the device displays every destination and amount,
+then the fee, and requires a physical approval for each item. It asks for one
+final physical confirmation before producing a signature. `#` or button 1
+accepts; `*` or button 2 rejects.
+
+Wallets created by current firmware are stored as an authenticated encrypted
+record. Separate encryption and authentication keys are derived from the
+password with a random salt and PBKDF2-HMAC-SHA256; the stored verifier is not
+the mnemonic-encryption key. A wallet created by older firmware is migrated to
+this format only after its correct password is entered successfully. Keep a
+tested seed backup before upgrading firmware.
 
 ### Create a wallet from dice rolls
 

@@ -32,24 +32,30 @@ void showFirmwareHash(String firmwareHash) {
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setTextSize(1);
-  tft.setCursor(0, 4);
-  tft.println("Firmware v" + env.version + " SHA-256");
-  tft.println("");
+  tft.setCursor(0, 2);
+  tft.print("Firmware v" + env.version + " SHA-256");
 
   if (firmwareHash.length() == 64) {
     tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    tft.setTextSize(2);
+    tft.setCursor(0, 16);
     for (int offset = 0; offset < 64; offset += 16) {
       tft.println(firmwareHash.substring(offset, offset + 16));
     }
   } else {
     tft.setTextColor(TFT_RED, TFT_BLACK);
-    tft.println("Hash unavailable");
+    tft.setTextSize(2);
+    tft.setCursor(0, 42);
+    tft.print("Hash unavailable");
   }
 
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.println("");
-  tft.println("Compare with GitHub release");
-  tft.println("Press # to continue");
+  tft.setTextSize(1);
+  tft.setCursor(0, 88);
+  tft.println("Compare with GitHub/");
+  tft.println("web installer release");
+  tft.setCursor(0, 118);
+  tft.print("Press # to continue");
 }
 
 void drawBowserLogo(int y) {

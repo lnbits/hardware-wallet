@@ -40,7 +40,7 @@ CommandResponse executeRestore(String commandData) {
   sendCommandOutput(COMMAND_RESTORE, String(global.authenticated));
 
   if (global.authenticated == true) {
-    global.passwordHash = data.passwordHash;
+    global.passwordVerifier = data.passwordVerifier;
     global.mnemonic = data.mnemonic;
     return {"Restore successful",  "/seed` to view word list"};
   }

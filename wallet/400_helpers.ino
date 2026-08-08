@@ -137,7 +137,7 @@ String generateExtraEtropy() {
 
   bootloader_random_disable();
 
-  return uBitcoinEntropy + espHexEntropy + clientEntropy + global.passwordHash;
+  return uBitcoinEntropy + espHexEntropy + clientEntropy + global.passwordVerifier;
 }
 
 String generateStrongerMnemonic(int wordCount) {
@@ -155,6 +155,19 @@ bool isNotEmptyParam(String paramValue) {
 
 bool isEmptyParam(String paramValue) {
   return !isNotEmptyParam(paramValue);
+}
+
+bool isStrictHex(const String &value) {
+  if (value.length() == 0 || value.length() % 2 != 0) return false;
+  for (size_t i = 0; i < value.length(); i++) {
+    char c = value[i];
+    if (!(
+      (c >= '0' && c <= '9') ||
+      (c >= 'a' && c <= 'f') ||
+      (c >= 'A' && c <= 'F')
+    )) return false;
+  }
+  return true;
 }
 
 Command extractCommand(String s) {

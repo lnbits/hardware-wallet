@@ -11,6 +11,10 @@ const ADDRESSES_KEY = 'bowser-wallet.addresses.v1'
 const SETTINGS_KEY = 'bowser-wallet.settings.v1'
 const CHAIN_STATE_KEY = 'bowser-wallet.chain-state.v1'
 const MAX_CACHED_HISTORY = 1_000
+const PRIVATE_EXTENDED_KEY = /(?:^|[^a-z0-9])(?:xprv|tprv|yprv|zprv|uprv|vprv)/i
+
+const containsPrivateExtendedKey = (value: unknown) =>
+  typeof value === 'string' && PRIVATE_EXTENDED_KEY.test(value.trim())
 
 export const normalizeMempoolEndpoint = (value: string) => {
   const url = new URL(value.trim())
@@ -48,6 +52,7 @@ export const loadAccounts = () =>
         account &&
         typeof account.id === 'string' &&
         typeof account.xpub === 'string' &&
+        !containsPrivateExtendedKey(account.xpub) &&
         typeof account.accountPath === 'string' &&
         (account.network === 'Mainnet' || account.network === 'Testnet'),
     )
@@ -72,7 +77,9 @@ export const loadAccounts = () =>
           : 0,
       createdAt: typeof account.createdAt === 'string' ? account.createdAt : '',
     }))
-export const saveAccounts = (accounts: WalletAccount[]) =>
+export const saveAccounts = (accounts: WalletAccount[]) => {
+  if (accounts.some((account) => containsPrivateExtendedKey(account.xpub)))
+    throw new Error('Refusing to persist an extended private key')
   localStorage.setItem(
     ACCOUNTS_KEY,
     JSON.stringify(
@@ -90,6 +97,7 @@ export const saveAccounts = (accounts: WalletAccount[]) =>
       })),
     ),
   )
+}
 
 export const loadAddresses = () =>
   read<AddressRecord[]>(ADDRESSES_KEY, [])
@@ -227,6 +235,7 @@ const validUtxo = (value: unknown): value is UtxoRecord => {
     typeof item.accountPath === 'string' &&
     ['p2pkh', 'p2sh', 'p2wpkh', 'p2tr'].includes(item.accountType || '') &&
     typeof item.xpub === 'string' &&
+    !containsPrivateExtendedKey(item.xpub) &&
     typeof item.fingerprint === 'string' &&
     typeof item.selected === 'boolean'
   )
@@ -316,6 +325,8 @@ export const saveChainState = (
   network: NetworkName,
   state: CachedChainState,
 ) => {
+  if (state.utxos.some((utxo) => containsPrivateExtendedKey(utxo.xpub)))
+    throw new Error('Refusing to persist an extended private key')
   const existing = read<Partial<Record<NetworkName, unknown>>>(
     CHAIN_STATE_KEY,
     {},

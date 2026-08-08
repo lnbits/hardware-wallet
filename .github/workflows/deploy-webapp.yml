@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - "v*"
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -18,13 +17,96 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - name: Checkout tagged source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Install verified Arduino CLI
+        shell: bash
+        run: |
+          cli_archive="${RUNNER_TEMP}/arduino-cli.tar.gz"
+          cli_directory="${RUNNER_TEMP}/arduino-cli"
+          curl --fail --location --silent --show-error \
+            https://github.com/arduino/arduino-cli/releases/download/v1.5.1/arduino-cli_1.5.1_Linux_64bit.tar.gz \
+            --output "${cli_archive}"
+          echo "28a8e119c498a25607821c36cb2dc49e8463941b261a0d99091baa7bc692dd2b  ${cli_archive}" | sha256sum --check --strict
+          mkdir -p "${cli_directory}"
+          tar -xzf "${cli_archive}" -C "${cli_directory}"
+          echo "${cli_directory}" >> "${GITHUB_PATH}"
+
+      - name: Install pinned ESP32 platform
+        shell: bash
+        run: |
+          arduino-cli config init
+          arduino-cli config add board_manager.additional_urls \
+            https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32@2.0.17
+
+      - name: Validate firmware version
+        id: firmware
+        shell: bash
+        run: |
+          firmware_version="$(sed -n 's/^#define BOWSER_FIRMWARE_VERSION "\([^"]*\)"$/\1/p' wallet/wallet.ino)"
+          test -n "${firmware_version}"
+          test "${GITHUB_REF_TYPE}" = "tag"
+          test "${GITHUB_REF_NAME}" = "v${firmware_version}"
+          echo "version=${firmware_version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Compile firmware from checked-out source
+        shell: bash
+        run: |
+          arduino-cli compile --clean \
+            --fqbn esp32:esp32:lilygo_t_display \
+            --libraries "${GITHUB_WORKSPACE}/libraries" \
+            --build-path "${GITHUB_WORKSPACE}/firmware-build" \
+            "${GITHUB_WORKSPACE}/wallet"
+
+      - name: Package source-built firmware
+        shell: bash
+        run: |
+          firmware_version="${{ steps.firmware.outputs.version }}"
+          firmware_dir="built-firmware/v${firmware_version}"
+          core_dir="${HOME}/.arduino15/packages/esp32/hardware/esp32/2.0.17"
+          mkdir -p "${firmware_dir}"
+          cp firmware-build/wallet.ino.bin "${firmware_dir}/wallet.ino.bin"
+          cp firmware-build/wallet.ino.bootloader.bin "${firmware_dir}/bootloader.bin"
+          cp firmware-build/wallet.ino.partitions.bin "${firmware_dir}/wallet.ino.partitions.bin"
+          cp "${core_dir}/tools/partitions/boot_app0.bin" "${firmware_dir}/boot_app0.bin"
+          python3 tools/esp_image_hash.py "${firmware_dir}/wallet.ino.bin" \
+            > "${firmware_dir}/ESP_IMAGE_SHA256.txt"
+          printf '%s\n' \
+            '{' \
+            '  "name": "Bowser HWW",' \
+            "  \"version\": \"${firmware_version}\"," \
+            '  "funding_url": "https://github.com/lnbits/hardware-wallet",' \
+            '  "new_install_prompt_erase": true,' \
+            '  "new_install_improv_wait_time": 0,' \
+            '  "builds": [' \
+            '    {' \
+            '      "chipFamily": "ESP32",' \
+            '      "parts": [' \
+            '        { "path": "bootloader.bin", "offset": 4096 },' \
+            '        { "path": "wallet.ino.partitions.bin", "offset": 32768 },' \
+            '        { "path": "boot_app0.bin", "offset": 57344 },' \
+            '        { "path": "wallet.ino.bin", "offset": 65536 }' \
+            '      ]' \
+            '    }' \
+            '  ]' \
+            '}' > "${firmware_dir}/manifest.json"
+          python3 -m json.tool "${firmware_dir}/manifest.json" > /dev/null
+
+      - name: Upload source-built firmware artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: source-built-firmware
+          path: built-firmware
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
           cache: npm
@@ -32,11 +114,11 @@ jobs:
 
       - name: Configure Pages
         id: pages
-        uses: actions/configure-pages@v6
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
 
       - name: Configure base path
         shell: bash
-        run: echo "BASE_PATH=${{ steps.pages.outputs.base_path }}/webapp" >> "$GITHUB_ENV"
+        run: echo "BASE_PATH=${{ steps.pages.outputs.base_path }}/webapp" >> "${GITHUB_ENV}"
 
       - name: Install dependencies
         working-directory: webapp
@@ -57,10 +139,14 @@ jobs:
       - name: Assemble Pages site
         shell: bash
         run: |
-          mkdir -p pages/webapp
+          firmware_version="${{ steps.firmware.outputs.version }}"
+          mkdir -p pages/webapp pages/installer/firmware/esp32/current
           cp index.html pages/index.html
           cp -R assets pages/assets
-          cp -R installer pages/installer
+          cp -R installer/. pages/installer/
+          rm -rf pages/installer/firmware/esp32
+          mkdir -p pages/installer/firmware/esp32/current
+          cp -R "built-firmware/v${firmware_version}/." pages/installer/firmware/esp32/current/
           cp -R webapp/build/. pages/webapp/
           touch pages/.nojekyll
 
@@ -69,11 +155,13 @@ jobs:
         run: |
           test -f pages/index.html
           test -f pages/installer/index.html
+          test -f pages/installer/firmware/esp32/current/manifest.json
+          test -f pages/installer/firmware/esp32/current/ESP_IMAGE_SHA256.txt
           test -f pages/webapp/index.html
           test -f pages/.nojekyll
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
           path: pages
           include-hidden-files: true
@@ -88,7 +176,7 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5
 
   release:
     if: startsWith(github.ref, 'refs/tags/')
@@ -98,16 +186,23 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - name: Checkout tagged source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
-      - name: Prepare latest firmware release assets
+      - name: Download source-built firmware
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: source-built-firmware
+          path: built-firmware
+
+      - name: Prepare firmware release assets
         id: firmware
         shell: bash
         run: |
-          firmware_version="$(find installer/firmware/esp32 -mindepth 1 -maxdepth 1 -type d -name 'v*' -printf '%f\n' | sort -V | tail -n 1)"
-          firmware_dir="installer/firmware/esp32/${firmware_version}"
+          firmware_version="${GITHUB_REF_NAME}"
+          firmware_dir="built-firmware/${firmware_version}"
           firmware_bin="${firmware_dir}/wallet.ino.bin"
+          test -f "${firmware_bin}"
           firmware_hash="$(python3 tools/esp_image_hash.py "${firmware_bin}")"
           published_hash="$(tr -d '[:space:]' < "${firmware_dir}/ESP_IMAGE_SHA256.txt")"
           test "${firmware_hash}" = "${published_hash}"
@@ -121,17 +216,22 @@ jobs:
           echo "hash=${firmware_hash}" >> "${GITHUB_OUTPUT}"
 
       - name: Write firmware verification notes
+        env:
+          FIRMWARE_VERSION: ${{ steps.firmware.outputs.version }}
+          FIRMWARE_HASH: ${{ steps.firmware.outputs.hash }}
         shell: bash
         run: |
           printf '%s\n' \
             '<!-- bowser-firmware:start -->' \
-            "## Bowser HWW firmware ${{ steps.firmware.outputs.version }}" \
+            "## Bowser HWW firmware ${FIRMWARE_VERSION}" \
+            '' \
+            'This firmware was compiled from the tagged source by the release workflow.' \
             '' \
             'ESP application image SHA-256:' \
             '' \
-            '`${{ steps.firmware.outputs.hash }}`' \
+            "\`${FIRMWARE_HASH}\`" \
             '' \
-            'Compare this value with the SHA-256 shown on the device after installation.' \
+            'Compare this value with the SHA-256 shown on the device and by the web installer.' \
             '<!-- bowser-firmware:end -->' > release-firmware.md
 
       - name: Create or update GitHub release
@@ -141,6 +241,7 @@ jobs:
         run: |
           if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
             gh release view "${GITHUB_REF_NAME}" --json body --jq .body > release-body.md
+            # shellcheck disable=SC2016
             awk '
               /<!-- bowser-firmware:start -->/ { skip = 1 }
               /<!-- bowser-firmware:end -->/ { skip = 0; next }

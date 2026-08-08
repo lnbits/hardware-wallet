@@ -174,6 +174,39 @@ describe('persistence allowlists', () => {
     expect(persistedText()).not.toContain('never-persist-this')
   })
 
+  it('rejects private extended keys on both load and save', () => {
+    const privateAccount = { ...account, xpub: 'tprv-sensitive-key' }
+    expect(() => saveAccounts([privateAccount])).toThrow(
+      'Refusing to persist an extended private key',
+    )
+
+    values.set('bowser-wallet.accounts.v1', JSON.stringify([privateAccount]))
+    expect(loadAccounts()).toEqual([])
+
+    const privateState = {
+      ...state,
+      utxos: [{ ...state.utxos[0], xpub: ' xprv-sensitive-key' }],
+    }
+    expect(() => saveChainState('Testnet', privateState)).toThrow(
+      'Refusing to persist an extended private key',
+    )
+
+    values.set(
+      'bowser-wallet.chain-state.v1',
+      JSON.stringify({ Testnet: privateState }),
+    )
+    expect(loadChainState('Testnet').utxos).toEqual([])
+
+    expect(() =>
+      saveAccounts([
+        {
+          ...account,
+          xpub: 'wpkh([12345678/84h/1h/0h]tprv-sensitive-key/0/*)',
+        },
+      ]),
+    ).toThrow('Refusing to persist an extended private key')
+  })
+
   it('drops unknown fields when loading legacy or modified storage', () => {
     values.set(
       'bowser-wallet.accounts.v1',

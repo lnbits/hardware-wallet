@@ -50,8 +50,9 @@
 # WARNING: this puts the wallet seed on the SD card in plain text.
 # /seed
 
-# Parse, review, and sign a base64 PSBT. In SD mode, output review and signing
-# happen as one operation; do not add a separate /sign command.
+# Parse, review, and sign a base64 PSBT. Confirm every output, the fee, and the
+# final signing prompt on the device using #/BTN1. Reject with */BTN2. Do not
+# add a separate /sign command.
 # /psbt Mainnet <base64-PSBT>
 # /psbt Testnet <base64-PSBT>
 

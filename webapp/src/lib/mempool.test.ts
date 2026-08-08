@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getAddressTransactions, getRecommendedFees } from './mempool'
+import {
+  getAddressTransactions,
+  getRecommendedFees,
+  scanAddress,
+} from './mempool'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -59,5 +63,40 @@ describe('mempool-compatible API client', () => {
     expect(fetchMock.mock.calls[1][0]).toBe(
       `https://mempool.space/api/address/bc1qtest/txs/chain/${first.at(-1)!.txid}`,
     )
+  })
+
+  it('aborts an in-flight blockchain scan immediately', async () => {
+    const controller = new AbortController()
+    vi.spyOn(globalThis, 'fetch').mockImplementation((_url, options) => {
+      const signal = options?.signal
+      return new Promise((_resolve, reject) => {
+        signal?.addEventListener('abort', () => reject(signal.reason), {
+          once: true,
+        })
+      })
+    })
+
+    const pending = scanAddress(
+      'https://scan-cancellation.test/api',
+      {
+        id: 'address-1',
+        accountId: 'account-1',
+        accountName: 'Test account',
+        address: 'tb1qexample',
+        path: "m/84'/1'/0'/0/0",
+        branch: 0,
+        index: 0,
+        amount: 0,
+        txCount: 0,
+        funded: 0,
+        spent: 0,
+        note: '',
+        scanned: false,
+      },
+      controller.signal,
+    )
+    controller.abort(new DOMException('Disconnected', 'AbortError'))
+
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
   })
 })

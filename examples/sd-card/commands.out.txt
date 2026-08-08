@@ -32,9 +32,11 @@ Seed: <word-1> <word-2> ... <final-word>
 /psbt 1
 /psbt psbt_parse_failed
 /psbt invalid_mnemonic
+/psbt review_rejected
 
-# A successful /psbt then writes one block per transaction output, its fee,
-# and the signed PSBT. Output indexes start at 0.
+# A successful /psbt writes one block per transaction output and its fee. The
+# device requires a physical approval for every output, the fee, and the final
+# signing action. Output indexes start at 0.
 Output <index>
 Address: <address>
 Amount: <amount-in-satoshis> sat

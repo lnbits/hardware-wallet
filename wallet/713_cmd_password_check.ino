@@ -25,14 +25,15 @@ CommandResponse executePasswordCheck(String commandData) {
                       ? ""
                       : commandData.substring(separator + 1);
 
-  String hash = hashStringData(password);
-  if (global.passwordHash == hash) {
+  if (unlockProtectedWallet(password)) {
     global.authenticated = true;
     global.passphrase = passphrase;
     sendCommandOutput(COMMAND_PASSWORD, String(global.authenticated));
     return {"Password correct!",   "Ready to sign sir!" };
   }
   global.authenticated = false;
+  global.mnemonic = "";
+  global.passphrase = "";
   sendCommandOutput(COMMAND_PASSWORD, String(global.authenticated));
   return {"Wrong password, try again", "8 numbers/letters"};
 }

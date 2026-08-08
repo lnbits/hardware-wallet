@@ -63,7 +63,7 @@ CommandResponse executeCreate(String password) {
     return {"Cannot create", "Wallet init failed"};
   }
 
-  global.passwordHash = data.passwordHash;
+  global.passwordVerifier = data.passwordVerifier;
   global.mnemonic = data.mnemonic;
   global.passphrase = "";
 

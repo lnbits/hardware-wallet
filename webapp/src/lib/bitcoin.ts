@@ -66,11 +66,23 @@ const normalizeExtendedKey = (value: string, network: NetworkName) => {
   return bs58check.encode(payload)
 }
 
-const accountNode = (value: string, network: NetworkName) =>
-  bip32.fromBase58(
+const accountNode = (value: string, network: NetworkName) => {
+  const node = bip32.fromBase58(
     normalizeExtendedKey(extractXpub(value), network),
     networkFor(network),
   )
+  if (!node.isNeutered())
+    throw new Error(
+      'Extended private keys are not accepted. Import an xpub or equivalent public key.',
+    )
+  return node
+}
+
+export const validateXpub = (value: string, network: NetworkName) => {
+  const xpub = extractXpub(value).trim()
+  accountNode(xpub, network)
+  return xpub
+}
 
 export const deriveAddress = (
   account: WalletAccount,

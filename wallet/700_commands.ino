@@ -102,24 +102,12 @@ HwwInitData initHww(String password, String mnemonic, String passphrase, bool pe
     if (mnemonic == "") return {"", "", false};
   }
 
-  String passwordHash  = hashStringData(password);
-
-  if (persistSecrets == true) {
-    int byteSize =  passwordHash.length() / 2;
-    byte encryptionKey[byteSize];
-    fromHex(passwordHash, encryptionKey, byteSize);
-
-    String encryptedMnemonic = encryptDataWithIv(encryptionKey, mnemonic);
-    clearSensitiveBytes(encryptionKey, sizeof(encryptionKey));
-    if (encryptedMnemonic == "") return {"", "", false};
-
-    deleteFile(SPIFFS, global.mnemonicFileName.c_str());
-    deleteFile(SPIFFS, global.passwordFileName.c_str());
-    writeFile(SPIFFS, global.passwordFileName.c_str(), passwordHash);
-    writeFile(SPIFFS, global.mnemonicFileName.c_str(), encryptedMnemonic);
+  if (!initializeProtectedWallet(password, mnemonic, persistSecrets)) {
+    mnemonic = "";
+    return {"", "", false};
   }
 
-  return {passwordHash, mnemonic, true};
+  return {global.passwordVerifier, mnemonic, true};
 }
 
 void sendCommandOutput(String command, String commandData) {

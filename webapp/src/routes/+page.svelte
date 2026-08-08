@@ -56,6 +56,7 @@
     extractXpub,
     finalizePsbt,
     parseTransaction,
+    validateXpub,
     validateAddress,
   } from '$lib/bitcoin'
   import {
@@ -153,7 +154,9 @@
   let deviceRevision = 0
   let serialLog: string[] = []
   let busy = ''
+  let scanning = false
   let scanProgress = ''
+  let scanController: AbortController | null = null
   let toasts: Toast[] = []
   let confirmation: Confirmation | null = null
   let showAccount = false
@@ -184,7 +187,7 @@
   let devicePassphrase = ''
   let restorePasswordConfirmation = ''
   let restoreWords = emptyMnemonicWords()
-  let seedWord = { position: 1, word: '' }
+  let seedWord = { position: 1 }
   let seedLoading = false
   let seedSession = 0
   let addressWatcher: AddressWatcher | null = null
@@ -288,6 +291,7 @@
     return () => {
       document.removeEventListener('visibilitychange', refreshWhenActive)
       window.removeEventListener('online', refreshWhenActive)
+      cancelBlockchainScan()
       stopAddressWatcher()
     }
   })
@@ -408,6 +412,18 @@
     scheduledScanForced = false
   }
 
+  function cancelBlockchainScan() {
+    scanController?.abort(
+      new DOMException('Blockchain scan cancelled', 'AbortError'),
+    )
+    scanController = null
+    scanning = false
+    scanProgress = ''
+  }
+
+  const scanCancelled = (controller: AbortController) =>
+    controller.signal.aborted || scanController !== controller || !entered
+
   function scheduleWalletScan(force = false) {
     scheduledScanForced ||= force
     if (liveScanTimer) clearTimeout(liveScanTimer)
@@ -418,7 +434,7 @@
         scheduledScanForced = false
         return
       }
-      if (busy) {
+      if (scanning) {
         scheduleWalletScan(forceScan)
         return
       }
@@ -488,7 +504,7 @@
     devicePassphrase = ''
     restorePasswordConfirmation = ''
     restoreWords = emptyMnemonicWords()
-    seedWord = { position: 1, word: '' }
+    seedWord = { position: 1 }
   }
 
   function openDeviceAction(action: 'restore' | 'wipe') {
@@ -579,6 +595,7 @@
   function enterWatchOnly() {
     entered = true
     view = networkAccounts.length ? 'overview' : 'accounts'
+    syncAddressWatcher()
     scheduleWalletScan()
   }
 
@@ -618,6 +635,7 @@
       deviceRevision += 1
       entered = true
       view = networkAccounts.length ? 'overview' : 'accounts'
+      syncAddressWatcher()
       scheduleWalletScan()
       notify('Bowser HWW connected', 'success')
     } catch (error) {
@@ -633,6 +651,10 @@
   }
 
   async function disconnect() {
+    cancelBlockchainScan()
+    stopAddressWatcher()
+    entered = false
+    view = 'overview'
     try {
       await device?.disconnect()
     } finally {
@@ -652,6 +674,7 @@
       notify('Wait for the current operation before changing networks', 'error')
       return
     }
+    cancelBlockchainScan()
     network = value
     settings = { ...settings, network: value }
     saveSettings(settings)
@@ -711,7 +734,7 @@
         fingerprint = response.fingerprint
       }
       if (!xpub) throw new Error('Enter an xpub or fetch one from your device')
-      xpub = xpub.trim()
+      xpub = validateXpub(xpub, network)
       if (
         accounts.some(
           (account) =>
@@ -779,6 +802,7 @@
       ))
     )
       return
+    cancelBlockchainScan()
     accounts = accounts.filter((item) => item.id !== account.id)
     addresses = addresses.filter((item) => item.accountId !== account.id)
     utxos = utxos.filter((item) => item.accountId !== account.id)
@@ -794,11 +818,15 @@
 
   async function scanWallet() {
     if (!networkAccounts.length) return openAccountDialog()
-    if (busy) return
+    if (scanning) return
+    const controller = new AbortController()
+    const scanNetwork = network
     const scanEndpoint = endpoint
-    busy = 'Scanning blockchain…'
+    const scanAccounts = [...networkAccounts]
+    scanController = controller
+    scanning = true
     try {
-      for (const account of networkAccounts) {
+      for (const account of scanAccounts) {
         for (const branch of [0, 1] as const) {
           const gap = Math.max(
             1,
@@ -813,6 +841,7 @@
           let empty = 0
           let index = 0
           while ((empty < gap || index < issued + gap) && index < 1000) {
+            if (scanCancelled(controller)) throw controller.signal.reason
             scanProgress = `${account.name} · ${branch === 0 ? 'receive' : 'change'} #${index}`
             let record = addresses.find(
               (item) =>
@@ -824,7 +853,12 @@
               record = deriveAddress(account, branch, index)
               addresses = [...addresses, record]
             }
-            const scanned = await scanAddress(scanEndpoint, record)
+            const scanned = await scanAddress(
+              scanEndpoint,
+              record,
+              controller.signal,
+            )
+            if (scanCancelled(controller)) throw controller.signal.reason
             addresses = addresses.map((item) =>
               item.id === record?.id ? scanned : item,
             )
@@ -833,25 +867,37 @@
           }
         }
       }
+      if (scanCancelled(controller) || network !== scanNetwork)
+        throw controller.signal.reason
       accounts = reconcileAccountCursors(accounts, addresses)
       persistWallet()
       const accountMap = new Map(
-        networkAccounts.map((account) => [account.id, account]),
+        scanAccounts.map((account) => [account.id, account]),
       )
-      utxos = await hydrateUtxos(
+      const ownedAddresses = addresses.filter((item) =>
+        accountMap.has(item.accountId),
+      )
+      const nextUtxos = await hydrateUtxos(
         scanEndpoint,
-        addresses.filter((item) => accountMap.has(item.accountId)),
+        ownedAddresses,
         accountMap,
+        controller.signal,
       )
-      history = await buildHistory(
+      const nextHistory = await buildHistory(
         scanEndpoint,
-        addresses.filter((item) => accountMap.has(item.accountId)),
+        ownedAddresses,
+        controller.signal,
       )
+      if (scanCancelled(controller) || network !== scanNetwork)
+        throw controller.signal.reason
+      utxos = nextUtxos
+      history = nextHistory
       lastScanAt = Date.now()
       persistChainState()
       syncAddressWatcher()
       notify('Blockchain scan complete', 'success')
     } catch (error) {
+      if (scanCancelled(controller)) return
       const stoppedAt = scanProgress
       const detail = error instanceof Error ? error.message : String(error)
       notify(
@@ -860,17 +906,30 @@
         stoppedAt ? `${detail} · ${stoppedAt}` : detail,
       )
     } finally {
-      busy = ''
-      scanProgress = ''
+      if (scanController === controller) {
+        scanController = null
+        scanning = false
+        scanProgress = ''
+      }
     }
   }
 
   async function scanOneAddress(address: AddressRecord) {
-    if (busy) return
+    if (scanning) return
+    const controller = new AbortController()
+    const scanNetwork = network
     const scanEndpoint = endpoint
-    busy = `Scanning ${short(address.address)}…`
+    scanController = controller
+    scanning = true
+    scanProgress = short(address.address)
     try {
-      const scanned = await scanAddress(scanEndpoint, address)
+      const scanned = await scanAddress(
+        scanEndpoint,
+        address,
+        controller.signal,
+      )
+      if (scanCancelled(controller) || network !== scanNetwork)
+        throw controller.signal.reason
       addresses = addresses.map((item) =>
         item.id === address.id ? scanned : item,
       )
@@ -880,19 +939,37 @@
         networkAccounts.map((account) => [account.id, account]),
       )
       const owned = addresses.filter((item) => accountMap.has(item.accountId))
-      utxos = await hydrateUtxos(scanEndpoint, owned, accountMap)
-      history = await buildHistory(scanEndpoint, owned)
+      const nextUtxos = await hydrateUtxos(
+        scanEndpoint,
+        owned,
+        accountMap,
+        controller.signal,
+      )
+      const nextHistory = await buildHistory(
+        scanEndpoint,
+        owned,
+        controller.signal,
+      )
+      if (scanCancelled(controller) || network !== scanNetwork)
+        throw controller.signal.reason
+      utxos = nextUtxos
+      history = nextHistory
       lastScanAt = Date.now()
       persistChainState()
       notify('Address refreshed', 'success')
     } catch (error) {
+      if (scanCancelled(controller)) return
       notify(
         'Could not scan address',
         'error',
         error instanceof Error ? error.message : String(error),
       )
     } finally {
-      busy = ''
+      if (scanController === controller) {
+        scanController = null
+        scanning = false
+        scanProgress = ''
+      }
     }
   }
 
@@ -1566,6 +1643,7 @@
       ))
     )
       return
+    cancelBlockchainScan()
     clearWalletData()
     accounts = []
     addresses = []
@@ -1628,7 +1706,10 @@
                 </p>
               </div>
               <div class="inline">
-                <button class="btn ghost" onclick={scanWallet} disabled={!!busy}
+                <button
+                  class="btn ghost"
+                  onclick={scanWallet}
+                  disabled={scanning}
                   ><ScanLine size={17} /> Scan blockchain</button
                 ><button class="btn primary" onclick={() => openReceiveDialog()}
                   ><QrCode size={17} /> Receive</button
@@ -1740,8 +1821,9 @@
                 <div class="security-list">
                   <div>
                     <Check size={16} /><span
-                      ><strong>Keys stay offline</strong><small
-                        >Private keys never enter this browser.</small
+                      ><strong>Secrets are not persisted</strong><small
+                        >Passwords, passphrases, and seed words stay in memory
+                        only.</small
                       ></span
                     >
                   </div>
@@ -1815,8 +1897,10 @@
                         class="btn ghost"
                         onclick={() => openReceiveDialog(account.id)}
                         ><QrCode size={15} /> Receive</button
-                      ><button class="btn ghost" onclick={scanWallet}
-                        ><RefreshCw size={15} /> Scan</button
+                      ><button
+                        class="btn ghost"
+                        onclick={scanWallet}
+                        disabled={scanning}><RefreshCw size={15} /> Scan</button
                       >
                     </div>
                   </article>
@@ -1848,8 +1932,10 @@
                 </p>
               </div>
               <div class="inline">
-                <button class="btn ghost" onclick={scanWallet}
-                  ><ScanLine size={17} /> Scan</button
+                <button
+                  class="btn ghost"
+                  onclick={scanWallet}
+                  disabled={scanning}><ScanLine size={17} /> Scan</button
                 ><button class="btn primary" onclick={() => openReceiveDialog()}
                   ><QrCode size={17} /> New receive address</button
                 >
@@ -1901,6 +1987,7 @@
                                 class="icon-btn"
                                 title="Refresh address"
                                 onclick={() => scanOneAddress(address)}
+                                disabled={scanning}
                                 ><RefreshCw size={15} /></button
                               ><button
                                 class="icon-btn"
@@ -2033,8 +2120,10 @@
                     placeholder="Filter by transaction ID or direction…"
                   />
                 </div>
-                <button class="btn ghost" onclick={scanWallet}
-                  ><RefreshCw size={15} /> Refresh</button
+                <button
+                  class="btn ghost"
+                  onclick={scanWallet}
+                  disabled={scanning}><RefreshCw size={15} /> Refresh</button
                 >
               </div>
               {#if filteredHistory.length}<div class="table-wrap">
@@ -2348,7 +2437,7 @@
                   <button onclick={openSeedBackup} disabled={!deviceConnected}
                     ><Eye /><span
                       ><strong>View seed backup</strong><small
-                        >Step through all 24 words</small
+                        >Step through words on the device screen</small
                       ></span
                     ></button
                   ><button onclick={() => openDeviceAction('restore')}
@@ -2749,8 +2838,9 @@
 >
   <div class="stack">
     <div class="callout warning">
-      Enter seed words only when using this app in a trusted offline
-      environment. Keypad/SD restoration is safer for an air-gapped device.
+      Only perform this in a trusted browser environment. Seed words entered
+      here are handled in browser memory and sent to the device. Keypad/SD
+      restoration is safer for an air-gapped device.
     </div>
     <div class="field">
       <div class="seed-grid-heading">
@@ -2845,9 +2935,8 @@
   onclose={closeDeviceAction}
 >
   <div class="seed-word">
-    <span>Word {seedWord.position} of 24</span><strong
-      >{seedWord.word || '••••••••'}</strong
-    >
+    <span>Word {seedWord.position} of 24</span>
+    <strong>Displayed on Bowser HWW</strong>
   </div>
   <div class="inline centered section">
     <button
@@ -2861,8 +2950,8 @@
     >
   </div>
   <div class="callout warning section">
-    Write this down privately. Never photograph, copy, or store the complete
-    seed digitally.
+    Read and write down the word from the hardware wallet screen. The word is
+    not sent to or displayed by this browser.
   </div>
 </Modal>
 
@@ -2891,9 +2980,10 @@
     </div>{/if}
 </Modal>
 
-{#if busy}<div class="busy">
-    <LoaderCircle class="spin" size={19} /><span>{busy}</span
-    >{#if scanProgress}<small>{scanProgress}</small>{/if}
+{#if busy || scanning}<div class="busy">
+    <LoaderCircle class="spin" size={19} /><span
+      >{busy || 'Scanning blockchain…'}</span
+    >{#if scanning && scanProgress}<small>Scan: {scanProgress}</small>{/if}
   </div>{/if}
 <div class="toast-stack">
   {#each toasts as toast}<div

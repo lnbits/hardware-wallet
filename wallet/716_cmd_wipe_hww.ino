@@ -22,10 +22,10 @@ CommandResponse executeWhipeHww(String password) {
   sendCommandOutput(COMMAND_WIPE,  String(global.authenticated));
 
   if (global.authenticated == true) {
-    global.passwordHash = data.passwordHash;
+    global.passwordVerifier = data.passwordVerifier;
     global.mnemonic = data.mnemonic;
     global.passphrase = "";
     return { "Successfully wiped!",  "Every new beginning comes from some other beginning's end."};
   }
-  return {"Error, try again"  "8 numbers/letters"};
+  return {"Error, try again", "8 numbers/letters"};
 }

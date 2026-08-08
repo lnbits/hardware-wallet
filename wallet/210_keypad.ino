@@ -55,3 +55,39 @@ char waitForKeypadKey() {
     return key;
   }
 }
+
+bool awaitPhysicalReviewApproval() {
+  setupKeypad();
+
+  // A control already held when the review appears must not approve it.
+  while (
+    scanKeypad() != 0 ||
+    digitalRead(global.button1Pin) == LOW ||
+    (
+      global.button2Pin != global.button1Pin &&
+      digitalRead(global.button2Pin) == LOW
+    )
+  ) delay(10);
+
+  while (true) {
+    char key = scanKeypad();
+    if (key == '#' || key == '*') {
+      bool approved = key == '#';
+      while (scanKeypad() != 0) delay(10);
+      return approved;
+    }
+
+    if (digitalRead(global.button1Pin) == LOW) {
+      while (digitalRead(global.button1Pin) == LOW) delay(10);
+      return true;
+    }
+    if (
+      global.button2Pin != global.button1Pin &&
+      digitalRead(global.button2Pin) == LOW
+    ) {
+      while (digitalRead(global.button2Pin) == LOW) delay(10);
+      return false;
+    }
+    delay(10);
+  }
+}

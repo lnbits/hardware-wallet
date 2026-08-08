@@ -30,24 +30,17 @@ void setup() {
 }
 
 bool loadFiles() {
-  FileData pwdFile = readFile(SPIFFS, global.passwordFileName.c_str());
-  String passwordHash = pwdFile.data;
-
-  int byteSize =  passwordHash.length() / 2;
-  byte passwordHashBin[byteSize];
-  fromHex(passwordHash, passwordHashBin, byteSize);
-
-  FileData mnFile = readFile(SPIFFS, global.mnemonicFileName.c_str());
-  global.mnemonic = decryptDataWithIv(passwordHashBin, mnFile.data);
-  clearSensitiveBytes(passwordHashBin, sizeof(passwordHashBin));
-  global.passwordHash = passwordHash;
+  bool walletLoaded = loadWalletStorage();
+  global.authenticated = false;
+  global.mnemonic = "";
+  global.passphrase = "";
 
   FileData sharedSecretFile = readFile(SPIFFS, global.sharedSecretFileName.c_str());
   if (sharedSecretFile.success) {
     deleteFile(SPIFFS, global.sharedSecretFileName.c_str());
   }
 
-  return mnFile.success && pwdFile.success;
+  return walletLoaded;
 }
 
 void updateDeviceConfig() {
