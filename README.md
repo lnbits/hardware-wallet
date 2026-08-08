@@ -31,6 +31,8 @@ The LNbits [WatchOnly Extension](https://github.com/lnbits/watchonly)
 
 The standalone [Bowser Wallet webapp](https://lnbits.github.io/hardware-wallet/webapp/)
 
+[Electrum](https://lnbits.github.io/hardware-wallet/webapp/)
+
 ## Installation
 
 ### Web installer (easy)
