@@ -46,8 +46,9 @@
 # /address Testnet <full-derivation-path>
 # /address Testnet <full-derivation-path> <expected-address>
 
-# Write the complete mnemonic to commands.out.txt.
-# WARNING: this puts the wallet seed on the SD card in plain text.
+# Review the mnemonic one word at a time on the hardware display. Nothing from
+# this command is written to commands.out.txt. Use #/BTN1 to advance and
+# */BTN2 to go back; advance from word 24 to finish.
 # /seed
 
 # Parse, review, and sign a base64 PSBT. Confirm every output, the fee, and the

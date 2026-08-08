@@ -25,8 +25,8 @@
 /xpub 0 invalid_mnemonic
 /address 1 <derived-address>
 
-# WARNING: /seed emits the complete mnemonic in plain text.
-Seed: <word-1> <word-2> ... <final-word>
+# /seed displays the mnemonic only on the hardware screen and writes no output
+# to this file.
 
 # PSBT acceptance or failure
 /psbt 1

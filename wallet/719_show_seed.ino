@@ -3,7 +3,8 @@
    While in interactive mode the client selects which word is shown, but the
    word itself remains on the hardware display and is never returned over the
    serial connection.
-   In the "command file" mode all the seed words will be returned.
+   In command-file mode all 24 words are reviewed on the hardware display and
+   nothing is written to commands.out.txt.
    @param positionStr: String (optional). Position of the word to be displayed.
    @return CommandResponse
     - the seed word at the specified position to the hardware display
@@ -19,14 +20,28 @@ CommandResponse executeShowSeed(String positionStr) {
 
 CommandResponse showSeed(String positionStr) {
   if (global.hasCommandsFile == true) {
-    return sendSeedToFile();
+    reviewSeedOnDevice(global.mnemonic);
+    return {"Show Seed", "Done"};
   }
   return showSeedWordAtPosition(positionStr);
 }
 
-CommandResponse sendSeedToFile() {
-  commandOutToFile("Seed: " + global.mnemonic);
-  return {"Show Seed", "Done"};
+void reviewSeedOnDevice(const String &mnemonic) {
+  int position = 1;
+  while (true) {
+    showDiceMnemonicWord(
+      position,
+      getWordAtPosition(mnemonic, position - 1)
+    );
+
+    bool moveForward = awaitPhysicalReviewApproval();
+    if (moveForward && position == 24) return;
+    if (moveForward) {
+      position++;
+    } else if (position > 1) {
+      position--;
+    }
+  }
 }
 
 CommandResponse showSeedWordAtPosition(String positionStr) {

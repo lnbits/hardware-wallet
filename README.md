@@ -201,8 +201,9 @@ Neither the dice sequence nor the seed words are written to the microSD card by
 remove `commands.in.txt`, because it contains the wallet password. The wallet
 is persisted in the device's existing password-encrypted storage even if a
 previous `/pair` command disabled persistence for SD restores. The existing
-`/seed` command writes the seed to the microSD card and should not be used when
-the goal is to keep the seed exclusively on the device and paper backup.
+`/seed` command also keeps the mnemonic off the microSD card: it displays one
+word at a time on the hardware screen. Press `#` or button 1 to advance, and
+`*` or button 2 to go back. Advancing from word 24 finishes the review.
 
 ## Entropy lines (the important bit)
 
