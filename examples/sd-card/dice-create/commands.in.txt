@@ -4,3 +4,6 @@
 
 # Example follow-up command; the newly created wallet is already authenticated.
 /xpub Testnet m/84'/1'/0'
+
+# Just "xpub" will fetch xpub for Mainnet m/84'/0'/0'
+/xpub
