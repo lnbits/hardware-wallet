@@ -35,7 +35,7 @@ extern "C" {
 #include "SD.h"
 #include "SPI.h"
 
-#define BOWSER_FIRMWARE_VERSION "0.6"
+#define BOWSER_FIRMWARE_VERSION "0.7.1"
 
 fs::SPIFFSFS &FlashFS = SPIFFS;
 
