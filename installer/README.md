@@ -7,8 +7,6 @@ root of this repository, start a local server that serves repository files
 first and proxies missing shared assets to the deployed LNbits site:
 
 ```bash
-cd ~/hardware-wallet
-
 npm exec --yes http-server -- . \
   -p 8000 \
   -a 127.0.0.1 \
