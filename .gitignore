@@ -6,3 +6,19 @@ __pycache__/
 /built-firmware/
 /installer/firmware/esp32/current/*/
 /libraries/uBitcoin/tests/build/
+
+# TFT_eSPI is vendored as Arduino runtime source only. Keep upstream examples,
+# documentation, CI files, and tooling out of firmware commits.
+/libraries/TFT_eSPI/.gitattributes
+/libraries/TFT_eSPI/.github/
+/libraries/TFT_eSPI/.gitignore
+/libraries/TFT_eSPI/CMakeLists.txt
+/libraries/TFT_eSPI/Kconfig
+/libraries/TFT_eSPI/README.md
+/libraries/TFT_eSPI/README.txt
+/libraries/TFT_eSPI/TFT_config.h
+/libraries/TFT_eSPI/Tools/
+/libraries/TFT_eSPI/docs/
+/libraries/TFT_eSPI/examples/
+/libraries/TFT_eSPI/library.json
+/libraries/TFT_eSPI/other stuff/

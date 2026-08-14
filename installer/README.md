@@ -1,5 +1,15 @@
 # Bowser HWW web installer
 
+## Pinned browser flashers
+
+The installer loads the unmodified
+[`esp-web-tools@10.4.0`](https://www.npmjs.com/package/esp-web-tools/v/10.4.0)
+release from unpkg for every supported board.
+
+Before changing this pin, physically verify automatic connection and flashing
+without using the BOOT button on the T-Display, ESP32-2432S028R, and Waveshare
+ESP32-C6-LCD-1.3.
+
 ## Test locally
 
 The installer uses shared styles and images from `lnbits.github.io`. From the

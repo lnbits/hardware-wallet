@@ -8,20 +8,25 @@ Each directory contains:
 
 - `profile.h`: identity, rotation, backlight, buttons, keypad, microSD, and
   touch capabilities.
-- `tft_setup.h`: the TFT_eSPI controller, dimensions, bus, and display pins.
+- A `tft_setup.h` display configuration selected through TFT_eSPI's upstream
+  setup hook.
 
-The build target supplies both headers using `build.extra_flags`. For example:
+The build target supplies the profile and display backend using compiler
+flags. TFT_eSPI's
+upstream `TFT_ESPI_USER_SETUP_PATH` hook expects its value to be a string
+literal. For example:
 
 ```text
 -DBOWSER_BOARD_PROFILE=boards/my_board/profile.h
--DTFT_ESPI_USER_SETUP_PATH=../../wallet/boards/my_board/tft_setup.h
+-DBOWSER_DISPLAY_BACKEND=display_backends/tft_espi.h
+-DTFT_ESPI_USER_SETUP_PATH="/absolute/path/to/wallet/boards/my_board/tft_setup.h"
 ```
 
 ## Adding a board
 
 1. Copy the closest directory and give it a stable lowercase target ID.
-2. Fill out its `BoardProfile` and TFT_eSPI setup from the manufacturer's
-   schematic, not from a product listing.
+2. Fill out its `BoardProfile` and display configuration from the
+   manufacturer's schematic, not from a product listing.
 3. Return the correct `SPIClass` from `boardSdSpi()`. Sharing one SPI bus is
    fine when the board is wired that way; separate buses should use separate
    instances.

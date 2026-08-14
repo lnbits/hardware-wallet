@@ -1,5 +1,13 @@
 #pragma once
 
+// TFT_eSPI 2.5.44's optimized C6 path is incompatible with ESP32 Arduino
+// core 3.3.x. Select its unmodified, portable SPI backend instead. The common
+// Bowser TFT_eSPI adapter restores ESP32 after this header is processed so the
+// application and all non-display dependencies retain their normal target.
+#if defined(CONFIG_IDF_TARGET_ESP32C6)
+#undef ESP32
+#endif
+
 #define ST7789_DRIVER
 #define TFT_WIDTH 240
 #define TFT_HEIGHT 240

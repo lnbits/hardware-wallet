@@ -78,7 +78,7 @@ jobs:
           python3 tools/package_firmware.py \
             "${target}" "${firmware_version}" "firmware-build/${target}" \
             "built-firmware/v${firmware_version}/${target}" \
-            --boot-app0 "${HOME}/.arduino15/packages/esp32/hardware/esp32/3.0.1/tools/partitions/boot_app0.bin"
+            --boot-app0 "${HOME}/.arduino15/packages/esp32/hardware/esp32/3.3.11/tools/partitions/boot_app0.bin"
 
           for manifest in built-firmware/v${firmware_version}/*/manifest.json; do
             python3 -m json.tool "${manifest}" > /dev/null

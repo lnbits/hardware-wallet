@@ -170,13 +170,24 @@
     ></script>
     <script>
       (() => {
+        const supportedTargets = new Set([
+          "lilygo_tdisplay",
+          "esp32_2432s028r",
+          "waveshare_esp32_c6_lcd_1_3",
+        ]);
+        const requestedTarget = new URLSearchParams(location.search).get(
+          "board",
+        );
+        const initialTarget = supportedTargets.has(requestedTarget)
+          ? requestedTarget
+          : "lilygo_tdisplay";
         const targetSelector = document.querySelector("#firmware-target");
         const boardImage = document.querySelector("#board-image");
         const installButton = document.querySelector("#bowser-install-button");
-        const activateButton = installButton.querySelector('[slot="activate"]');
         const browserWarning = document.querySelector("#browser-warning");
         const flashControl = document.querySelector("#flash-control");
-        let activeTarget = targetSelector.value;
+        targetSelector.value = initialTarget;
+        let activeTarget = initialTarget;
 
         const boards = {
           lilygo_tdisplay: {
@@ -198,6 +209,10 @@
 
         const selectTarget = () => {
           const target = targetSelector.value;
+          const targetUrl = new URL(location.href);
+          targetUrl.searchParams.set("board", target);
+          history.replaceState({}, "", targetUrl);
+          activeTarget = target;
           const board = boards[target];
           installButton.setAttribute(
             "manifest",
@@ -237,10 +252,6 @@
             });
 
         targetSelector.addEventListener("change", selectTarget);
-        activateButton.addEventListener("click", () => {
-          activeTarget = targetSelector.value;
-          selectTarget();
-        });
 
         const watchInstallDialog = (dialog) => {
           let addingHash = false;
@@ -265,6 +276,7 @@
 
             addingHash = true;
             const panel = document.createElement("div");
+            panel.slot = "content";
             panel.dataset.bowserFirmwareHash = "";
             panel.style.margin = "16px 24px";
             panel.style.padding = "12px";

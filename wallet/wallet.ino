@@ -17,7 +17,7 @@
 #include "ui_controls.h"
 
 #include <Wire.h>
-#include <TFT_eSPI.h>
+#include "display.h"
 #include <Hash.h>
 #include <ArduinoJson.h>
 #include "Bitcoin.h"
@@ -39,7 +39,7 @@ extern "C" {
 fs::SPIFFSFS &FlashFS = SPIFFS;
 
 SHA256 h;
-TFT_eSPI tft = TFT_eSPI();
+BowserDisplay tft;
 
 
 //////////////////////////////// Define and initialize the Global State ////////////////////////////////
