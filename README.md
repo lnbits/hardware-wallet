@@ -1,4 +1,4 @@
-<img width="800" height="200" alt="image" src="https://github.com/user-attachments/assets/e6e7db25-65fc-4325-b901-62c6d666ba2f" />
+<img alt="image" src="https://github.com/user-attachments/assets/e6e7db25-65fc-4325-b901-62c6d666ba2f" />
 
 Bowser Wallet can be used over Web Serial with the LNbits WatchOnly extension or its standalone web client. It can also operate air-gapped using a microSD card and the optional keypad.
 
