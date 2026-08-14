@@ -316,13 +316,19 @@ to review it. Advancing from word 24 finishes the review.
 
 ## Entropy lines (the important bit)
 
-- uBitcoin obtains random words from the ESP32 hardware RNG through
-  [`esp_random()`](libraries/uBitcoin/src/utility/trezor/rand.c#L30-L36).
-- Before using that RNG, the wallet checks its conditioned output for stuck
-  values, stuck bit positions, repeated words, and gross bit imbalance in
-  [`hardwareRngPassesHealthCheck()`](wallet/400_helpers.ino#L73-L113).
-- The wallet adds 32 bytes directly from the ESP32 hardware RNG through
-  [`esp_fill_random()`](wallet/400_helpers.ino#L115-L139).
+- For automatic seed and wallet-salt generation, the wallet obtains random
+  words through Espressif's `esp_fill_random()` while the internal physical-
+  noise source is explicitly enabled.
+- It samples 4,096 conditioned output bits and fails closed on stuck bit
+  positions, repeated words, short-period output, excessive bit runs, or an
+  adaptive-proportion failure in [`rng_health.h`](wallet/rng_health.h).
+- SHA-256 conditions that complete health-checked sample into seed or salt
+  material. Password verifiers, pairing secrets, and other session state are
+  deliberately excluded in
+  [`deriveHealthyHardwareEntropy()`](wallet/400_helpers.ino).
+- These application-level tests inspect conditioned RNG output and provide
+  defense in depth; they are not a claim of SP 800-90B validation because the
+  ESP32 does not expose its raw physical-noise samples to this firmware.
 - Dice wallet creation hashes the exact 100-character dice-roll buffer with
   SHA-256, then passes the resulting 32 bytes directly as BIP39 entropy to
   [`mnemonicFromEntropy()`](wallet/723_cmd_create.ino#L30-L44).

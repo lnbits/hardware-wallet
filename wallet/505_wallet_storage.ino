@@ -74,11 +74,7 @@ bool constantTimeStringEquals(const String &left, const String &right) {
 }
 
 bool generateWalletSalt(uint8_t *salt) {
-  bootloader_random_enable();
-  bool healthy = hardwareRngPassesHealthCheck();
-  if (healthy) esp_fill_random(salt, WALLET_SALT_SIZE);
-  bootloader_random_disable();
-  return healthy;
+  return deriveHealthyHardwareEntropy(salt, WALLET_SALT_SIZE);
 }
 
 bool parseProtectedWalletRecord(const String &record) {

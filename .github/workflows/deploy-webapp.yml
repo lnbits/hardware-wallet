@@ -53,13 +53,17 @@ jobs:
           test "${GITHUB_REF_NAME}" = "v${firmware_version}"
           echo "version=${firmware_version}" >> "${GITHUB_OUTPUT}"
 
-      - name: Test physical-input debouncing
+      - name: Test firmware safety helpers
         shell: bash
         run: |
           g++ -std=c++11 -Wall -Wextra -Werror -pedantic \
             tests/input_debounce_test.cpp \
             -o "${RUNNER_TEMP}/input_debounce_test"
           "${RUNNER_TEMP}/input_debounce_test"
+          g++ -std=c++11 -Wall -Wextra -Werror -pedantic \
+            tests/rng_health_test.cpp \
+            -o "${RUNNER_TEMP}/rng_health_test"
+          "${RUNNER_TEMP}/rng_health_test"
 
       - name: Compile and package every supported board
         shell: bash
