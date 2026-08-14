@@ -67,13 +67,60 @@ arduino-cli config add board_manager.additional_urls \
   https://espressif.github.io/arduino-esp32/package_esp32_index.json
 arduino-cli core update-index
 
-# Build one or more targets. Output is written below build/<target>/.
-tools/build_firmware.sh lilygo_tdisplay
-tools/build_firmware.sh esp32_2432s028r
-tools/build_firmware.sh waveshare_esp32_c6_lcd_1_3
-
 # Connect the device and identify its serial port before uploading.
 arduino-cli board list
+
+# Set this to the port shown above. Common Linux ports are ttyACM0 and ttyUSB0.
+bowser_port=/dev/ttyACM0
+```
+
+Build and upload only the target matching the connected board. Keep each build
+and upload pair together: the build script installs that target's pinned ESP32
+core, and `arduino-cli upload` uses the currently installed core's flashing
+tools.
+
+For the LILYGO T-Display:
+
+```bash
+./tools/build_firmware.sh lilygo_tdisplay
+
+arduino-cli upload --verbose \
+  --fqbn esp32:esp32:ttgo-lora32 \
+  --port "${bowser_port}" \
+  --input-dir build/lilygo_tdisplay \
+  wallet
+```
+
+For the ESP32-2432S028R touchscreen board:
+
+```bash
+./tools/build_firmware.sh esp32_2432s028r
+
+arduino-cli upload --verbose \
+  --fqbn esp32:esp32:esp32 \
+  --port "${bowser_port}" \
+  --input-dir build/esp32_2432s028r \
+  wallet
+```
+
+For the Waveshare ESP32-C6-LCD-1.3:
+
+```bash
+./tools/build_firmware.sh waveshare_esp32_c6_lcd_1_3
+
+arduino-cli upload --verbose \
+  --fqbn esp32:esp32:esp32c6:CDCOnBoot=cdc \
+  --port "${bowser_port}" \
+  --input-dir build/waveshare_esp32_c6_lcd_1_3 \
+  wallet
+```
+
+After uploading, reboot the board and compare the application-image
+fingerprint shown by the device with the value calculated from the binary you
+uploaded. Replace `<target>` with the selected target ID:
+
+```bash
+python3 tools/esp_image_hash.py "build/<target>/wallet.ino.bin"
 ```
 
 The web installer presents the same three targets and uses an independent
@@ -105,7 +152,7 @@ whole `.bin` file: the ESP image digest covers the image content preceding the
 final 32-byte embedded digest. As a result, a whole-file SHA-256 is expected to
 be different.
 
-## Supported boards
+### Supported boards
 
 The same wallet source builds for each board. Select a target at compile time;
 board pins and capabilities live in a small board profile rather than being
