@@ -24,6 +24,21 @@ spread through the application as conditional compilation.
 | `esp32_2432s028r` | ESP32-2432S028R, 320×240 landscape | Resistive touchscreen with contextual on-screen controls and dice keypad | On-board |
 | `waveshare_esp32_c6_lcd_1_3` | Waveshare ESP32-C6-LCD-1.3, 240×240 | BOOT: tap to accept/advance, hold to cancel/back | On-board |
 
+The build script pins the toolchain and fully qualified board name for every
+target:
+
+| Target | ESP32 Arduino core | FQBN |
+| --- | --- | --- |
+| `lilygo_tdisplay` | `esp32:esp32@2.0.17` | `esp32:esp32:ttgo-lora32` |
+| `esp32_2432s028r` | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
+| `waveshare_esp32_c6_lcd_1_3` | `esp32:esp32@3.3.11` | `esp32:esp32:esp32c6:CDCOnBoot=cdc` |
+
+All targets use the vendored, unmodified TFT_eSPI 2.5.44 runtime source. The
+C6 profile selects TFT_eSPI's portable SPI backend because its optimized C6
+path does not compile with ESP32 Arduino core 3.3.x. Upstream examples,
+documentation, CI metadata, and non-Arduino tooling are deliberately excluded
+from the repository; see [vendored dependencies](libraries/DEPENDENCIES.md).
+
 The touch board runs a four-point calibration the first time it boots and
 stores the result in flash. The UI reserves a footer for controls only on touch
 hardware, leaving the content area uncluttered on button-based boards.
