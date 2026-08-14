@@ -8,6 +8,7 @@ const BoardProfile BOARD = {
   "Waveshare ESP32-C6-LCD-1.3",
   0,
   true,
+  0,
   22,
   HIGH,
   9,
@@ -21,7 +22,9 @@ const BoardProfile BOARD = {
   5,
   6,
   4,
-  {false, -1, -1, -1, -1, -1},
+  false,
+  {false, -1, -1, -1, -1, -1, false},
+  {false, -1, -1, -1, -1, 0, 0, false, false, false},
 };
 
 inline SPIClass &boardSdSpi() {

@@ -3,6 +3,7 @@
 //========================================================================//
 
 #include "input_debounce.h"
+#include "touch_backends/gt911.h"
 
 const char KEYPAD_KEYS[4][3] = {
   {'1', '2', '3'},
@@ -14,6 +15,7 @@ const char KEYPAD_KEYS[4][3] = {
 namespace {
 const unsigned long LONG_PRESS_CANCEL_MS = 900;
 const uint32_t INPUT_DEBOUNCE_MS = 30;
+const uint16_t TOUCH_PRESSURE_THRESHOLD = 350;
 const char *TOUCH_CALIBRATION_FILE = "/touch.cal";
 const char *TOUCH_CALIBRATION_VERSION = "2";
 
@@ -40,32 +42,60 @@ ButtonTracker secondaryButton = {-1, false, false, 0, 0};
 ReleasedKeyDebouncer touchKeyDebouncer;
 ReleasedKeyDebouncer matrixKeyDebouncer;
 bool inputHardwareInitialized = false;
+BowserGt911 gt911;
 
 uint8_t touchTransfer(uint8_t value) {
   uint8_t result = 0;
   for (int bit = 7; bit >= 0; bit--) {
-    digitalWrite(BOARD.touch.clockPin, LOW);
-    digitalWrite(BOARD.touch.mosiPin, (value >> bit) & 1);
+    digitalWrite(BOARD.xpt2046.clockPin, LOW);
+    digitalWrite(BOARD.xpt2046.mosiPin, (value >> bit) & 1);
     delayMicroseconds(1);
-    digitalWrite(BOARD.touch.clockPin, HIGH);
-    result = (result << 1) | digitalRead(BOARD.touch.misoPin);
+    digitalWrite(BOARD.xpt2046.clockPin, HIGH);
+    result = (result << 1) | digitalRead(BOARD.xpt2046.misoPin);
     delayMicroseconds(1);
   }
-  digitalWrite(BOARD.touch.clockPin, LOW);
+  digitalWrite(BOARD.xpt2046.clockPin, LOW);
   return result;
 }
 
 uint16_t readTouchChannel(uint8_t command) {
-  digitalWrite(BOARD.touch.chipSelectPin, LOW);
+  digitalWrite(BOARD.xpt2046.chipSelectPin, LOW);
   touchTransfer(command);
   uint16_t value = uint16_t(touchTransfer(0)) << 8;
   value |= touchTransfer(0);
-  digitalWrite(BOARD.touch.chipSelectPin, HIGH);
+  digitalWrite(BOARD.xpt2046.chipSelectPin, HIGH);
   return (value >> 3) & 0x0FFF;
 }
 
+uint16_t readRawTouchPressure() {
+  if (!BOARD.xpt2046.enabled) return 0;
+
+#ifdef TOUCH_CS
+  if (BOARD.xpt2046.sharesDisplaySpi) {
+    return tft.getTouchRawZ();
+  }
+#endif
+
+  // PENIRQ is useful as a hint, but it is not reliable enough to gate input:
+  // GPIOs 34-39 on the classic ESP32 have no internal pull-up, and some board
+  // revisions omit or weakly populate the external pull-up. Read XPT2046
+  // pressure instead so a floating/stuck IRQ cannot deadlock calibration.
+  int32_t pressure = 4095;
+  pressure += readTouchChannel(0xB0);  // Z1
+  pressure -= readTouchChannel(0xC0);  // Z2
+  if (pressure == 4095) pressure = 0;
+  if (pressure < 0) return 0;
+  if (pressure > 4095) return 4095;
+  return uint16_t(pressure);
+}
+
 bool rawTouchIsDown() {
-  return BOARD.touch.enabled && digitalRead(BOARD.touch.interruptPin) == LOW;
+  if (BOARD.gt911.enabled) {
+    uint16_t x = 0;
+    uint16_t y = 0;
+    return gt911.poll(BOARD.gt911, tft.width(), tft.height(), x, y);
+  }
+  return readRawTouchPressure() > TOUCH_PRESSURE_THRESHOLD;
 }
 
 void sortTouchSamples(uint16_t *samples, int count) {
@@ -82,6 +112,12 @@ void sortTouchSamples(uint16_t *samples, int count) {
 
 bool readRawTouchPoint(uint16_t &rawX, uint16_t &rawY) {
   if (!rawTouchIsDown()) return false;
+
+#ifdef TOUCH_CS
+  if (BOARD.xpt2046.sharesDisplaySpi) {
+    return tft.getTouchRaw(&rawX, &rawY) != 0;
+  }
+#endif
 
   const int sampleCount = 5;
   uint16_t xSamples[sampleCount];
@@ -106,6 +142,8 @@ int16_t mapTouchAxis(int32_t value, int32_t start, int32_t end, int16_t maximum)
 }
 
 bool readTouchPoint(uint16_t &x, uint16_t &y) {
+  if (BOARD.gt911.enabled) return gt911.touching(x, y);
+
   uint16_t rawX = 0;
   uint16_t rawY = 0;
   if (!touchCalibration.valid || !readRawTouchPoint(rawX, rawY)) return false;
@@ -163,19 +201,19 @@ void saveTouchCalibration() {
 void drawCalibrationTarget(int16_t x, int16_t y, int number) {
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setTextSize(2);
+  String label = "Touch calibration " + String(number) + "/4";
+  tft.setTextSize(uiFittedTextSize(label, 2, tft.width() - 16));
   tft.setCursor(8, tft.height() / 2 - 8);
-  tft.print("Touch calibration ");
-  tft.print(number);
-  tft.print("/4");
+  tft.print(label);
   tft.drawCircle(x, y, 12, TFT_WHITE);
   tft.drawFastHLine(x - 18, y, 37, TFT_WHITE);
   tft.drawFastVLine(x, y - 18, 37, TFT_WHITE);
 }
 
 void captureCalibrationPoint(int16_t x, int16_t y, int number, uint16_t &rawX, uint16_t &rawY) {
-  while (rawTouchIsDown()) delay(10);
   drawCalibrationTarget(x, y, number);
+  // Show the target immediately, even if the screen was touched during boot.
+  while (rawTouchIsDown()) delay(10);
   while (!rawTouchIsDown()) delay(10);
   delay(35);
   while (!readRawTouchPoint(rawX, rawY)) delay(5);
@@ -243,7 +281,7 @@ void calibrateTouch() {
 }
 
 char pollTouchKey() {
-  if (!BOARD.touch.enabled) return 0;
+  if (!BOARD.hasTouchscreen) return 0;
 
   char sampledKey = 0;
   uint16_t x = 0;
@@ -353,15 +391,27 @@ void setupInputHardware() {
   if (primaryButton.pin >= 0) pinMode(primaryButton.pin, INPUT_PULLUP);
   if (secondaryButton.pin >= 0) pinMode(secondaryButton.pin, INPUT_PULLUP);
 
-  if (BOARD.touch.enabled) {
-    pinMode(BOARD.touch.clockPin, OUTPUT);
-    pinMode(BOARD.touch.mosiPin, OUTPUT);
-    pinMode(BOARD.touch.misoPin, INPUT);
-    pinMode(BOARD.touch.chipSelectPin, OUTPUT);
-    pinMode(BOARD.touch.interruptPin, INPUT_PULLUP);
-    digitalWrite(BOARD.touch.clockPin, LOW);
-    digitalWrite(BOARD.touch.chipSelectPin, HIGH);
-    if (!loadTouchCalibration()) calibrateTouch();
+  if (BOARD.hasTouchscreen) {
+    if (BOARD.gt911.enabled) {
+      if (!gt911.begin(BOARD.gt911)) {
+        showMessage("GT911 not found", "Check touch hardware");
+        while (true) delay(1000);
+      }
+    } else if (BOARD.xpt2046.enabled) {
+      if (!BOARD.xpt2046.sharesDisplaySpi) {
+        pinMode(BOARD.xpt2046.clockPin, OUTPUT);
+        pinMode(BOARD.xpt2046.mosiPin, OUTPUT);
+        pinMode(BOARD.xpt2046.misoPin, INPUT);
+        digitalWrite(BOARD.xpt2046.clockPin, LOW);
+      }
+      pinMode(BOARD.xpt2046.chipSelectPin, OUTPUT);
+      pinMode(BOARD.xpt2046.interruptPin, INPUT_PULLUP);
+      digitalWrite(BOARD.xpt2046.chipSelectPin, HIGH);
+      if (!loadTouchCalibration()) calibrateTouch();
+    } else {
+      showMessage("Touch profile invalid", BOARD.id);
+      while (true) delay(1000);
+    }
   }
 
   resetInputDebouncers(millis());

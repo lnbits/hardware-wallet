@@ -7,8 +7,8 @@ The installer loads the unmodified
 release from unpkg for every supported board.
 
 Before changing this pin, physically verify automatic connection and flashing
-without using the BOOT button on the T-Display, ESP32-2432S028R, and Waveshare
-ESP32-C6-LCD-1.3.
+without using the BOOT button on the T-Display, ESP32-2432S028R,
+ESP32-3248S035R, ESP32-3248S035C, and Waveshare ESP32-C6-LCD-1.3.
 
 ## Build and package local firmware
 
@@ -22,6 +22,8 @@ installation is not required. It deliberately uses these target definitions:
 | --- | --- | --- |
 | `lilygo_tdisplay` | `esp32:esp32@2.0.17` | `esp32:esp32:ttgo-lora32` |
 | `esp32_2432s028r` | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
+| `esp32_3248s035r` | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
+| `esp32_3248s035c` | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
 | `waveshare_esp32_c6_lcd_1_3` | `esp32:esp32@3.3.11` | `esp32:esp32:esp32c6:CDCOnBoot=cdc` |
 
 Set a version label for the local manifests. It does not need to be a released
@@ -31,7 +33,7 @@ version when testing locally:
 firmware_version=0.7.1-local
 ```
 
-Build and package the two original ESP32 targets first, while core 2.0.17 is
+Build and package the classic ESP32 targets first, while core 2.0.17 is
 installed:
 
 ```bash
@@ -55,6 +57,28 @@ python3 tools/package_firmware.py \
   "${firmware_version}" \
   build/esp32_2432s028r \
   installer/firmware/esp32/current/esp32_2432s028r \
+  --boot-app0 "${HOME}/.arduino15/packages/esp32/hardware/esp32/2.0.17/tools/partitions/boot_app0.bin"
+
+./tools/build_firmware.sh \
+  esp32_3248s035r \
+  build/esp32_3248s035r
+
+python3 tools/package_firmware.py \
+  esp32_3248s035r \
+  "${firmware_version}" \
+  build/esp32_3248s035r \
+  installer/firmware/esp32/current/esp32_3248s035r \
+  --boot-app0 "${HOME}/.arduino15/packages/esp32/hardware/esp32/2.0.17/tools/partitions/boot_app0.bin"
+
+./tools/build_firmware.sh \
+  esp32_3248s035c \
+  build/esp32_3248s035c
+
+python3 tools/package_firmware.py \
+  esp32_3248s035c \
+  "${firmware_version}" \
+  build/esp32_3248s035c \
+  installer/firmware/esp32/current/esp32_3248s035c \
   --boot-app0 "${HOME}/.arduino15/packages/esp32/hardware/esp32/2.0.17/tools/partitions/boot_app0.bin"
 ```
 

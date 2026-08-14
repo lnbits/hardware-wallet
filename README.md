@@ -103,6 +103,30 @@ arduino-cli upload --verbose \
   wallet
 ```
 
+For the ESP32-3248S035R touchscreen board:
+
+```bash
+./tools/build_firmware.sh esp32_3248s035r
+
+arduino-cli upload --verbose \
+  --fqbn esp32:esp32:esp32 \
+  --port "${bowser_port}" \
+  --input-dir build/esp32_3248s035r \
+  wallet
+```
+
+For the ESP32-3248S035C capacitive touchscreen board:
+
+```bash
+./tools/build_firmware.sh esp32_3248s035c
+
+arduino-cli upload --verbose \
+  --fqbn esp32:esp32:esp32 \
+  --port "${bowser_port}" \
+  --input-dir build/esp32_3248s035c \
+  wallet
+```
+
 For the Waveshare ESP32-C6-LCD-1.3:
 
 ```bash
@@ -123,7 +147,7 @@ uploaded. Replace `<target>` with the selected target ID:
 python3 tools/esp_image_hash.py "build/<target>/wallet.ino.bin"
 ```
 
-The web installer presents the same three targets and uses an independent
+The web installer presents the same targets and uses an independent
 manifest and application-image hash for each one. Tagged builds compile and
 package all targets in CI.
 
@@ -162,6 +186,8 @@ spread through the application as conditional compilation.
 | --- | --- | --- | --- |
 | `lilygo_tdisplay` | LILYGO T-Display, 240×135 landscape | Two side buttons; optional 3×4 keyboard module | Optional module |
 | `esp32_2432s028r` | ESP32-2432S028R, 320×240 landscape | Resistive touchscreen with contextual on-screen controls and dice keypad | On-board |
+| `esp32_3248s035r` | ESP32-3248S035R, 480×320 landscape | Resistive touchscreen with contextual on-screen controls and dice keypad | On-board |
+| `esp32_3248s035c` | ESP32-3248S035C, 480×320 landscape | Capacitive touchscreen with contextual on-screen controls and dice keypad | On-board |
 | `waveshare_esp32_c6_lcd_1_3` | Waveshare ESP32-C6-LCD-1.3, 240×240 | BOOT: tap to accept/advance, hold to cancel/back | On-board |
 
 The build script pins the toolchain and fully qualified board name for every
@@ -171,6 +197,8 @@ target:
 | --- | --- | --- |
 | `lilygo_tdisplay` | `esp32:esp32@2.0.17` | `esp32:esp32:ttgo-lora32` |
 | `esp32_2432s028r` | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
+| `esp32_3248s035r` | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
+| `esp32_3248s035c` | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
 | `waveshare_esp32_c6_lcd_1_3` | `esp32:esp32@3.3.11` | `esp32:esp32:esp32c6:CDCOnBoot=cdc` |
 
 All targets use the vendored, unmodified TFT_eSPI 2.5.44 runtime source. The
@@ -179,9 +207,11 @@ path does not compile with ESP32 Arduino core 3.3.x. Upstream examples,
 documentation, CI metadata, and non-Arduino tooling are deliberately excluded
 from the repository; see [vendored dependencies](libraries/DEPENDENCIES.md).
 
-The touch board runs a four-point calibration the first time it boots and
-stores the result in flash. The UI reserves a footer for controls only on touch
-hardware, leaving the content area uncluttered on button-based boards.
+Resistive touch boards run a four-point calibration the first time they boot
+and store the result in flash. Capacitive GT911 boards use their controller's
+native coordinates without calibration. The UI reserves a footer for controls
+only on touch hardware, leaving the content area uncluttered on button-based
+boards.
 
 To add another board, see the [board profile guide](wallet/boards/README.md).
 
@@ -200,6 +230,9 @@ device using commands in this form:
 The device can respond with a string in the same form:
 
 `/command-name {response1} {response2} ... {responseN}`
+
+During `/ping`, a device without a configured wallet also emits `/new` before
+the ping response. A configured device emits no wallet-state notice.
 
 Each command is documented in its implementation file:
 
@@ -247,10 +280,14 @@ tested seed backup before upgrading firmware.
 
 ### Create a wallet from dice rolls
 
-The air-gapped T-Display Keyboard Module or the ESP32-2432S028R on-screen
-keypad can create a 24-word BIP39 wallet using a physical six-sided die. The
-single-button Waveshare target deliberately disables dice entry because it has
-no practical way to enter six distinct values.
+The air-gapped T-Display Keyboard Module or a supported touchscreen keypad can
+create a 24-word BIP39 wallet using a physical six-sided die. The single-button
+Waveshare target deliberately disables dice entry because it has no practical
+way to enter six distinct values.
+
+From the webapp, connect and open **Device**, then select **Reset Wallet (use
+dice)**. The wallet password is sent through the encrypted pairing session;
+all dice rolls and seed words remain on the hardware. For an air-gapped flow:
 
 1. Put `/create your-password` in `commands.in.txt`. The password must contain
    at least 8 characters and cannot contain spaces.

@@ -2,6 +2,7 @@
 #include <cstdint>
 
 #include "../wallet/input_debounce.h"
+#include "../wallet/touch_transform.h"
 
 namespace {
 constexpr uint32_t debounceMs = 30;
@@ -82,6 +83,49 @@ void calibrationTargetsAreExtrapolatedToScreenEdges() {
   assert(bowserExtrapolateRawAxis(3500, 500, 24, 296, 0) == 3764);
   assert(bowserExtrapolateRawAxis(3500, 500, 24, 296, 319) == 247);
 }
+
+void gt911BoardTransformMapsCornersAndCenter() {
+  uint16_t x = 0;
+  uint16_t y = 0;
+
+  // ESP32-3248S035C: portrait 320x480 controller, landscape 480x320 UI,
+  // with swapped axes and inverted display Y.
+  assert(bowserMapTouchPoint(
+    0, 0, 320, 480, true, false, true, 480, 320, x, y
+  ));
+  assert(x == 0);
+  assert(y == 319);
+
+  assert(bowserMapTouchPoint(
+    319, 479, 320, 480, true, false, true, 480, 320, x, y
+  ));
+  assert(x == 479);
+  assert(y == 0);
+
+  assert(bowserMapTouchPoint(
+    160, 240, 320, 480, true, false, true, 480, 320, x, y
+  ));
+  assert(x == 240);
+  assert(y == 159);
+}
+
+void touchTransformClampsAndRejectsInvalidGeometry() {
+  uint16_t x = 0;
+  uint16_t y = 0;
+
+  assert(bowserMapTouchPoint(
+    500, 600, 320, 480, false, true, false, 320, 480, x, y
+  ));
+  assert(x == 0);
+  assert(y == 479);
+
+  assert(!bowserMapTouchPoint(
+    0, 0, 1, 480, false, false, false, 320, 480, x, y
+  ));
+  assert(!bowserMapTouchPoint(
+    0, 0, 320, 480, false, false, false, 1, 480, x, y
+  ));
+}
 }
 
 int main() {
@@ -93,5 +137,7 @@ int main() {
   heldInputCannotArmPrompt();
   releaseGateWraparoundIsSafe();
   calibrationTargetsAreExtrapolatedToScreenEdges();
+  gt911BoardTransformMapsCornersAndCenter();
+  touchTransformClampsAndRejectsInvalidGeometry();
   return 0;
 }

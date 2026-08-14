@@ -14,6 +14,7 @@
 #include <SD.h>
 
 #include "board_profile.h"
+#include "ui_scale.h"
 #include "ui_controls.h"
 
 #include <Wire.h>
@@ -47,6 +48,7 @@ BowserDisplay tft;
 struct GlobalState {
   String deviceId;
   bool authenticated;
+  bool walletConfigured;
   bool persistSecrets;
   String passwordVerifier;
   String mnemonic;
@@ -76,6 +78,7 @@ struct GlobalState {
 // Note: this is not an endorsment for One World Goverment
 GlobalState global = {
   "",
+  false,
   false,
   true,
   "",

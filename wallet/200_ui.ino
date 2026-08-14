@@ -13,16 +13,21 @@ void logo(int counter) {
   beginUiScreen();
   int16_t contentHeight = uiContentHeight();
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
-  tft.setTextSize(tft.width() >= 240 ? 3 : 2);
+  tft.setTextSize(uiFittedTextSize(title, 3, tft.width() - 8));
   tft.setCursor(4, max(4, contentHeight / 5));
   tft.print(title);
-  tft.setTextSize(counter > 0 ? 2 : 1);
+  tft.setTextSize(uiFittedTextSize(
+    subTitle,
+    counter > 0 ? 2 : 1,
+    tft.width() - 8
+  ));
   tft.setCursor(4, max(24, contentHeight * 3 / 5));
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.print(subTitle);
-  tft.setTextSize(1);
+  String version = "version: " + env.version + " / " + BOARD.id;
+  tft.setTextSize(uiFittedTextSize(version, 1, tft.width() - 8));
   tft.setCursor(4, max(40, contentHeight - 20));
-  tft.print("version: " + env.version + " / " + BOARD.id);
+  tft.print(version);
 }
 
 void showBootLogo() {
@@ -34,30 +39,37 @@ void showFirmwareHash(String firmwareHash) {
   beginUiScreen(UiControls::ContinueOnly);
   int16_t contentHeight = uiContentHeight();
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setTextSize(1);
+  String heading = "Firmware v" + env.version + " SHA-256";
+  uint8_t headingSize = uiFittedTextSize(heading, 1, tft.width() - 4);
+  tft.setTextSize(headingSize);
   tft.setCursor(2, 2);
-  tft.print("Firmware v" + env.version + " SHA-256");
+  tft.print(heading);
 
   if (firmwareHash.length() == 64) {
     tft.setTextColor(TFT_GREEN, TFT_BLACK);
-    tft.setTextSize(2);
-    tft.setCursor(2, 16);
+    uint8_t hashSize = uiFittedTextSize(
+      firmwareHash.substring(0, 16),
+      2,
+      tft.width() - 4
+    );
+    tft.setTextSize(hashSize);
+    tft.setCursor(2, 2 + uiTextPixelHeight(headingSize) + 2);
     for (int offset = 0; offset < 64; offset += 16) {
       tft.println(firmwareHash.substring(offset, offset + 16));
     }
   } else {
     tft.setTextColor(TFT_RED, TFT_BLACK);
-    tft.setTextSize(2);
+    tft.setTextSize(uiFittedTextSize("Hash unavailable", 2, tft.width() - 4));
     tft.setCursor(2, min(42, contentHeight / 3));
     tft.print("Hash unavailable");
   }
 
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setTextSize(1);
-  int16_t guidanceY = max(84, contentHeight - (BOARD.touch.enabled ? 28 : 44));
+  tft.setTextSize(uiFittedTextSize("Compare with release", 1, tft.width() - 4));
+  int16_t guidanceY = max(84, contentHeight - (BOARD.hasTouchscreen ? 28 : 44));
   tft.setCursor(2, guidanceY);
   tft.println("Compare with release");
-  if (!BOARD.touch.enabled) {
+  if (!BOARD.hasTouchscreen) {
     tft.setCursor(2, contentHeight - 12);
     if (BOARD.singleButtonLongPressCancels) {
       tft.print("Tap BOOT to continue");
@@ -84,11 +96,11 @@ void drawBowserLogo(int y) {
 void drawMessageContent(String message, String additional) {
   int16_t contentHeight = uiContentHeight();
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setTextSize(2);
+  tft.setTextSize(uiFittedTextSize(message, 2, tft.width() - 8));
   tft.setCursor(4, max(6, contentHeight / 5));
   tft.println(message);
   tft.setCursor(4, max(34, contentHeight * 3 / 5));
-  tft.setTextSize(2);
+  tft.setTextSize(uiFittedTextSize(additional, 2, tft.width() - 8));
   tft.println(additional);
   logInfo(message);
   logInfo(additional);
@@ -107,11 +119,12 @@ void showConfirmCancelMessage(String message, String additional) {
 void printMnemonicWord(String position, String word) {
   beginUiScreen(UiControls::PreviousNext);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setTextSize(2);
+  String heading = "Word " + position + ":";
+  tft.setTextSize(uiFittedTextSize(heading, 2, tft.width() - 8));
   tft.setCursor(4, 8);
-  tft.println("Word " + position + ":");
+  tft.println(heading);
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
-  tft.setTextSize(3);
+  tft.setTextSize(uiFittedTextSize(word, 3, tft.width() - 8));
   int16_t wordY = uiContentHeight() / 2;
   tft.setCursor(4, wordY < 54 ? wordY : 54);
   tft.println(word);
@@ -121,22 +134,36 @@ void showDiceRollProgress(int rollCount, char latestRoll) {
   bool complete = rollCount == DICE_ROLL_COUNT;
   beginUiScreen(UiControls::DicePad, complete);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setTextSize(2);
-  tft.setCursor(4, 2);
+  int16_t y = 2;
+  uint8_t textSize = uiFittedTextSize("Dice wallet", 2, tft.width() - 8);
+  tft.setTextSize(textSize);
+  tft.setCursor(4, y);
   tft.println("Dice wallet");
-  tft.setCursor(4, 22);
+  y += uiTextPixelHeight(textSize) + 2;
+  textSize = uiFittedTextSize("Enter rolls 1-6", 2, tft.width() - 8);
+  tft.setTextSize(textSize);
+  tft.setCursor(4, y);
   tft.println("Enter rolls 1-6");
-  tft.setCursor(4, 42);
-  tft.println(String(rollCount) + "/" + String(DICE_ROLL_COUNT));
+  y += uiTextPixelHeight(textSize) + 2;
+  String progress = String(rollCount) + "/" + String(DICE_ROLL_COUNT);
+  textSize = uiFittedTextSize(progress, 2, tft.width() - 8);
+  tft.setTextSize(textSize);
+  tft.setCursor(4, y);
+  tft.println(progress);
 
-  tft.setCursor(4, 66);
+  y += uiTextPixelHeight(textSize) + 2;
+  tft.setCursor(4, y);
   if (complete) {
     tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    tft.setTextSize(uiFittedTextSize("Select Done", 2, tft.width() - 8));
     tft.println("Select Done");
   } else if (latestRoll != 0) {
-    tft.println("Last roll: " + String(latestRoll));
+    String latest = "Last roll: " + String(latestRoll);
+    tft.setTextSize(uiFittedTextSize(latest, 2, tft.width() - 8));
+    tft.println(latest);
   } else {
     tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    tft.setTextSize(uiFittedTextSize("* removes last", 2, tft.width() - 8));
     tft.println("* removes last");
   }
 }
@@ -144,19 +171,21 @@ void showDiceRollProgress(int rollCount, char latestRoll) {
 void showDiceMnemonicWord(int position, String word) {
   beginUiScreen(UiControls::PreviousNext);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setTextSize(2);
+  String heading = "Write word " + String(position);
+  tft.setTextSize(uiFittedTextSize(heading, 2, tft.width() - 8));
   tft.setCursor(4, 4);
-  tft.println("Write word " + String(position));
+  tft.println(heading);
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
-  tft.setTextSize(3);
+  tft.setTextSize(uiFittedTextSize(word, 3, tft.width() - 8));
   int16_t wordY = uiContentHeight() / 2;
   tft.setCursor(4, wordY < 50 ? wordY : 50);
   tft.println(word);
-  if (!BOARD.touch.enabled) {
+  if (!BOARD.hasTouchscreen) {
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
-    tft.setTextSize(1);
+    String guidance = position == 24 ? "* back    # finish" : "* back    # next";
+    tft.setTextSize(uiFittedTextSize(guidance, 1, tft.width() - 8));
     tft.setCursor(4, uiContentHeight() - 12);
-    tft.println(position == 24 ? "* back    # finish" : "* back    # next");
+    tft.println(guidance);
   }
 }
 

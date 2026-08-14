@@ -65,7 +65,7 @@ jobs:
         shell: bash
         run: |
           firmware_version="${{ steps.firmware.outputs.version }}"
-          for target in lilygo_tdisplay esp32_2432s028r; do
+          for target in lilygo_tdisplay esp32_2432s028r esp32_3248s035r esp32_3248s035c; do
             tools/build_firmware.sh "${target}" "firmware-build/${target}"
             python3 tools/package_firmware.py \
               "${target}" "${firmware_version}" "firmware-build/${target}" \
@@ -142,7 +142,7 @@ jobs:
         run: |
           test -f pages/index.html
           test -f pages/installer/index.html
-          for target in lilygo_tdisplay esp32_2432s028r waveshare_esp32_c6_lcd_1_3; do
+          for target in lilygo_tdisplay esp32_2432s028r esp32_3248s035r esp32_3248s035c waveshare_esp32_c6_lcd_1_3; do
             test -f "pages/installer/firmware/esp32/current/${target}/manifest.json"
             test -f "pages/installer/firmware/esp32/current/${target}/ESP_IMAGE_SHA256.txt"
           done
@@ -192,7 +192,7 @@ jobs:
           firmware_dir="built-firmware/${firmware_version}"
           mkdir -p release-assets
           : > release-hashes.txt
-          for target in lilygo_tdisplay esp32_2432s028r waveshare_esp32_c6_lcd_1_3; do
+          for target in lilygo_tdisplay esp32_2432s028r esp32_3248s035r esp32_3248s035c waveshare_esp32_c6_lcd_1_3; do
             target_dir="${firmware_dir}/${target}"
             firmware_bin="${target_dir}/wallet.ino.bin"
             test -f "${firmware_bin}"

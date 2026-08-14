@@ -5,6 +5,7 @@ const BoardProfile BOARD = {
   "LILYGO T-Display",
   1,
   true,
+  0,
   4,
   HIGH,
   0,
@@ -18,7 +19,9 @@ const BoardProfile BOARD = {
   2,
   15,
   13,
-  {false, -1, -1, -1, -1, -1},
+  false,
+  {false, -1, -1, -1, -1, -1, false},
+  {false, -1, -1, -1, -1, 0, 0, false, false, false},
 };
 
 inline SPIClass &boardSdSpi() {

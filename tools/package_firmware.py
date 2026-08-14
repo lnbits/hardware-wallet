@@ -14,6 +14,8 @@ from esp_image_hash import esp_image_hash
 TARGETS = {
     "lilygo_tdisplay": {"chip_family": "ESP32", "bootloader_offset": 0x1000},
     "esp32_2432s028r": {"chip_family": "ESP32", "bootloader_offset": 0x1000},
+    "esp32_3248s035r": {"chip_family": "ESP32", "bootloader_offset": 0x1000},
+    "esp32_3248s035c": {"chip_family": "ESP32", "bootloader_offset": 0x1000},
     "waveshare_esp32_c6_lcd_1_3": {
         "chip_family": "ESP32-C6",
         "bootloader_offset": 0x0,

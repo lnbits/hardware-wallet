@@ -4,6 +4,7 @@ const String PAIRING_CONTROL_TEXT = "lnbits";
 
 const String COMMAND_HELP = "/help";
 const String COMMAND_PING = "/ping";
+const String COMMAND_NEW = "/new";
 const String COMMAND_RESTORE = "/restore";
 const String COMMAND_CREATE = "/create";
 const String COMMAND_WIPE = "/wipe";

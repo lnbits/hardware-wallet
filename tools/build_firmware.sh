@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: $0 <lilygo_tdisplay|esp32_2432s028r|waveshare_esp32_c6_lcd_1_3> [build-directory]" >&2
+  echo "Usage: $0 <lilygo_tdisplay|esp32_2432s028r|esp32_3248s035r|esp32_3248s035c|waveshare_esp32_c6_lcd_1_3> [build-directory]" >&2
   exit 2
 }
 
@@ -26,6 +26,22 @@ case "${target}" in
     core_version="2.0.17"
     fqbn="esp32:esp32:esp32"
     profile="esp32_2432s028r"
+    display_backend="display_backends/tft_espi.h"
+    tft_setup="${repository_root}/wallet/boards/${profile}/tft_setup.h"
+    compiler_c_flags="-MMD -c"
+    ;;
+  esp32_3248s035r)
+    core_version="2.0.17"
+    fqbn="esp32:esp32:esp32"
+    profile="esp32_3248s035r"
+    display_backend="display_backends/tft_espi.h"
+    tft_setup="${repository_root}/wallet/boards/${profile}/tft_setup.h"
+    compiler_c_flags="-MMD -c"
+    ;;
+  esp32_3248s035c)
+    core_version="2.0.17"
+    fqbn="esp32:esp32:esp32"
+    profile="esp32_3248s035c"
     display_backend="display_backends/tft_espi.h"
     tft_setup="${repository_root}/wallet/boards/${profile}/tft_setup.h"
     compiler_c_flags="-MMD -c"

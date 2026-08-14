@@ -9,31 +9,35 @@ CommandResponse executeHelp(String commandData) {
   return {"More info at:", "github.com/lnbits/hardware-wallet"};
 }
 
+void printHelpLine(const String &line) {
+  tft.setTextSize(uiFittedTextSize(line, 1, tft.width()));
+  tft.println(line);
+}
+
 void help()
 {
   beginUiScreen();
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setTextSize(2);
+  tft.setTextSize(uiFittedTextSize("Commands", 2, tft.width()));
   tft.setCursor(0, 0);
   tft.println("Commands");
-  tft.setCursor(0, 20);
-  tft.setTextSize(1);
+  tft.setCursor(0, 8 * uiFittedTextSize("Commands", 2, tft.width()) + 4);
 
-  tft.println("'/help' show available commands");
-  tft.println("'/restore <BIP39 seed words seperated by space>' will restore from seed");
-  tft.println("'/create <password>' creates a 24-word seed from 100 dice rolls (SD + dice input)");
-  tft.println("'/wipe' will completely wipe device and creat a new wallet");
-  tft.println("'/password' login by providing a password");
-  tft.println("'/password-clear' logout");
-  tft.println("'/seed' will show the seed on the hww display");
-  tft.println("'/psbt' will parse valid psbt and show its outputs and fee");
-  tft.println("'/sign' will sign valid psbt");
-  tft.println("'/xpub' defaults to Mainnet BIP84 account");
+  printHelpLine("'/help' show available commands");
+  printHelpLine("'/restore <BIP39 seed words seperated by space>' will restore from seed");
+  printHelpLine("'/create <password>' creates a 24-word seed from 100 dice rolls");
+  printHelpLine("'/wipe' will completely wipe device and creat a new wallet");
+  printHelpLine("'/password' login by providing a password");
+  printHelpLine("'/password-clear' logout");
+  printHelpLine("'/seed' will show the seed on the hww display");
+  printHelpLine("'/psbt' will parse valid psbt and show its outputs and fee");
+  printHelpLine("'/sign' will sign valid psbt");
+  printHelpLine("'/xpub' defaults to Mainnet BIP84 account");
 
   logInfo("Commands");
   logInfo("'/help' show available commands");
   logInfo("'/restore <BIP39 seed words seperated by space>' will restore from seed");
-  logInfo("'/create <password>' creates a 24-word seed from 100 dice rolls (SD + dice input)");
+  logInfo("'/create <password>' creates a 24-word seed from 100 dice rolls");
   logInfo("'/wipe' will completely wipe device and creat a new wallet");
   logInfo("'/password' login by providing a password");
   logInfo("'/password-clear' logout");

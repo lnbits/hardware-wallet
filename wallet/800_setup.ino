@@ -3,6 +3,13 @@
 void setup() {
   Serial.begin(9600);
 
+  // Keep a shared-bus touch controller deselected while TFT_eSPI configures
+  // the display SPI peripheral.
+  if (BOARD.xpt2046.enabled && BOARD.xpt2046.sharesDisplaySpi) {
+    pinMode(BOARD.xpt2046.chipSelectPin, OUTPUT);
+    digitalWrite(BOARD.xpt2046.chipSelectPin, HIGH);
+  }
+
   // Display details come from the selected board profile and TFT setup.
   tft.init();
   tft.setRotation(BOARD.displayRotation);
@@ -35,6 +42,7 @@ void setup() {
 
 bool loadFiles() {
   bool walletLoaded = loadWalletStorage();
+  global.walletConfigured = walletLoaded;
   global.authenticated = false;
   global.mnemonic = "";
   global.passphrase = "";

@@ -5,7 +5,7 @@ uint8_t uiTouchButtonCount = 0;
 int16_t currentUiContentHeight = 0;
 
 int16_t controlsHeight(UiControls controls) {
-  if (!BOARD.touch.enabled || controls == UiControls::None) return 0;
+  if (!BOARD.hasTouchscreen || controls == UiControls::None) return 0;
   int16_t available = tft.height();
   if (controls == UiControls::DicePad) {
     int16_t half = available / 2;
@@ -19,7 +19,6 @@ void addTouchButton(
   UiRect bounds,
   const String &label,
   char key,
-  uint16_t color,
   bool enabled = true
 ) {
   if (uiTouchButtonCount >= MAX_UI_TOUCH_BUTTONS) return;
@@ -29,14 +28,16 @@ void addTouchButton(
   button.key = key;
   button.enabled = enabled;
 
-  uint16_t fill = enabled ? color : TFT_DARKGREY;
-  tft.fillRect(bounds.x + 2, bounds.y + 2, bounds.width - 4, bounds.height - 4, fill);
-  tft.drawRect(bounds.x + 1, bounds.y + 1, bounds.width - 2, bounds.height - 2, TFT_WHITE);
-  tft.setTextColor(TFT_WHITE, fill);
-  tft.setTextSize(2);
-  int16_t textWidth = label.length() * 12;
+  uint16_t accent = enabled ? TFT_GREEN : TFT_DARKGREY;
+  tft.fillRect(bounds.x + 2, bounds.y + 2, bounds.width - 4, bounds.height - 4, TFT_BLACK);
+  tft.drawRect(bounds.x + 1, bounds.y + 1, bounds.width - 2, bounds.height - 2, accent);
+  tft.setTextColor(accent, TFT_BLACK);
+  uint8_t textSize = uiFittedTextSize(label, 2, bounds.width - 8);
+  tft.setTextSize(textSize);
+  int16_t textWidth = uiTextPixelWidth(label, textSize);
+  int16_t textHeight = uiTextPixelHeight(textSize);
   int16_t centeredX = (bounds.width - textWidth) / 2;
-  int16_t centeredY = (bounds.height - 16) / 2;
+  int16_t centeredY = (bounds.height - textHeight) / 2;
   int16_t textX = bounds.x + (centeredX > 4 ? centeredX : 4);
   int16_t textY = bounds.y + (centeredY > 4 ? centeredY : 4);
   tft.setCursor(textX, textY);
@@ -53,12 +54,11 @@ void drawTwoButtonRow(
   bool rightEnabled
 ) {
   int16_t halfWidth = tft.width() / 2;
-  addTouchButton({0, top, halfWidth, height}, leftLabel, leftKey, TFT_RED);
+  addTouchButton({0, top, halfWidth, height}, leftLabel, leftKey);
   addTouchButton(
     {halfWidth, top, int16_t(tft.width() - halfWidth), height},
     rightLabel,
     rightKey,
-    TFT_DARKGREEN,
     rightEnabled
   );
 }
@@ -101,14 +101,12 @@ void setUiControls(UiControls controls, bool confirmEnabled) {
       addTouchButton(
         {x, top, width, rowHeight},
         topLabels[column],
-        topKeys[column],
-        column == 3 ? TFT_RED : TFT_NAVY
+        topKeys[column]
       );
       addTouchButton(
         {x, int16_t(top + rowHeight), width, int16_t(footerHeight - rowHeight)},
         bottomLabels[column],
         bottomKeys[column],
-        column == 3 ? TFT_DARKGREEN : TFT_NAVY,
         column != 3 || confirmEnabled
       );
     }
@@ -120,9 +118,9 @@ void setUiControls(UiControls controls, bool confirmEnabled) {
   } else if (controls == UiControls::PreviousNext) {
     drawTwoButtonRow(top, footerHeight, "Back", '*', "Next", '#', confirmEnabled);
   } else if (controls == UiControls::ContinueOnly) {
-    addTouchButton({0, top, tft.width(), footerHeight}, "Continue", '#', TFT_DARKGREEN, confirmEnabled);
+    addTouchButton({0, top, tft.width(), footerHeight}, "Continue", '#', confirmEnabled);
   } else if (controls == UiControls::ToggleOnly) {
-    addTouchButton({0, top, tft.width(), footerHeight}, "Text / QR", '#', TFT_NAVY);
+    addTouchButton({0, top, tft.width(), footerHeight}, "Text / QR", '#');
   }
 }
 

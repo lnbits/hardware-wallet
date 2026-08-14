@@ -67,6 +67,27 @@ describe('Bowser encrypted transport framing', () => {
     )
   })
 
+  it('waits for device-only dice entry and seed review', async () => {
+    const bowser = device()
+    const request = vi.fn().mockResolvedValue('1')
+    ;(
+      bowser as unknown as {
+        request: typeof request
+      }
+    ).request = request
+
+    await bowser.createWithDice('dice-password')
+
+    expect(request).toHaveBeenCalledWith(
+      '/create',
+      ['dice-password'],
+      true,
+      15 * 60_000,
+    )
+    expect(bowser.walletConfigured).toBe(true)
+    expect(bowser.authenticated).toBe(true)
+  })
+
   it('accepts only an on-device seed-display acknowledgement', async () => {
     const bowser = device()
     const request = vi.fn().mockResolvedValue('7 displayed')
@@ -101,6 +122,26 @@ describe('Bowser encrypted transport framing', () => {
     expect(log.mock.calls.flat()).toEqual(['← /seed', '← /log'])
     expect(JSON.stringify(log.mock.calls)).not.toContain('sensitive-')
     expect(JSON.stringify(log.mock.calls)).not.toContain(encryptedSeed)
+  })
+
+  it('recognizes the payload-free new-device notice', async () => {
+    const state = vi.fn()
+    const bowser = new BowserDevice({
+      confirmPair: async () => true,
+      confirmOutput: async () => true,
+      confirmFee: async () => true,
+      log: vi.fn(),
+      state,
+    }) as unknown as TransportInternals & { walletConfigured: boolean }
+
+    expect(bowser.walletConfigured).toBe(true)
+    await bowser.handleLine('/new')
+    expect(bowser.walletConfigured).toBe(false)
+    expect(state).toHaveBeenCalledOnce()
+
+    bowser.walletConfigured = true
+    await bowser.handleLine('/new unexpected')
+    expect(bowser.walletConfigured).toBe(true)
   })
 
   it('never logs outgoing passwords, passphrases, or mnemonics', async () => {

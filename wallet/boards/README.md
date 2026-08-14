@@ -7,7 +7,9 @@ API; it does not contain a growing set of board-name `#ifdef` branches.
 Each directory contains:
 
 - `profile.h`: identity, rotation, backlight, buttons, keypad, microSD, and
-  touch capabilities.
+  touch capabilities. `uiTextSizeBoost` scales built-in fonts for larger
+  displays; each rendered label is still reduced automatically if needed to
+  fit its available width.
 - A `tft_setup.h` display configuration selected through TFT_eSPI's upstream
   setup hook.
 
@@ -41,7 +43,13 @@ Input is capability-based:
 
 - `hasMatrixKeypad` provides digits, accept, and cancel.
 - `hasSdCard` enables air-gapped command discovery on the configured SPI bus.
-- `touch.enabled` provides contextual touch buttons and first-boot calibration.
+- `hasTouchscreen` provides contextual touch buttons for any touch backend.
+- `xpt2046.enabled` selects resistive XPT2046 input. These boards
+  use first-boot calibration; `xpt2046.sharesDisplaySpi` uses TFT_eSPI's SPI
+  instance where the display and touch controller share one bus.
+- `gt911.enabled` selects capacitive GT911 input on its configured I2C pins.
+  Its profile owns the native dimensions and axis transforms, keeping board
+  orientation details out of wallet and command logic.
 - A one-button profile with `singleButtonLongPressCancels` maps a tap to
   accept/next and a long press to cancel/back.
 - Two-button boards map the two buttons directly.

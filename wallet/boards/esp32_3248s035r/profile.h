@@ -1,15 +1,15 @@
 #pragma once
 
-// Wiring reference:
-// https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/blob/main/PINS.md
+// Board definition reference:
+// https://github.com/rzeldent/platformio-espressif32-sunton/blob/main/esp32-3248S035R.json
 
 const BoardProfile BOARD = {
-  "esp32_2432s028r",
-  "ESP32-2432S028R",
+  "esp32_3248s035r",
+  "ESP32-3248S035R",
   1,
   false,
   1,
-  21,
+  27,
   HIGH,
   0,
   -1,
@@ -23,7 +23,7 @@ const BoardProfile BOARD = {
   23,
   5,
   true,
-  {true, 25, 39, 32, 33, 36, false},
+  {true, 14, 12, 13, 33, 36, true},
   {false, -1, -1, -1, -1, 0, 0, false, false, false},
 };
 

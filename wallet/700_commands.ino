@@ -107,6 +107,7 @@ HwwInitData initHww(String password, String mnemonic, String passphrase, bool pe
     return {"", "", false};
   }
 
+  global.walletConfigured = true;
   return {global.passwordVerifier, mnemonic, true};
 }
 
