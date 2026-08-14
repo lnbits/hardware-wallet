@@ -14,7 +14,8 @@ Maintainers are not responsible for any loss of funds.
 
 ## What you need
 
-- One of the [supported ESP32 boards](#supported-boards)
+- One of the ESP32 boards marked **Available** under
+  [supported boards](#supported-boards)
 - A USB data cable for flashing and connected operation
 - A computer with one of the following:
   - Chrome, Chromium, or Brave for the web installer and Web Serial
@@ -91,30 +92,6 @@ arduino-cli upload --verbose \
   wallet
 ```
 
-For the ESP32-2432S028R touchscreen board:
-
-```bash
-./tools/build_firmware.sh esp32_2432s028r
-
-arduino-cli upload --verbose \
-  --fqbn esp32:esp32:esp32 \
-  --port "${bowser_port}" \
-  --input-dir build/esp32_2432s028r \
-  wallet
-```
-
-For the ESP32-3248S035R touchscreen board:
-
-```bash
-./tools/build_firmware.sh esp32_3248s035r
-
-arduino-cli upload --verbose \
-  --fqbn esp32:esp32:esp32 \
-  --port "${bowser_port}" \
-  --input-dir build/esp32_3248s035r \
-  wallet
-```
-
 For the ESP32-3248S035C capacitive touchscreen board:
 
 ```bash
@@ -127,7 +104,31 @@ arduino-cli upload --verbose \
   wallet
 ```
 
-For the Waveshare ESP32-C6-LCD-1.3:
+For the ESP32-2432S028R touchscreen board *(coming soon)*:
+
+```bash
+./tools/build_firmware.sh esp32_2432s028r
+
+arduino-cli upload --verbose \
+  --fqbn esp32:esp32:esp32 \
+  --port "${bowser_port}" \
+  --input-dir build/esp32_2432s028r \
+  wallet
+```
+
+For the ESP32-3248S035R touchscreen board *(coming soon)*:
+
+```bash
+./tools/build_firmware.sh esp32_3248s035r
+
+arduino-cli upload --verbose \
+  --fqbn esp32:esp32:esp32 \
+  --port "${bowser_port}" \
+  --input-dir build/esp32_3248s035r \
+  wallet
+```
+
+For the Waveshare ESP32-C6-LCD-1.3 *(coming soon)*:
 
 ```bash
 ./tools/build_firmware.sh waveshare_esp32_c6_lcd_1_3
@@ -147,9 +148,9 @@ uploaded. Replace `<target>` with the selected target ID:
 python3 tools/esp_image_hash.py "build/<target>/wallet.ino.bin"
 ```
 
-The web installer presents the same targets and uses an independent
-manifest and application-image hash for each one. Tagged builds compile and
-package all targets in CI.
+The web installer shows every planned target, but only available targets are
+selectable. Tagged builds compile and package only those available targets in
+CI; coming-soon profiles remain buildable locally for development.
 
 ### Verify the firmware release hash
 
@@ -182,24 +183,24 @@ The same wallet source builds for each board. Select a target at compile time;
 board pins and capabilities live in a small board profile rather than being
 spread through the application as conditional compilation.
 
-| Target | Display | Input | microSD |
-| --- | --- | --- | --- |
-| `lilygo_tdisplay` | LILYGO T-Display, 240×135 landscape | Two side buttons; optional 3×4 keyboard module | Optional module |
-| `esp32_2432s028r` | ESP32-2432S028R, 320×240 landscape | Resistive touchscreen with contextual on-screen controls and dice keypad | On-board |
-| `esp32_3248s035r` | ESP32-3248S035R, 480×320 landscape | Resistive touchscreen with contextual on-screen controls and dice keypad | On-board |
-| `esp32_3248s035c` | ESP32-3248S035C, 480×320 landscape | Capacitive touchscreen with contextual on-screen controls and dice keypad | On-board |
-| `waveshare_esp32_c6_lcd_1_3` | Waveshare ESP32-C6-LCD-1.3, 240×240 | BOOT: tap to accept/advance, hold to cancel/back | On-board |
+| Target | Status | Display | Input | microSD |
+| --- | --- | --- | --- | --- |
+| `lilygo_tdisplay` | Available | LILYGO T-Display, 240×135 landscape | Two side buttons; optional 3×4 keyboard module | Optional module |
+| `esp32_2432s028r` | **Coming soon** | ESP32-2432S028R, 320×240 landscape | Resistive touchscreen with contextual on-screen controls and dice keypad | On-board |
+| `esp32_3248s035r` | **Coming soon** | ESP32-3248S035R, 480×320 landscape | Resistive touchscreen with contextual on-screen controls and dice keypad | On-board |
+| `esp32_3248s035c` | Available | ESP32-3248S035C, 480×320 landscape | Capacitive touchscreen with contextual on-screen controls and dice keypad | On-board |
+| `waveshare_esp32_c6_lcd_1_3` | **Coming soon** | Waveshare ESP32-C6-LCD-1.3, 240×240 | BOOT: tap to accept/advance, hold to cancel/back | On-board |
 
 The build script pins the toolchain and fully qualified board name for every
 target:
 
-| Target | ESP32 Arduino core | FQBN |
-| --- | --- | --- |
-| `lilygo_tdisplay` | `esp32:esp32@2.0.17` | `esp32:esp32:ttgo-lora32` |
-| `esp32_2432s028r` | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
-| `esp32_3248s035r` | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
-| `esp32_3248s035c` | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
-| `waveshare_esp32_c6_lcd_1_3` | `esp32:esp32@3.3.11` | `esp32:esp32:esp32c6:CDCOnBoot=cdc` |
+| Target | Status | ESP32 Arduino core | FQBN |
+| --- | --- | --- | --- |
+| `lilygo_tdisplay` | Available | `esp32:esp32@2.0.17` | `esp32:esp32:ttgo-lora32` |
+| `esp32_2432s028r` | **Coming soon** | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
+| `esp32_3248s035r` | **Coming soon** | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
+| `esp32_3248s035c` | Available | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
+| `waveshare_esp32_c6_lcd_1_3` | **Coming soon** | `esp32:esp32@3.3.11` | `esp32:esp32:esp32c6:CDCOnBoot=cdc` |
 
 All targets use the vendored, unmodified TFT_eSPI 2.5.44 runtime source. The
 C6 profile selects TFT_eSPI's portable SPI backend because its optimized C6

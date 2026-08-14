@@ -4,11 +4,11 @@
 
 The installer loads the unmodified
 [`esp-web-tools@10.4.0`](https://www.npmjs.com/package/esp-web-tools/v/10.4.0)
-release from unpkg for every supported board.
+release from unpkg for every available board.
 
-Before changing this pin, physically verify automatic connection and flashing
-without using the BOOT button on the T-Display, ESP32-2432S028R,
-ESP32-3248S035R, ESP32-3248S035C, and Waveshare ESP32-C6-LCD-1.3.
+Before changing this pin, verify automatic connection and flashing without
+using the BOOT button on the T-Display and ESP32-3248S035C. The other profiles
+are coming soon.
 
 ## Build and package local firmware
 
@@ -18,13 +18,13 @@ these commands from the repository root. The build script installs the pinned
 ESP32 Arduino core required by each target, so a separate manual core
 installation is not required. It deliberately uses these target definitions:
 
-| Target | ESP32 Arduino core | FQBN |
-| --- | --- | --- |
-| `lilygo_tdisplay` | `esp32:esp32@2.0.17` | `esp32:esp32:ttgo-lora32` |
-| `esp32_2432s028r` | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
-| `esp32_3248s035r` | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
-| `esp32_3248s035c` | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
-| `waveshare_esp32_c6_lcd_1_3` | `esp32:esp32@3.3.11` | `esp32:esp32:esp32c6:CDCOnBoot=cdc` |
+| Target | Status | ESP32 Arduino core | FQBN |
+| --- | --- | --- | --- |
+| `lilygo_tdisplay` | Available | `esp32:esp32@2.0.17` | `esp32:esp32:ttgo-lora32` |
+| `esp32_2432s028r` | **Coming soon** | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
+| `esp32_3248s035r` | **Coming soon** | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
+| `esp32_3248s035c` | Available | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
+| `waveshare_esp32_c6_lcd_1_3` | **Coming soon** | `esp32:esp32@3.3.11` | `esp32:esp32:esp32c6:CDCOnBoot=cdc` |
 
 Set a version label for the local manifests. It does not need to be a released
 version when testing locally:
@@ -48,6 +48,7 @@ python3 tools/package_firmware.py \
   installer/firmware/esp32/current/lilygo_tdisplay \
   --boot-app0 "${HOME}/.arduino15/packages/esp32/hardware/esp32/2.0.17/tools/partitions/boot_app0.bin"
 
+# Coming soon: ESP32-2432S028R.
 ./tools/build_firmware.sh \
   esp32_2432s028r \
   build/esp32_2432s028r
@@ -59,6 +60,7 @@ python3 tools/package_firmware.py \
   installer/firmware/esp32/current/esp32_2432s028r \
   --boot-app0 "${HOME}/.arduino15/packages/esp32/hardware/esp32/2.0.17/tools/partitions/boot_app0.bin"
 
+# Coming soon: ESP32-3248S035R.
 ./tools/build_firmware.sh \
   esp32_3248s035r \
   build/esp32_3248s035r
@@ -82,8 +84,8 @@ python3 tools/package_firmware.py \
   --boot-app0 "${HOME}/.arduino15/packages/esp32/hardware/esp32/2.0.17/tools/partitions/boot_app0.bin"
 ```
 
-Build and package the C6 target last. Its build switches the installed core to
-3.3.11:
+The Waveshare C6 target is **coming soon**. Developers can build and package it
+last; its build switches the installed core to 3.3.11:
 
 ```bash
 ./tools/build_firmware.sh \

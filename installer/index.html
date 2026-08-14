@@ -72,15 +72,17 @@
           <label for="firmware-target">Supported board</label>
           <select id="firmware-target">
             <option value="lilygo_tdisplay">LILYGO T-Display</option>
-            <option value="esp32_2432s028r">ESP32-2432S028R touch</option>
-            <option value="esp32_3248s035r">
-              ESP32-3248S035R resistive touch
+            <option value="esp32_2432s028r" disabled>
+              ESP32-2432S028R touch — Coming soon
+            </option>
+            <option value="esp32_3248s035r" disabled>
+              ESP32-3248S035R resistive touch — Coming soon
             </option>
             <option value="esp32_3248s035c">
               ESP32-3248S035C capacitive touch
             </option>
-            <option value="waveshare_esp32_c6_lcd_1_3">
-              Waveshare ESP32-C6-LCD-1.3
+            <option value="waveshare_esp32_c6_lcd_1_3" disabled>
+              Waveshare ESP32-C6-LCD-1.3 — Coming soon
             </option>
           </select>
 
@@ -178,10 +180,7 @@
       (() => {
         const supportedTargets = new Set([
           "lilygo_tdisplay",
-          "esp32_2432s028r",
-          "esp32_3248s035r",
           "esp32_3248s035c",
-          "waveshare_esp32_c6_lcd_1_3",
         ]);
         const requestedTarget = new URLSearchParams(location.search).get(
           "board",

@@ -4,6 +4,19 @@ Bowser keeps one application and selects one board profile at compile time.
 Application code consumes the `BOARD` capability object and the common input
 API; it does not contain a growing set of board-name `#ifdef` branches.
 
+Release status:
+
+| Target | Status |
+| --- | --- |
+| `lilygo_tdisplay` | Available |
+| `esp32_2432s028r` | **Coming soon** |
+| `esp32_3248s035r` | **Coming soon** |
+| `esp32_3248s035c` | Available |
+| `waveshare_esp32_c6_lcd_1_3` | **Coming soon** |
+
+Coming-soon profiles remain available for local development, but are not
+published by the web installer release workflow.
+
 Each directory contains:
 
 - `profile.h`: identity, rotation, backlight, buttons, keypad, microSD, and
