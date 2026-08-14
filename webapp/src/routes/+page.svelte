@@ -1837,8 +1837,7 @@
                             class="row-subtitle mono"
                             href={transactionExplorerUrl(item.txid)}
                             target="_blank"
-                            rel="noreferrer"
-                            >{short(item.txid)}</a
+                            rel="noreferrer">{short(item.txid)}</a
                           >
                         </div>
                         <span class="spacer"></span><strong
