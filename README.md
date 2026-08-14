@@ -34,39 +34,6 @@ The standalone [Bowser Wallet webapp](https://lnbits.github.io/hardware-wallet/w
 
 ## Installation
 
-### Supported boards
-
-The same wallet source builds for each board. Select a target at compile time;
-board pins and capabilities live in a small board profile rather than being
-spread through the application as conditional compilation.
-
-| Target | Display | Input | microSD |
-| --- | --- | --- | --- |
-| `lilygo_tdisplay` | LILYGO T-Display, 240×135 landscape | Two side buttons; optional 3×4 keyboard module | Optional module |
-| `esp32_2432s028r` | ESP32-2432S028R, 320×240 landscape | Resistive touchscreen with contextual on-screen controls and dice keypad | On-board |
-| `waveshare_esp32_c6_lcd_1_3` | Waveshare ESP32-C6-LCD-1.3, 240×240 | BOOT: tap to accept/advance, hold to cancel/back | On-board |
-
-The build script pins the toolchain and fully qualified board name for every
-target:
-
-| Target | ESP32 Arduino core | FQBN |
-| --- | --- | --- |
-| `lilygo_tdisplay` | `esp32:esp32@2.0.17` | `esp32:esp32:ttgo-lora32` |
-| `esp32_2432s028r` | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
-| `waveshare_esp32_c6_lcd_1_3` | `esp32:esp32@3.3.11` | `esp32:esp32:esp32c6:CDCOnBoot=cdc` |
-
-All targets use the vendored, unmodified TFT_eSPI 2.5.44 runtime source. The
-C6 profile selects TFT_eSPI's portable SPI backend because its optimized C6
-path does not compile with ESP32 Arduino core 3.3.x. Upstream examples,
-documentation, CI metadata, and non-Arduino tooling are deliberately excluded
-from the repository; see [vendored dependencies](libraries/DEPENDENCIES.md).
-
-The touch board runs a four-point calibration the first time it boots and
-stores the result in flash. The UI reserves a footer for controls only on touch
-hardware, leaving the content area uncluttered on button-based boards.
-
-To add another board, see the [board profile guide](wallet/boards/README.md).
-
 ### Web installer (easy)
 
 Use the [LNbits Hardware Wallet web installer](https://lnbits.github.io/hardware-wallet).
@@ -75,41 +42,6 @@ After installation, the web installer and the device both show the SHA-256 of
 the installed application image. Compare all 64 characters with the firmware
 SHA-256 published in the corresponding board asset in the GitHub release, then
 accept using the device's keypad, touchscreen, or button.
-
-### Verify the firmware release hash
-
-Every tagged release compiles the firmware from that tag in GitHub Actions,
-then publishes that exact source-built image and its ESP application image hash
-in the GitHub release notes and as an `ESP_IMAGE_SHA256.txt` release asset. The
-same CI-built files are deployed to the web installer. The hash is also
-calculated from the running application partition by the device when it boots.
-Compare all three values; they should be identical.
-
-You can independently verify the firmware file included in this repository:
-
-```bash
-python3 tools/esp_image_hash.py \
-  installer/firmware/esp32/current/lilygo_tdisplay/wallet.ino.bin
-```
-
-The command validates the SHA-256 embedded at the end of the ESP application
-image and prints its 64-character hexadecimal value. It exits with an error if
-the file is not an ESP application image or its embedded digest is invalid.
-
-This is deliberately not the same operation as running `sha256sum` over the
-whole `.bin` file: the ESP image digest covers the image content preceding the
-final 32-byte embedded digest. As a result, a whole-file SHA-256 is expected to
-be different.
-
-Matching hashes confirm that the application image on the device is byte-for-
-byte the image compiled from the tagged source and published for the release.
-Perform the comparison using a trusted copy of the GitHub release page; a hash
-displayed by the same potentially compromised source as the firmware does not
-independently prove authenticity. For the strongest verification, inspect the
-tagged source and the pinned release workflow, or build the tagged source
-yourself. Exact byte-for-byte reproducibility can also depend on matching the
-toolchain and build environment because ESP application metadata includes a
-hash of the build output.
 
 ### Build from source with Arduino CLI (tinfoil)
 
@@ -147,6 +79,65 @@ arduino-cli board list
 The web installer presents the same three targets and uses an independent
 manifest and application-image hash for each one. Tagged builds compile and
 package all targets in CI.
+
+### Verify the firmware release hash
+
+Every tagged release compiles the firmware from that tag in GitHub Actions,
+then publishes that exact source-built image and its ESP application image hash
+in the GitHub release notes and as an `ESP_IMAGE_SHA256.txt` release asset. The
+same CI-built files are deployed to the web installer. The hash is also
+calculated from the running application partition by the device when it boots.
+Compare all three values; they should be identical.
+
+You can independently verify the firmware file included in this repository:
+
+```bash
+python3 tools/esp_image_hash.py \
+  installer/firmware/esp32/current/lilygo_tdisplay/wallet.ino.bin
+```
+
+The command validates the SHA-256 embedded at the end of the ESP application
+image and prints its 64-character hexadecimal value. It exits with an error if
+the file is not an ESP application image or its embedded digest is invalid.
+
+This is deliberately not the same operation as running `sha256sum` over the
+whole `.bin` file: the ESP image digest covers the image content preceding the
+final 32-byte embedded digest. As a result, a whole-file SHA-256 is expected to
+be different.
+
+## Supported boards
+
+The same wallet source builds for each board. Select a target at compile time;
+board pins and capabilities live in a small board profile rather than being
+spread through the application as conditional compilation.
+
+| Target | Display | Input | microSD |
+| --- | --- | --- | --- |
+| `lilygo_tdisplay` | LILYGO T-Display, 240×135 landscape | Two side buttons; optional 3×4 keyboard module | Optional module |
+| `esp32_2432s028r` | ESP32-2432S028R, 320×240 landscape | Resistive touchscreen with contextual on-screen controls and dice keypad | On-board |
+| `waveshare_esp32_c6_lcd_1_3` | Waveshare ESP32-C6-LCD-1.3, 240×240 | BOOT: tap to accept/advance, hold to cancel/back | On-board |
+
+The build script pins the toolchain and fully qualified board name for every
+target:
+
+| Target | ESP32 Arduino core | FQBN |
+| --- | --- | --- |
+| `lilygo_tdisplay` | `esp32:esp32@2.0.17` | `esp32:esp32:ttgo-lora32` |
+| `esp32_2432s028r` | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
+| `waveshare_esp32_c6_lcd_1_3` | `esp32:esp32@3.3.11` | `esp32:esp32:esp32c6:CDCOnBoot=cdc` |
+
+All targets use the vendored, unmodified TFT_eSPI 2.5.44 runtime source. The
+C6 profile selects TFT_eSPI's portable SPI backend because its optimized C6
+path does not compile with ESP32 Arduino core 3.3.x. Upstream examples,
+documentation, CI metadata, and non-Arduino tooling are deliberately excluded
+from the repository; see [vendored dependencies](libraries/DEPENDENCIES.md).
+
+The touch board runs a four-point calibration the first time it boots and
+stores the result in flash. The UI reserves a footer for controls only on touch
+hardware, leaving the content area uncluttered on button-based boards.
+
+To add another board, see the [board profile guide](wallet/boards/README.md).
+
 
 ## Device commands
 
