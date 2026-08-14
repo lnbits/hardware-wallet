@@ -134,7 +134,7 @@ CommandResponse signPsbt(PSBT psbt, HDPrivateKey hd) {
 }
 
 CommandResponse signPsbtToFile(PSBT psbt, HDPrivateKey hd) {
-  showMessage("Sign reviewed PSBT?", "# / BTN1 yes, * / BTN2 no");
+  showConfirmCancelMessage("Sign reviewed PSBT?", "Review complete");
   if (awaitPhysicalReviewApproval() == false) {
     sendCommandOutput(COMMAND_SEND_PSBT, "review_rejected");
     return {"Operation canceled", "Signing rejected"};
@@ -158,9 +158,10 @@ CommandResponse confirmAndSignPsbt(PSBT psbt, HDPrivateKey hd) {
 
   Command c = decryptAndExtractCommand(data);
   if (c.cmd == COMMAND_SIGN_PSBT) {
-    showMessage("Confirm", "Press button to confirm");
+    showConfirmCancelMessage("Confirm signing", "Check outputs and fee");
+    armInputForPrompt();
     EventData event = awaitEvent();
-    if (event.type != EVENT_BUTTON_ACTION) {
+    if (event.type != EVENT_BUTTON_ACTION || event.data != "confirm") {
       return {"Operation Canceled", "" };
     };
 

@@ -26,8 +26,4 @@ const String EVENT_BUTTON_ACTION = "button";
 // execute un-encrypted commands
 const String EVENT_INTERNAL_COMMAND = "intern";
 
-// T-Display Keyboard Module matrix pins. The rows and columns match the
-// silkscreen/pinout for the 4x3 keypad used by the air-gapped device.
-const int KEYPAD_COLUMN_PINS[3] = {33, 32, 25};
-const int KEYPAD_ROW_PINS[4] = {21, 27, 26, 22};
 const int DICE_ROLL_COUNT = 100;

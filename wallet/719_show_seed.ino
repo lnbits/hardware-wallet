@@ -59,6 +59,7 @@ CommandResponse showSeedWordAtPosition(String positionStr) {
   sendCommandOutput(COMMAND_SEED, positionStr + " displayed");
   word = "";
 
+  armInputForPrompt();
   EventData event = awaitEvent();
   if (event.type == EVENT_BUTTON_ACTION) {
     event = handleButtonDownEvent(event, position);
@@ -68,14 +69,9 @@ CommandResponse showSeedWordAtPosition(String positionStr) {
 
 
 EventData handleButtonDownEvent(EventData buttonEvent, int position) {
-  String buttonState = getWordAtPosition(buttonEvent.data, 1);
-  if (buttonState == "1") {
-    // on button up, just show the word again
-    return {EVENT_INTERNAL_COMMAND, COMMAND_SEED + " " + String(position)};
+  if (buttonEvent.data == "cancel") {
+    int previous = position > 1 ? position - 1 : 1;
+    return {EVENT_INTERNAL_COMMAND, COMMAND_SEED + " " + String(previous)};
   }
-
-  String buttonNumber = getWordAtPosition(buttonEvent.data, 0);
-  if (buttonNumber == "1")
-    return {EVENT_INTERNAL_COMMAND, COMMAND_SEED + " " + String(position - 1)};
-  return {EVENT_INTERNAL_COMMAND, COMMAND_SEED + " " + String(position + 1) };
+  return {EVENT_INTERNAL_COMMAND, COMMAND_SEED + " " + String(position + 1)};
 }

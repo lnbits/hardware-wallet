@@ -44,7 +44,11 @@
 #endif
 
 // Include the processor specific drivers
-#if defined (ESP32)
+#if defined(CONFIG_IDF_TARGET_ESP32C6)
+  // ESP32-C6 uses the portable Arduino SPI path. The classic ESP32 register
+  // implementation targets a different SPI peripheral layout.
+  #include "Processors/TFT_eSPI_Generic.h"
+#elif defined (ESP32)
   #include "Processors/TFT_eSPI_ESP32.h"
 #elif defined (ESP8266)
   #include "Processors/TFT_eSPI_ESP8266.h"

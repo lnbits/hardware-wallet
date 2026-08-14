@@ -12,15 +12,32 @@ WebSerial mode is intended for smaller day-to-day amounts. For more sensitive us
 
 Maintainers are not responsible for any loss of funds.
 
+## Supported boards
+
+The same wallet source builds for each board. Select a target at compile time;
+board pins and capabilities live in a small board profile rather than being
+spread through the application as conditional compilation.
+
+| Target | Display | Input | microSD |
+| --- | --- | --- | --- |
+| `lilygo_tdisplay` | LILYGO T-Display, 240×135 landscape | Two side buttons; optional 3×4 keyboard module | Optional module |
+| `esp32_2432s028r` | ESP32-2432S028R, 320×240 landscape | Resistive touchscreen with contextual on-screen controls and dice keypad | On-board |
+| `waveshare_esp32_c6_lcd_1_3` | Waveshare ESP32-C6-LCD-1.3, 240×240 | BOOT: tap to accept/advance, hold to cancel/back | On-board |
+
+The touch board runs a four-point calibration the first time it boots and
+stores the result in flash. The UI reserves a footer for controls only on touch
+hardware, leaving the content area uncluttered on button-based boards.
+
+To add another board, see the [board profile guide](wallet/boards/README.md).
+
 ## What you need
 
-- A LILYGO TTGO T-Display ESP32
+- One of the supported ESP32 boards above
 - A USB data cable for flashing and connected operation
 - A computer with one of the following:
   - Chrome, Chromium, or Brave for the web installer and Web Serial
   - Arduino CLI or Arduino IDE for compiling and flashing manually
-- Optional: the LILYGO T-Display Keyboard Module and a microSD card for
-  air-gapped commands and dice-roll wallet creation
+- A microSD card for air-gapped commands; the T-Display also needs its keyboard/SD module
 - Optional: the LNbits OnchainWallet extension for connected wallet operation
 - Optional: a case, or a complete kit from the
   [LNbits shop](https://shop.lnbits.com/product-category/hardware/hardware-wallets)
@@ -41,8 +58,8 @@ Use the [LNbits Hardware Wallet web installer](https://lnbits.github.io/hardware
 
 After installation, the web installer and the device both show the SHA-256 of
 the installed application image. Compare all 64 characters with the firmware
-SHA-256 published in the corresponding GitHub release, then press `#` on the
-keypad to continue. A side button can be used on devices without a keypad.
+SHA-256 published in the corresponding board asset in the GitHub release, then
+accept using the device's keypad, touchscreen, or button.
 
 ### Verify the firmware release hash
 
@@ -57,7 +74,7 @@ You can independently verify the firmware file included in this repository:
 
 ```bash
 python3 tools/esp_image_hash.py \
-  installer/firmware/esp32/current/wallet.ino.bin
+  installer/firmware/esp32/current/lilygo_tdisplay/wallet.ino.bin
 ```
 
 The command validates the SHA-256 embedded at the end of the ESP application
@@ -97,26 +114,24 @@ Then clone and build the firmware:
 git clone https://github.com/lnbits/hardware-wallet
 cd hardware-wallet
 
-# Install the exact ESP32 core version used by this project.
+# Configure the Espressif board index. The target script installs the pinned
+# core version needed by the selected board.
 arduino-cli config add board_manager.additional_urls \
   https://espressif.github.io/arduino-esp32/package_esp32_index.json
 arduino-cli core update-index
-arduino-cli core install esp32:esp32@2.0.17
-arduino-cli core list
 
-# Connect the device and identify its serial port.
+# Build one or more targets. Output is written below build/<target>/.
+tools/build_firmware.sh lilygo_tdisplay
+tools/build_firmware.sh esp32_2432s028r
+tools/build_firmware.sh waveshare_esp32_c6_lcd_1_3
+
+# Connect the device and identify its serial port before uploading.
 arduino-cli board list
-
-# Set this to the port shown above. Common Linux ports are ttyACM0 and ttyUSB0.
-HWW_PORT=/dev/ttyACM0
-
-# Compile and upload for the LILYGO T-Display.
-arduino-cli compile --verbose --clean --upload \
-  --fqbn esp32:esp32:ttgo-lora32 \
-  --port "$HWW_PORT" \
-  --libraries "$PWD/libraries" \
-  "$PWD/wallet"
 ```
+
+The web installer presents the same three targets and uses an independent
+manifest and application-image hash for each one. Tagged builds compile and
+package all targets in CI.
 
 ## Device commands
 
@@ -166,8 +181,9 @@ Each command is documented in its implementation file:
 
 When signing an SD-card PSBT, the device displays every destination and amount,
 then the fee, and requires a physical approval for each item. It asks for one
-final physical confirmation before producing a signature. `#` or button 1
-accepts; `*` or button 2 rejects.
+final physical confirmation before producing a signature. `#`, the positive
+touch button, or a short button press accepts; `*`, the negative touch button,
+or a long press rejects.
 
 Wallets created by current firmware are stored as an authenticated encrypted
 record. Separate encryption and authentication keys are derived from the
@@ -178,23 +194,25 @@ tested seed backup before upgrading firmware.
 
 ### Create a wallet from dice rolls
 
-The air-gapped T-Display Keyboard Module can create a 24-word BIP39 wallet
-using a physical six-sided die:
+The air-gapped T-Display Keyboard Module or the ESP32-2432S028R on-screen
+keypad can create a 24-word BIP39 wallet using a physical six-sided die. The
+single-button Waveshare target deliberately disables dice entry because it has
+no practical way to enter six distinct values.
 
 1. Put `/create your-password` in `commands.in.txt`. The password must contain
    at least 8 characters and cannot contain spaces.
 2. Insert the microSD card and reboot the device.
-3. Roll a fair six-sided die 100 times, entering each result with keypad keys
-   `1` through `6`. Press `*` to remove the most recent entry.
-4. At `100/100`, press `#` to create the wallet.
-5. Write down each seed word shown on the device. Press `#` for the next word
-   and `*` for the previous word. Press `#` on word 24 to finish.
+3. Roll a fair six-sided die 100 times, entering each result with keypad or
+   touch keys `1` through `6`. Use `*` or **Delete** to remove an entry.
+4. At `100/100`, use `#` or **Done** to create the wallet.
+5. Write down each seed word shown on the device and use its contextual
+   previous/next controls. Advancing from word 24 finishes.
 
-The keypad matrix uses columns GPIO 33, 32, and 25 and rows GPIO 21, 27, 26,
-and 22. The firmware hashes the exact 100 ASCII dice digits with SHA-256 and
-uses the resulting 256 bits directly as BIP39 entropy. This makes the process
-reproducible for recovery and provides more than 256 bits of input entropy when
-the die is fair.
+The optional T-Display keypad matrix uses columns GPIO 33, 32, and 25 and rows
+GPIO 21, 27, 26, and 22. The firmware hashes the exact 100 ASCII dice digits
+with SHA-256 and uses the resulting 256 bits directly as BIP39 entropy. This
+makes the process reproducible for recovery and provides more than 256 bits of
+input entropy when the die is fair.
 
 Neither the dice sequence nor the seed words are written to the microSD card by
 `/create`; `commands.out.txt` only receives `/create 1` on success. Protect or
@@ -202,8 +220,8 @@ remove `commands.in.txt`, because it contains the wallet password. The wallet
 is persisted in the device's existing password-encrypted storage even if a
 previous `/pair` command disabled persistence for SD restores. The existing
 `/seed` command also keeps the mnemonic off the microSD card: it displays one
-word at a time on the hardware screen. Press `#` or button 1 to advance, and
-`*` or button 2 to go back. Advancing from word 24 finishes the review.
+word at a time on the hardware screen. Use the board's next/previous controls
+to review it. Advancing from word 24 finishes the review.
 
 ## Entropy lines (the important bit)
 

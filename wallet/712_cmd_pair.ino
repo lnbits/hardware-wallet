@@ -6,8 +6,8 @@
    @param data: String. Space separated values. Use minus (`-`) to skip the value.
     Value significance by position:
     0 - publicKeyHex: String (optional). The public key of the client in hex format, used in DHKE.
-    1 - button1Pin: int (optional). The pin number for the first button (optional).
-    2 - button2Pin: int (optional). The pin number for the second button (optional).
+    1 - button1Pin: legacy field, accepted but ignored. Pins come from the board profile.
+    2 - button2Pin: legacy field, accepted but ignored. Pins come from the board profile.
     3 - persistSecrets: boolean (optional).
           - Persist the password-protected wallet record when restoring a wallet.
           - Set to `false` in air-gapped mode when the seed is provided in `commands.in.txt`
@@ -101,17 +101,12 @@ CommandResponse pair(
 }
 
 void updateDeviceConfig(String button1Pin, String button2Pin) {
-  String deviceConfig = global.deviceId;
-  if (isNotEmptyParam(button1Pin)) {
-    global.button1Pin = button1Pin.toInt();
-    deviceConfig = deviceConfig + " " + button1Pin;
+  // Retain the legacy positional parameters for client compatibility, but do
+  // not let an unauthenticated pairing frame reassign hardware GPIOs.
+  if (isNotEmptyParam(button1Pin) || isNotEmptyParam(button2Pin)) {
+    logInfo("Pairing button pin overrides ignored for board " + String(BOARD.id));
   }
-
-  if (isNotEmptyParam(button2Pin)) {
-    global.button2Pin = button2Pin.toInt();
-    deviceConfig = deviceConfig + " " + button2Pin;
-  }
-
-  // update device config
-  writeFile(SPIFFS, global.deviceMetaFileName.c_str(), deviceConfig);
+  global.button1Pin = BOARD.primaryButtonPin;
+  global.button2Pin = BOARD.secondaryButtonPin;
+  writeFile(SPIFFS, global.deviceMetaFileName.c_str(), global.deviceId);
 }

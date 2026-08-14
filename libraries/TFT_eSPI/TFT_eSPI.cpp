@@ -16,7 +16,9 @@
 
 #include "TFT_eSPI.h"
 
-#if defined (ESP32)
+#if defined(CONFIG_IDF_TARGET_ESP32C6)
+  #include "Processors/TFT_eSPI_Generic.c"
+#elif defined (ESP32)
   #include "Processors/TFT_eSPI_ESP32.c"
 #elif defined (ESP8266)
   #include "Processors/TFT_eSPI_ESP8266.c"
@@ -4278,4 +4280,3 @@ void TFT_eSPI::getSetup(setup_t &tft_settings)
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
-

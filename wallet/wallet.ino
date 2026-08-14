@@ -10,6 +10,11 @@
 
 #include <FS.h>
 #include <SPIFFS.h>
+#include <SPI.h>
+#include <SD.h>
+
+#include "board_profile.h"
+#include "ui_controls.h"
 
 #include <Wire.h>
 #include <TFT_eSPI.h>
@@ -25,15 +30,9 @@ extern "C" {
 
 #include <aes.h>
 
-#include <FS.h>
-#include <SPIFFS.h>
-
 #include "bootloader_random.h"
 #include "esp_ota_ops.h"
 #include "esp_partition.h"
-
-#include "SD.h"
-#include "SPI.h"
 
 #define BOWSER_FIRMWARE_VERSION "0.7.1"
 
@@ -41,18 +40,6 @@ fs::SPIFFSFS &FlashFS = SPIFFS;
 
 SHA256 h;
 TFT_eSPI tft = TFT_eSPI();
-
-
-// SD Cars
-#define SD_MISO     2
-#define SD_MOSI     15
-#define SD_SCLK     17
-#define SD_CS       13
-
-
-// Buttons
-#define button1PinNumber 0
-#define button2PinNumber 35
 
 
 //////////////////////////////// Define and initialize the Global State ////////////////////////////////
@@ -105,8 +92,8 @@ GlobalState global = {
   "/shared_secret.txt",
   "/wallet.v2",
   "/device_meta.txt",
-  button1PinNumber,
-  button2PinNumber,
+  BOARD.primaryButtonPin,
+  BOARD.secondaryButtonPin,
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
   false,
   "",

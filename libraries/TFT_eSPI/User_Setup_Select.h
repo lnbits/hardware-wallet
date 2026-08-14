@@ -17,6 +17,18 @@
 #ifndef USER_SETUP_LOADED //  Lets PlatformIO users define settings in
 //  platformio.ini, see notes in "Tools" folder.
 
+// Bowser build targets keep TFT configuration with their board profile. This
+// backports TFT_eSPI's external setup hook so the vendored library never needs
+// a board selection edited in-place.
+#ifdef TFT_ESPI_USER_SETUP_PATH
+#define TFT_ESPI_STRINGIFY_IMPL(value) #value
+#define TFT_ESPI_STRINGIFY(value) TFT_ESPI_STRINGIFY_IMPL(value)
+#include TFT_ESPI_STRINGIFY(TFT_ESPI_USER_SETUP_PATH)
+#define USER_SETUP_LOADED
+#endif
+
+#ifndef USER_SETUP_LOADED
+
 // Only ONE line below should be uncommented.  Add extra lines and files as needed.
 
 // #include <User_Setup.h>           // Default setup is root library folder
@@ -75,6 +87,8 @@
 //#include <User_Setups/Setup135_ST7789.h>           // Setup file for ESP8266 and ST7789 135 x 240 TFT
 
 //#include <User_Setups/SetupX_Template.h>
+
+#endif
 
 
 #endif // USER_SETUP_LOADED

@@ -6,9 +6,9 @@ PSBT parseBase64Psbt(String psbtBase64) {
 }
 
 void printOutputDetails(PSBT psbt, HDPrivateKey hd, int index, const Network * network) {
-  tft.fillScreen(TFT_BLACK);
+  beginUiScreen(global.hasCommandsFile ? UiControls::ConfirmCancel : UiControls::None);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setCursor(0, 0);
+  tft.setCursor(4, 2);
   tft.setTextSize(2);
   tft.println("Output " + String(index));
   tft.setTextSize(1);
@@ -37,9 +37,9 @@ void printOutputDetails(PSBT psbt, HDPrivateKey hd, int index, const Network * n
 }
 
 void printFeeDetails(uint64_t fee) {
-  tft.fillScreen(TFT_BLACK);
+  beginUiScreen(global.hasCommandsFile ? UiControls::ConfirmCancel : UiControls::None);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setCursor(0, 30);
+  tft.setCursor(4, max(8, uiContentHeight() / 3));
   tft.setTextSize(2);
   tft.print("Fee: ");
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
@@ -49,10 +49,18 @@ void printFeeDetails(uint64_t fee) {
 }
 
 void printSdReviewControls() {
+  if (BOARD.touch.enabled) {
+    setUiControls(UiControls::ConfirmCancel);
+    return;
+  }
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setTextSize(1);
-  tft.setCursor(0, 124);
-  tft.print("# / BTN1 accept   * / BTN2 cancel");
+  tft.setCursor(0, tft.height() - 11);
+  if (BOARD.singleButtonLongPressCancels) {
+    tft.print("Tap accept / hold cancel");
+  } else {
+    tft.print("# / BTN1 accept   * / BTN2 cancel");
+  }
 }
 
 bool isChangeAddress(HDPrivateKey hd, PSBTOutputMetadata txOutMeta, TxOut txOut) {

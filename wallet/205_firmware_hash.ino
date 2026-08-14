@@ -16,26 +16,11 @@ String getRunningFirmwareSha256() {
 void waitForFirmwareHashConfirmation() {
   String firmwareHash = getRunningFirmwareSha256();
   showFirmwareHash(firmwareHash);
+  armInputForPrompt();
 
-  setupKeypad();
   while (true) {
-    char key = scanKeypad();
-    bool buttonPressed = digitalRead(global.button1Pin) == LOW;
-    if (global.button2Pin != global.button1Pin) {
-      buttonPressed = buttonPressed || digitalRead(global.button2Pin) == LOW;
-    }
-
-    if (key == '#' || buttonPressed) {
-      while (
-        scanKeypad() != 0 ||
-        digitalRead(global.button1Pin) == LOW ||
-        (
-          global.button2Pin != global.button1Pin &&
-          digitalRead(global.button2Pin) == LOW
-        )
-      ) {
-        delay(10);
-      }
+    char key = pollInputKey();
+    if (key == '#') {
       firmwareHash = "";
       return;
     }

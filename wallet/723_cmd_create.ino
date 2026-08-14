@@ -2,9 +2,9 @@
    @brief Create a 24-word BIP39 wallet from physical six-sided dice rolls.
 
    This command is intentionally restricted to SD-card command mode. The user
-   enters 100 rolls on the attached 4x3 keypad. The SHA-256 digest of the 100
-   ASCII digits is used directly as the 256-bit BIP39 entropy. The rolls and
-   mnemonic are never written to the SD card.
+   enters 100 rolls on a physical or on-screen dice keypad. The SHA-256 digest
+   of the 100 ASCII digits is used directly as the 256-bit BIP39 entropy. The
+   rolls and mnemonic are never written to the SD card.
 
    @param password: String. Minimum 8 characters, spaces are not allowed.
    @return CommandResponse
@@ -15,6 +15,11 @@
 CommandResponse executeCreate(String password) {
   if (global.hasCommandsFile == false) {
     return {"SD card only", "Use commands.in.txt"};
+  }
+
+  if (!BOARD.hasMatrixKeypad && !BOARD.touch.enabled) {
+    sendCommandOutput(COMMAND_CREATE, "0");
+    return {"Dice input unavailable", "Use restore instead"};
   }
 
   password.trim();
@@ -76,6 +81,7 @@ int collectDiceRolls(char *rolls, int requiredRolls) {
   setupKeypad();
   int rollCount = 0;
   showDiceRollProgress(rollCount, 0);
+  armInputForPrompt();
 
   while (true) {
     while (rollCount < requiredRolls) {
@@ -108,6 +114,7 @@ void reviewDiceMnemonic(const String &mnemonic) {
   int position = 1;
   while (true) {
     showDiceMnemonicWord(position, getWordAtPosition(mnemonic, position - 1));
+    armInputForPrompt();
     char key = waitForKeypadKey();
 
     if (key == '*' && position > 1) {

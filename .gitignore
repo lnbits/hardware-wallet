@@ -1,1 +1,8 @@
 .vscode
+__pycache__/
+*.pyc
+/build/
+/firmware-build/
+/built-firmware/
+/installer/firmware/esp32/current/*/
+/libraries/uBitcoin/tests/build/
