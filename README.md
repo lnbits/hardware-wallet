@@ -12,7 +12,29 @@ WebSerial mode is intended for smaller day-to-day amounts. For more sensitive us
 
 Maintainers are not responsible for any loss of funds.
 
-## Supported boards
+## What you need
+
+- One of the [supported ESP32 boards](#supported-boards)
+- A USB data cable for flashing and connected operation
+- A computer with one of the following:
+  - Chrome, Chromium, or Brave for the web installer and Web Serial
+  - Arduino CLI or Arduino IDE for compiling and flashing manually
+- A microSD card for air-gapped commands; the T-Display also needs its keyboard/SD module
+- Optional: the LNbits OnchainWallet extension for connected wallet operation
+- Optional: a case, or a complete kit from the
+  [LNbits shop](https://shop.lnbits.com/product-category/hardware/hardware-wallets)
+
+## For use with
+
+The LNbits [WatchOnly Extension](https://github.com/lnbits/watchonly)
+
+The standalone [Bowser Wallet webapp](https://lnbits.github.io/hardware-wallet/webapp/)
+
+[Electrum](https://lnbits.github.io/hardware-wallet/webapp/)
+
+## Installation
+
+### Supported boards
 
 The same wallet source builds for each board. Select a target at compile time;
 board pins and capabilities live in a small board profile rather than being
@@ -44,28 +66,6 @@ stores the result in flash. The UI reserves a footer for controls only on touch
 hardware, leaving the content area uncluttered on button-based boards.
 
 To add another board, see the [board profile guide](wallet/boards/README.md).
-
-## What you need
-
-- One of the supported ESP32 boards above
-- A USB data cable for flashing and connected operation
-- A computer with one of the following:
-  - Chrome, Chromium, or Brave for the web installer and Web Serial
-  - Arduino CLI or Arduino IDE for compiling and flashing manually
-- A microSD card for air-gapped commands; the T-Display also needs its keyboard/SD module
-- Optional: the LNbits OnchainWallet extension for connected wallet operation
-- Optional: a case, or a complete kit from the
-  [LNbits shop](https://shop.lnbits.com/product-category/hardware/hardware-wallets)
-
-## For use with
-
-The LNbits [WatchOnly Extension](https://github.com/lnbits/watchonly)
-
-The standalone [Bowser Wallet webapp](https://lnbits.github.io/hardware-wallet/webapp/)
-
-[Electrum](https://lnbits.github.io/hardware-wallet/webapp/)
-
-## Installation
 
 ### Web installer (easy)
 
