@@ -21,12 +21,19 @@ export interface BowserEvents {
   state: () => void
 }
 
-const PUBLIC_COMMANDS = new Set(['/pair', '/log', '/password-clear', '/ping'])
+const PUBLIC_COMMANDS = new Set([
+  '/pair',
+  '/log',
+  '/new',
+  '/password-clear',
+  '/ping',
+])
 
 export class BowserDevice implements DeviceAdapter {
   readonly kind = 'bowser' as const
   connected = false
   authenticated = false
+  walletConfigured = true
   deviceId = ''
   port: SerialPort | null = null
   private reader: ReadableStreamDefaultReader<Uint8Array> | null = null
@@ -66,6 +73,7 @@ export class BowserDevice implements DeviceAdapter {
       throw new Error(
         'WebSerial is unavailable. Use Chrome, Chromium, Brave, or Edge over HTTPS.',
       )
+    this.walletConfigured = true
     this.port = await navigator.serial.requestPort()
     try {
       this.port.addEventListener('disconnect', () => void this.reset())
@@ -154,6 +162,7 @@ export class BowserDevice implements DeviceAdapter {
   private reset() {
     this.connected = false
     this.authenticated = false
+    this.walletConfigured = true
     this.sharedSecret?.fill(0)
     this.privateKey?.fill(0)
     this.sharedSecret = null
@@ -210,6 +219,11 @@ export class BowserDevice implements DeviceAdapter {
       // trusted place for secrets, so neither belongs in the in-memory console.
       this.events.log(`← ${command}`)
       if (command === '/log') {
+        return
+      }
+      if (command === '/new' && data === '') {
+        this.walletConfigured = false
+        this.events.state()
         return
       }
       if (command === '/password-clear') {
@@ -389,6 +403,7 @@ export class BowserDevice implements DeviceAdapter {
     )
     if (response.trim() !== '1')
       throw new Error('Bowser HWW did not restore the wallet')
+    this.walletConfigured = true
     this.authenticated = true
     this.events.state()
   }
@@ -397,6 +412,23 @@ export class BowserDevice implements DeviceAdapter {
     const response = await this.request('/wipe', [password], true, 60_000)
     if (response.trim() !== '1')
       throw new Error('Bowser HWW did not reset the wallet')
+    this.walletConfigured = true
+    this.authenticated = true
+    this.events.state()
+  }
+
+  async createWithDice(password: string) {
+    // Allow time for 100 physical rolls plus the complete on-device seed
+    // review. Dice values and mnemonic words never enter browser memory.
+    const response = await this.request(
+      '/create',
+      [password],
+      true,
+      15 * 60_000,
+    )
+    if (response.trim() !== '1')
+      throw new Error('Bowser HWW did not create the dice wallet')
+    this.walletConfigured = true
     this.authenticated = true
     this.events.state()
   }

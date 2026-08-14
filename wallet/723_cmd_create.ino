@@ -1,20 +1,22 @@
 /**
    @brief Create a 24-word BIP39 wallet from physical six-sided dice rolls.
 
-   This command is intentionally restricted to SD-card command mode. The user
-   enters 100 rolls on the attached 4x3 keypad. The SHA-256 digest of the 100
-   ASCII digits is used directly as the 256-bit BIP39 entropy. The rolls and
-   mnemonic are never written to the SD card.
+   The command may arrive through an encrypted WebSerial session or an
+   air-gapped SD-card command file. The user enters 100 rolls on a physical or
+   on-screen dice keypad. The SHA-256 digest of the 100 ASCII digits is used
+   directly as the 256-bit BIP39 entropy. The rolls and mnemonic never leave
+   the device.
 
    @param password: String. Minimum 8 characters, spaces are not allowed.
    @return CommandResponse
       - creation and seed-review status to the UI.
-      - `/create {status}` to the SD-card output file. Status is `1` when the
-        wallet is successfully created and `0` otherwise.
+      - `/create {status}` to the active command transport. Status is `1` when
+        the wallet is successfully created and `0` otherwise.
 */
 CommandResponse executeCreate(String password) {
-  if (global.hasCommandsFile == false) {
-    return {"SD card only", "Use commands.in.txt"};
+  if (!BOARD.hasMatrixKeypad && !BOARD.hasTouchscreen) {
+    sendCommandOutput(COMMAND_CREATE, "0");
+    return {"Dice input unavailable", "Use restore instead"};
   }
 
   password.trim();
@@ -76,6 +78,7 @@ int collectDiceRolls(char *rolls, int requiredRolls) {
   setupKeypad();
   int rollCount = 0;
   showDiceRollProgress(rollCount, 0);
+  armInputForPrompt();
 
   while (true) {
     while (rollCount < requiredRolls) {
@@ -108,6 +111,7 @@ void reviewDiceMnemonic(const String &mnemonic) {
   int position = 1;
   while (true) {
     showDiceMnemonicWord(position, getWordAtPosition(mnemonic, position - 1));
+    armInputForPrompt();
     char key = waitForKeypadKey();
 
     if (key == '*' && position > 1) {

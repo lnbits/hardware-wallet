@@ -107,6 +107,7 @@ HwwInitData initHww(String password, String mnemonic, String passphrase, bool pe
     return {"", "", false};
   }
 
+  global.walletConfigured = true;
   return {global.passwordVerifier, mnemonic, true};
 }
 
@@ -139,18 +140,22 @@ EventData toggleDatanAndQR(String data, bool showQR) {
   String dataUpper = data + "";
   dataUpper.toUpperCase();
 
-  EventData event = {EVENT_BUTTON_ACTION, "0 1"};
-  while (event.type == EVENT_BUTTON_ACTION) {
-    String buttonState = getWordAtPosition(event.data, 1);
+  if (showQR == true) {
+    showQRCode(dataUpper);
+  } else {
+    showMessage(data, "");
+    setUiControls(UiControls::ToggleOnly);
+  }
 
-    if (buttonState == "1") {
-      if (showQR == true) {
-        showQRCode(dataUpper);
-      } else {
-        showMessage(data, "");
-      }
+  armInputForPrompt();
+  EventData event = awaitEvent();
+  while (event.type == EVENT_BUTTON_ACTION) {
+    showQR = !showQR;
+    if (showQR == true) {
+      showQRCode(dataUpper);
     } else {
-      showQR = !showQR;
+      showMessage(data, "");
+      setUiControls(UiControls::ToggleOnly);
     }
     event = awaitEvent();
   }

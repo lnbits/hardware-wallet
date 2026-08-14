@@ -94,6 +94,7 @@ export interface DeviceAdapter {
   readonly kind: 'bowser'
   connected: boolean
   authenticated: boolean
+  walletConfigured: boolean
   connect(): Promise<void>
   disconnect(): Promise<void>
   getXpub(

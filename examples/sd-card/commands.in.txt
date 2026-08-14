@@ -14,7 +14,8 @@
 # /pair - - - false
 
 # Create and persist a new 24-word wallet from exactly 100 physical d6 rolls.
-# Requires the T-Display Keyboard Module. This replaces the current wallet.
+# Requires the T-Display Keyboard Module or the ESP32-2432S028R touch keypad.
+# It is unavailable on the single-button Waveshare target. This replaces the current wallet.
 # The new wallet password must be at least 8 characters.
 # /create <new-password-of-at-least-8-characters>
 
@@ -47,13 +48,13 @@
 # /address Testnet <full-derivation-path> <expected-address>
 
 # Review the mnemonic one word at a time on the hardware display. Nothing from
-# this command is written to commands.out.txt. Use #/BTN1 to advance and
-# */BTN2 to go back; advance from word 24 to finish.
+# this command is written to commands.out.txt. Use the displayed next/back
+# controls; advance from word 24 to finish.
 # /seed
 
 # Parse, review, and sign a base64 PSBT. Confirm every output, the fee, and the
-# final signing prompt on the device using #/BTN1. Reject with */BTN2. Do not
-# add a separate /sign command.
+# final signing prompt using the device's accept/cancel controls. Do not add a
+# separate /sign command.
 # /psbt Mainnet <base64-PSBT>
 # /psbt Testnet <base64-PSBT>
 

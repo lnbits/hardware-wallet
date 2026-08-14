@@ -14,13 +14,13 @@ Maintainers are not responsible for any loss of funds.
 
 ## What you need
 
-- A LILYGO TTGO T-Display ESP32
+- One of the ESP32 boards marked **Available** under
+  [supported boards](#supported-boards)
 - A USB data cable for flashing and connected operation
 - A computer with one of the following:
   - Chrome, Chromium, or Brave for the web installer and Web Serial
   - Arduino CLI or Arduino IDE for compiling and flashing manually
-- Optional: the LILYGO T-Display Keyboard Module and a microSD card for
-  air-gapped commands and dice-roll wallet creation
+- A microSD card for air-gapped commands; the T-Display also needs its keyboard/SD module
 - Optional: the LNbits OnchainWallet extension for connected wallet operation
 - Optional: a case, or a complete kit from the
   [LNbits shop](https://shop.lnbits.com/product-category/hardware/hardware-wallets)
@@ -41,43 +41,8 @@ Use the [LNbits Hardware Wallet web installer](https://lnbits.github.io/hardware
 
 After installation, the web installer and the device both show the SHA-256 of
 the installed application image. Compare all 64 characters with the firmware
-SHA-256 published in the corresponding GitHub release, then press `#` on the
-keypad to continue. A side button can be used on devices without a keypad.
-
-### Verify the firmware release hash
-
-Every tagged release compiles the firmware from that tag in GitHub Actions,
-then publishes that exact source-built image and its ESP application image hash
-in the GitHub release notes and as an `ESP_IMAGE_SHA256.txt` release asset. The
-same CI-built files are deployed to the web installer. The hash is also
-calculated from the running application partition by the device when it boots.
-Compare all three values; they should be identical.
-
-You can independently verify the firmware file included in this repository:
-
-```bash
-python3 tools/esp_image_hash.py \
-  installer/firmware/esp32/current/wallet.ino.bin
-```
-
-The command validates the SHA-256 embedded at the end of the ESP application
-image and prints its 64-character hexadecimal value. It exits with an error if
-the file is not an ESP application image or its embedded digest is invalid.
-
-This is deliberately not the same operation as running `sha256sum` over the
-whole `.bin` file: the ESP image digest covers the image content preceding the
-final 32-byte embedded digest. As a result, a whole-file SHA-256 is expected to
-be different.
-
-Matching hashes confirm that the application image on the device is byte-for-
-byte the image compiled from the tagged source and published for the release.
-Perform the comparison using a trusted copy of the GitHub release page; a hash
-displayed by the same potentially compromised source as the firmware does not
-independently prove authenticity. For the strongest verification, inspect the
-tagged source and the pinned release workflow, or build the tagged source
-yourself. Exact byte-for-byte reproducibility can also depend on matching the
-toolchain and build environment because ESP application metadata includes a
-hash of the build output.
+SHA-256 published in the corresponding board asset in the GitHub release, then
+accept using the device's keypad, touchscreen, or button.
 
 ### Build from source with Arduino CLI (tinfoil)
 
@@ -97,26 +62,160 @@ Then clone and build the firmware:
 git clone https://github.com/lnbits/hardware-wallet
 cd hardware-wallet
 
-# Install the exact ESP32 core version used by this project.
+# Configure the Espressif board index. The target script installs the pinned
+# core version needed by the selected board.
 arduino-cli config add board_manager.additional_urls \
   https://espressif.github.io/arduino-esp32/package_esp32_index.json
 arduino-cli core update-index
-arduino-cli core install esp32:esp32@2.0.17
-arduino-cli core list
 
-# Connect the device and identify its serial port.
+# Connect the device and identify its serial port before uploading.
 arduino-cli board list
 
 # Set this to the port shown above. Common Linux ports are ttyACM0 and ttyUSB0.
-HWW_PORT=/dev/ttyACM0
-
-# Compile and upload for the LILYGO T-Display.
-arduino-cli compile --verbose --clean --upload \
-  --fqbn esp32:esp32:ttgo-lora32 \
-  --port "$HWW_PORT" \
-  --libraries "$PWD/libraries" \
-  "$PWD/wallet"
+bowser_port=/dev/ttyACM0
 ```
+
+Build and upload only the target matching the connected board. Keep each build
+and upload pair together: the build script installs that target's pinned ESP32
+core, and `arduino-cli upload` uses the currently installed core's flashing
+tools.
+
+For the LILYGO T-Display:
+
+```bash
+./tools/build_firmware.sh lilygo_tdisplay
+
+arduino-cli upload --verbose \
+  --fqbn esp32:esp32:ttgo-lora32 \
+  --port "${bowser_port}" \
+  --input-dir build/lilygo_tdisplay \
+  wallet
+```
+
+For the ESP32-3248S035C capacitive touchscreen board:
+
+```bash
+./tools/build_firmware.sh esp32_3248s035c
+
+arduino-cli upload --verbose \
+  --fqbn esp32:esp32:esp32 \
+  --port "${bowser_port}" \
+  --input-dir build/esp32_3248s035c \
+  wallet
+```
+
+For the ESP32-2432S028R touchscreen board *(coming soon)*:
+
+```bash
+./tools/build_firmware.sh esp32_2432s028r
+
+arduino-cli upload --verbose \
+  --fqbn esp32:esp32:esp32 \
+  --port "${bowser_port}" \
+  --input-dir build/esp32_2432s028r \
+  wallet
+```
+
+For the ESP32-3248S035R touchscreen board *(coming soon)*:
+
+```bash
+./tools/build_firmware.sh esp32_3248s035r
+
+arduino-cli upload --verbose \
+  --fqbn esp32:esp32:esp32 \
+  --port "${bowser_port}" \
+  --input-dir build/esp32_3248s035r \
+  wallet
+```
+
+For the Waveshare ESP32-C6-LCD-1.3 *(coming soon)*:
+
+```bash
+./tools/build_firmware.sh waveshare_esp32_c6_lcd_1_3
+
+arduino-cli upload --verbose \
+  --fqbn esp32:esp32:esp32c6:CDCOnBoot=cdc \
+  --port "${bowser_port}" \
+  --input-dir build/waveshare_esp32_c6_lcd_1_3 \
+  wallet
+```
+
+After uploading, reboot the board and compare the application-image
+fingerprint shown by the device with the value calculated from the binary you
+uploaded. Replace `<target>` with the selected target ID:
+
+```bash
+python3 tools/esp_image_hash.py "build/<target>/wallet.ino.bin"
+```
+
+The web installer shows every planned target, but only available targets are
+selectable. Tagged builds compile and package only those available targets in
+CI; coming-soon profiles remain buildable locally for development.
+
+### Verify the firmware release hash
+
+Every tagged release compiles the firmware from that tag in GitHub Actions,
+then publishes that exact source-built image and its ESP application image hash
+in the GitHub release notes and as an `ESP_IMAGE_SHA256.txt` release asset. The
+same CI-built files are deployed to the web installer. The hash is also
+calculated from the running application partition by the device when it boots.
+Compare all three values; they should be identical.
+
+You can independently verify the firmware file included in this repository:
+
+```bash
+python3 tools/esp_image_hash.py \
+  installer/firmware/esp32/current/lilygo_tdisplay/wallet.ino.bin
+```
+
+The command validates the SHA-256 embedded at the end of the ESP application
+image and prints its 64-character hexadecimal value. It exits with an error if
+the file is not an ESP application image or its embedded digest is invalid.
+
+This is deliberately not the same operation as running `sha256sum` over the
+whole `.bin` file: the ESP image digest covers the image content preceding the
+final 32-byte embedded digest. As a result, a whole-file SHA-256 is expected to
+be different.
+
+### Supported boards
+
+The same wallet source builds for each board. Select a target at compile time;
+board pins and capabilities live in a small board profile rather than being
+spread through the application as conditional compilation.
+
+| Target | Status | Display | Input | microSD |
+| --- | --- | --- | --- | --- |
+| `lilygo_tdisplay` | Available | LILYGO T-Display, 240×135 landscape | Two side buttons; optional 3×4 keyboard module | Optional module |
+| `esp32_2432s028r` | **Coming soon** | ESP32-2432S028R, 320×240 landscape | Resistive touchscreen with contextual on-screen controls and dice keypad | On-board |
+| `esp32_3248s035r` | **Coming soon** | ESP32-3248S035R, 480×320 landscape | Resistive touchscreen with contextual on-screen controls and dice keypad | On-board |
+| `esp32_3248s035c` | Available | ESP32-3248S035C, 480×320 landscape | Capacitive touchscreen with contextual on-screen controls and dice keypad | On-board |
+| `waveshare_esp32_c6_lcd_1_3` | **Coming soon** | Waveshare ESP32-C6-LCD-1.3, 240×240 | BOOT: tap to accept/advance, hold to cancel/back | On-board |
+
+The build script pins the toolchain and fully qualified board name for every
+target:
+
+| Target | Status | ESP32 Arduino core | FQBN |
+| --- | --- | --- | --- |
+| `lilygo_tdisplay` | Available | `esp32:esp32@2.0.17` | `esp32:esp32:ttgo-lora32` |
+| `esp32_2432s028r` | **Coming soon** | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
+| `esp32_3248s035r` | **Coming soon** | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
+| `esp32_3248s035c` | Available | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
+| `waveshare_esp32_c6_lcd_1_3` | **Coming soon** | `esp32:esp32@3.3.11` | `esp32:esp32:esp32c6:CDCOnBoot=cdc` |
+
+All targets use the vendored, unmodified TFT_eSPI 2.5.44 runtime source. The
+C6 profile selects TFT_eSPI's portable SPI backend because its optimized C6
+path does not compile with ESP32 Arduino core 3.3.x. Upstream examples,
+documentation, CI metadata, and non-Arduino tooling are deliberately excluded
+from the repository; see [vendored dependencies](libraries/DEPENDENCIES.md).
+
+Resistive touch boards run a four-point calibration the first time they boot
+and store the result in flash. Capacitive GT911 boards use their controller's
+native coordinates without calibration. The UI reserves a footer for controls
+only on touch hardware, leaving the content area uncluttered on button-based
+boards.
+
+To add another board, see the [board profile guide](wallet/boards/README.md).
+
 
 ## Device commands
 
@@ -132,6 +231,9 @@ device using commands in this form:
 The device can respond with a string in the same form:
 
 `/command-name {response1} {response2} ... {responseN}`
+
+During `/ping`, a device without a configured wallet also emits `/new` before
+the ping response. A configured device emits no wallet-state notice.
 
 Each command is documented in its implementation file:
 
@@ -166,8 +268,9 @@ Each command is documented in its implementation file:
 
 When signing an SD-card PSBT, the device displays every destination and amount,
 then the fee, and requires a physical approval for each item. It asks for one
-final physical confirmation before producing a signature. `#` or button 1
-accepts; `*` or button 2 rejects.
+final physical confirmation before producing a signature. `#`, the positive
+touch button, or a short button press accepts; `*`, the negative touch button,
+or a long press rejects.
 
 Wallets created by current firmware are stored as an authenticated encrypted
 record. Separate encryption and authentication keys are derived from the
@@ -178,23 +281,29 @@ tested seed backup before upgrading firmware.
 
 ### Create a wallet from dice rolls
 
-The air-gapped T-Display Keyboard Module can create a 24-word BIP39 wallet
-using a physical six-sided die:
+The air-gapped T-Display Keyboard Module or a supported touchscreen keypad can
+create a 24-word BIP39 wallet using a physical six-sided die. The single-button
+Waveshare target deliberately disables dice entry because it has no practical
+way to enter six distinct values.
+
+From the webapp, connect and open **Device**, then select **Reset Wallet (use
+dice)**. The wallet password is sent through the encrypted pairing session;
+all dice rolls and seed words remain on the hardware. For an air-gapped flow:
 
 1. Put `/create your-password` in `commands.in.txt`. The password must contain
    at least 8 characters and cannot contain spaces.
 2. Insert the microSD card and reboot the device.
-3. Roll a fair six-sided die 100 times, entering each result with keypad keys
-   `1` through `6`. Press `*` to remove the most recent entry.
-4. At `100/100`, press `#` to create the wallet.
-5. Write down each seed word shown on the device. Press `#` for the next word
-   and `*` for the previous word. Press `#` on word 24 to finish.
+3. Roll a fair six-sided die 100 times, entering each result with keypad or
+   touch keys `1` through `6`. Use `*` or **Delete** to remove an entry.
+4. At `100/100`, use `#` or **Done** to create the wallet.
+5. Write down each seed word shown on the device and use its contextual
+   previous/next controls. Advancing from word 24 finishes.
 
-The keypad matrix uses columns GPIO 33, 32, and 25 and rows GPIO 21, 27, 26,
-and 22. The firmware hashes the exact 100 ASCII dice digits with SHA-256 and
-uses the resulting 256 bits directly as BIP39 entropy. This makes the process
-reproducible for recovery and provides more than 256 bits of input entropy when
-the die is fair.
+The optional T-Display keypad matrix uses columns GPIO 33, 32, and 25 and rows
+GPIO 21, 27, 26, and 22. The firmware hashes the exact 100 ASCII dice digits
+with SHA-256 and uses the resulting 256 bits directly as BIP39 entropy. This
+makes the process reproducible for recovery and provides more than 256 bits of
+input entropy when the die is fair.
 
 Neither the dice sequence nor the seed words are written to the microSD card by
 `/create`; `commands.out.txt` only receives `/create 1` on success. Protect or
@@ -202,18 +311,24 @@ remove `commands.in.txt`, because it contains the wallet password. The wallet
 is persisted in the device's existing password-encrypted storage even if a
 previous `/pair` command disabled persistence for SD restores. The existing
 `/seed` command also keeps the mnemonic off the microSD card: it displays one
-word at a time on the hardware screen. Press `#` or button 1 to advance, and
-`*` or button 2 to go back. Advancing from word 24 finishes the review.
+word at a time on the hardware screen. Use the board's next/previous controls
+to review it. Advancing from word 24 finishes the review.
 
 ## Entropy lines (the important bit)
 
-- uBitcoin obtains random words from the ESP32 hardware RNG through
-  [`esp_random()`](libraries/uBitcoin/src/utility/trezor/rand.c#L30-L36).
-- Before using that RNG, the wallet checks its conditioned output for stuck
-  values, stuck bit positions, repeated words, and gross bit imbalance in
-  [`hardwareRngPassesHealthCheck()`](wallet/400_helpers.ino#L73-L113).
-- The wallet adds 32 bytes directly from the ESP32 hardware RNG through
-  [`esp_fill_random()`](wallet/400_helpers.ino#L115-L139).
+- For automatic seed and wallet-salt generation, the wallet obtains random
+  words through Espressif's `esp_fill_random()` while the internal physical-
+  noise source is explicitly enabled.
+- It samples 4,096 conditioned output bits and fails closed on stuck bit
+  positions, repeated words, short-period output, excessive bit runs, or an
+  adaptive-proportion failure in [`rng_health.h`](wallet/rng_health.h).
+- SHA-256 conditions that complete health-checked sample into seed or salt
+  material. Password verifiers, pairing secrets, and other session state are
+  deliberately excluded in
+  [`deriveHealthyHardwareEntropy()`](wallet/400_helpers.ino).
+- These application-level tests inspect conditioned RNG output and provide
+  defense in depth; they are not a claim of SP 800-90B validation because the
+  ESP32 does not expose its raw physical-noise samples to this firmware.
 - Dice wallet creation hashes the exact 100-character dice-roll buffer with
   SHA-256, then passes the resulting 32 bytes directly as BIP39 entropy to
   [`mnemonicFromEntropy()`](wallet/723_cmd_create.ino#L30-L44).

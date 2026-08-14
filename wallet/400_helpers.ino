@@ -70,83 +70,55 @@ String getTokenAtPosition(String str, String separator, int position) {
   return "";
 }
 
-bool hardwareRngPassesHealthCheck() {
-  // This checks conditioned ESP RNG output for gross failures. It does not
-  // measure the entropy of the underlying physical noise source.
-  const size_t sampleCount = 64;
-  const size_t totalBits = sampleCount * 32;
-  uint32_t samples[sampleCount];
-  esp_fill_random(samples, sizeof(samples));
+bool deriveHealthyHardwareEntropy(uint8_t *output, size_t outputLength) {
+  if (output == NULL || outputLength == 0 || outputLength > 32) return false;
 
-  uint32_t onesSeen = 0;
-  uint32_t zerosSeen = 0;
-  size_t oneBitCount = 0;
-  size_t repeatedWords = 1;
-  size_t longestRepeat = 1;
+  uint32_t samples[BowserRngHealth::kSampleWordCount] = {0};
+  uint8_t digest[32] = {0};
+  memset(output, 0, outputLength);
 
-  for (size_t i = 0; i < sampleCount; i++) {
-    uint32_t sample = samples[i];
-    onesSeen |= sample;
-    zerosSeen |= ~sample;
-
-    while (sample != 0) {
-      oneBitCount++;
-      sample &= sample - 1;
-    }
-
-    if (i > 0 && samples[i] == samples[i - 1]) {
-      repeatedWords++;
-      if (repeatedWords > longestRepeat) longestRepeat = repeatedWords;
-    } else {
-      repeatedWords = 1;
-    }
-  }
-
-  bool allBitsChanged = onesSeen == UINT32_MAX && zerosSeen == UINT32_MAX;
-  bool noStuckOutput = longestRepeat < 3;
-  bool plausibleBitBalance =
-    oneBitCount >= (totalBits * 2) / 5 &&
-    oneBitCount <= (totalBits * 3) / 5;
-
-  clearSensitiveBytes((uint8_t *)samples, sizeof(samples));
-  return allBitsChanged && noStuckOutput && plausibleBitBalance;
-}
-
-String generateExtraEtropy() {
+  // Espressif documents this as enabling a physical-noise source when RF is
+  // not active. Keep enable/disable paired inside this function so callers
+  // cannot accidentally sample the PRNG-only state.
   bootloader_random_enable();
-
-  if (hardwareRngPassesHealthCheck() == false) {
-    bootloader_random_disable();
-    logInfo("Hardware RNG health check failed");
-    return "";
-  }
-
-  String uBitcoinEntropy = generateMnemonic(24);
-  if (uBitcoinEntropy == "") {
-    bootloader_random_disable();
-    logInfo("Hardware RNG mnemonic generation failed");
-    return "";
-  }
-
-  byte espEntropy[32];
-  esp_fill_random(espEntropy, 32);
-  String espHexEntropy = toHex(espEntropy, 32);
-  clearSensitiveBytes(espEntropy, sizeof(espEntropy));
-
-  String clientEntropy = toHex(global.dhe_shared_secret, 32);
-
+  esp_fill_random(samples, sizeof(samples));
   bootloader_random_disable();
 
-  return uBitcoinEntropy + espHexEntropy + clientEntropy + global.passwordVerifier;
+  // These checks run on the ESP hardware RNG's conditioned output. They are
+  // defense in depth, not a claim of SP 800-90B validation of the inaccessible
+  // raw physical-noise samples.
+  const bool healthy = BowserRngHealth::conditionedOutputPasses(
+    samples,
+    BowserRngHealth::kSampleWordCount
+  );
+  if (!healthy) {
+    clearSensitiveBytes((uint8_t *)samples, sizeof(samples));
+    logInfo("Hardware RNG health check failed");
+    return false;
+  }
+
+  // Condition the complete, health-checked sample into at most 256 bits. No
+  // password verifier, pairing secret, or other wallet/session state enters
+  // this derivation.
+  sha256((uint8_t *)samples, sizeof(samples), digest);
+  memcpy(output, digest, outputLength);
+  clearSensitiveBytes(digest, sizeof(digest));
+  clearSensitiveBytes((uint8_t *)samples, sizeof(samples));
+  return true;
 }
 
 String generateStrongerMnemonic(int wordCount) {
-  String extraEtropy = generateExtraEtropy();
-  if (extraEtropy == "") return "";
+  uint8_t entropy[32] = {0};
+  if (!deriveHealthyHardwareEntropy(entropy, sizeof(entropy))) return "";
 
-  const char *mnemonic = generateMnemonic(wordCount, extraEtropy);
-  if (mnemonic == NULL) return "";
-  return String(mnemonic);
+  const char *mnemonicChars = generateMnemonic(
+    wordCount,
+    entropy,
+    sizeof(entropy)
+  );
+  String mnemonic = mnemonicChars == NULL ? "" : String(mnemonicChars);
+  clearSensitiveBytes(entropy, sizeof(entropy));
+  return mnemonic;
 }
 
 bool isNotEmptyParam(String paramValue) {

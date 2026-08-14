@@ -3,16 +3,27 @@
 void setup() {
   Serial.begin(9600);
 
-  // load screen
+  // Keep a shared-bus touch controller deselected while TFT_eSPI configures
+  // the display SPI peripheral.
+  if (BOARD.xpt2046.enabled && BOARD.xpt2046.sharesDisplaySpi) {
+    pinMode(BOARD.xpt2046.chipSelectPin, OUTPUT);
+    digitalWrite(BOARD.xpt2046.chipSelectPin, HIGH);
+  }
+
+  // Display details come from the selected board profile and TFT setup.
   tft.init();
-  tft.setRotation(1);
-  tft.invertDisplay(true);
+  tft.setRotation(BOARD.displayRotation);
+  tft.invertDisplay(BOARD.invertDisplay);
+  if (BOARD.backlightPin >= 0) {
+    pinMode(BOARD.backlightPin, OUTPUT);
+    digitalWrite(BOARD.backlightPin, BOARD.backlightOnLevel);
+  }
   showBootLogo();
   delay(1500);
 
   h.begin();
   FlashFS.begin(FORMAT_ON_FAIL);
-  SPIFFS.begin(true);
+  setupInputHardware();
 
   logInfo("HWW: waiting for commands");
   // In case of forced reboot, tell the client to logout.
@@ -31,6 +42,7 @@ void setup() {
 
 bool loadFiles() {
   bool walletLoaded = loadWalletStorage();
+  global.walletConfigured = walletLoaded;
   global.authenticated = false;
   global.mnemonic = "";
   global.passphrase = "";
@@ -49,15 +61,9 @@ void updateDeviceConfig() {
   if (deviceMetaFile.success) {
     global.deviceId = getWordAtPosition(deviceMetaFile.data, 0);
 
-    String button1PinStr = getWordAtPosition(deviceMetaFile.data, 1);
-    if (button1PinStr && button1PinStr != "") {
-      global.button1Pin = button1PinStr.toInt();
-    }
-
-    String button2PinStr = getWordAtPosition(deviceMetaFile.data, 2);
-    if (button2PinStr && button2PinStr != "") {
-      global.button2Pin = button2PinStr.toInt();
-    }
+    // Older metadata may contain configurable button pins. Hardware wiring is
+    // now owned by the selected board profile, so those legacy fields are
+    // intentionally ignored.
   } else {
     // create random unique ID
     const int uuidSize = 32;
@@ -76,8 +82,6 @@ void updateDeviceConfig() {
     writeFile(SPIFFS, global.deviceMetaFileName.c_str(), global.deviceId);
   }
 
-  pinMode(global.button1Pin, INPUT_PULLUP);
-  if (global.button1Pin != global.button2Pin) {
-    pinMode(global.button2Pin, INPUT_PULLUP);
-  }
+  global.button1Pin = BOARD.primaryButtonPin;
+  global.button2Pin = BOARD.secondaryButtonPin;
 }

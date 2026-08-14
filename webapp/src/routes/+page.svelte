@@ -12,6 +12,7 @@
     Coins,
     Copy,
     Download,
+    Dices,
     Eye,
     FileKey,
     Gauge,
@@ -162,7 +163,8 @@
   let showAccount = false
   let showReceive = false
   let showPsbt = false
-  let showDeviceAction: 'unlock' | 'restore' | 'seed' | 'wipe' | null = null
+  let showDeviceAction:
+    'new' | 'unlock' | 'restore' | 'seed' | 'dice' | 'wipe' | null = null
   let qrData = ''
   let qrAddress: AddressRecord | null = null
 
@@ -223,6 +225,8 @@
   $: deviceConnected = (deviceRevision >= 0 && device?.connected) || false
   $: deviceAuthenticated =
     (deviceRevision >= 0 && device?.authenticated) || false
+  $: deviceWalletConfigured =
+    !(device instanceof BowserDevice) || device.walletConfigured
   $: networkAccounts = accounts.filter((account) => account.network === network)
   $: networkAddresses = addresses.filter((address) =>
     networkAccounts.some((account) => account.id === address.accountId),
@@ -261,6 +265,9 @@
   )
   $: endpoint =
     network === 'Mainnet' ? settings.mempoolMainnet : settings.mempoolTestnet
+
+  const transactionExplorerUrl = (txid: string) =>
+    `${endpoint.replace(/\/api$/, '')}/tx/${encodeURIComponent(txid)}`
 
   const nav: Array<{ id: View; label: string; icon: typeof LayoutDashboard }> =
     [
@@ -507,7 +514,7 @@
     seedWord = { position: 1 }
   }
 
-  function openDeviceAction(action: 'restore' | 'wipe') {
+  function openDeviceAction(action: 'restore' | 'wipe' | 'dice') {
     closeDeviceAction()
     showDeviceAction = action
   }
@@ -634,10 +641,23 @@
       await device.connect()
       deviceRevision += 1
       entered = true
-      view = networkAccounts.length ? 'overview' : 'accounts'
+      view = device.walletConfigured
+        ? networkAccounts.length
+          ? 'overview'
+          : 'accounts'
+        : 'device'
+      if (!device.walletConfigured) showDeviceAction = 'new'
       syncAddressWatcher()
       scheduleWalletScan()
-      notify('Bowser HWW connected', 'success')
+      if (device.walletConfigured) {
+        notify('Bowser HWW connected', 'success')
+      } else {
+        notify(
+          'New Bowser HWW connected',
+          'info',
+          'Create a new wallet or restore an existing seed.',
+        )
+      }
     } catch (error) {
       device = null
       notify(
@@ -1522,7 +1542,7 @@
     }
   }
 
-  async function deviceWipe() {
+  async function deviceReset(entropySource: 'trng' | 'dice') {
     if (!(device instanceof BowserDevice)) return
     if (busy) return
     if (devicePassword.length < 8 || /\s/.test(devicePassword))
@@ -1531,26 +1551,45 @@
         'error',
         'Password must contain at least 8 characters and no spaces.',
       )
+    const creatingWallet = !device.walletConfigured
+    const usingDice = entropySource === 'dice'
+    const entropyLabel = usingDice ? 'dice' : 'TRNG'
     if (
       !(await ask(
-        'Reset hardware wallet?',
-        'This permanently replaces the wallet stored on the device.',
-        'Only continue if your seed backup is verified.',
-        'Reset device',
-        true,
+        creatingWallet ? 'Create wallet on device?' : 'Reset hardware wallet?',
+        creatingWallet
+          ? `This generates a new wallet using ${entropyLabel}.`
+          : 'This permanently replaces the wallet stored on the device.',
+        usingDice
+          ? 'Enter 100 dice rolls and review the seed entirely on your Bowser HWW.'
+          : creatingWallet
+            ? 'Write down and verify the seed backup shown by the device.'
+            : 'Only continue if your seed backup is verified.',
+        creatingWallet ? 'Create wallet' : 'Reset device',
+        !creatingWallet,
       ))
     )
       return
-    busy = 'Resetting wallet…'
+    busy = usingDice
+      ? 'Waiting for dice rolls and seed review on device…'
+      : creatingWallet
+        ? 'Creating wallet…'
+        : 'Resetting wallet…'
     try {
-      await device.wipe(devicePassword)
+      if (usingDice) await device.createWithDice(devicePassword)
+      else await device.wipe(devicePassword)
       closeDeviceAction()
       notify(
-        'Device wallet reset',
+        creatingWallet ? 'Device wallet created' : 'Device wallet reset',
         'success',
-        'Back up the new seed, then replace local accounts from the previous wallet.',
+        usingDice
+          ? 'Dice entry and seed review completed on the device.'
+          : creatingWallet
+            ? 'Back up the new seed before using the wallet.'
+            : 'Back up the new seed, then replace local accounts from the previous wallet.',
       )
-      await openSeedBackup()
+      // The dice flow already reviews all 24 words before `/create 1` is sent.
+      if (!usingDice) await openSeedBackup()
     } catch (error) {
       notify(
         'Reset failed',
@@ -1794,9 +1833,13 @@
                               <span class="badge warning">Pending</span>
                             {/if}
                           </div>
-                          <div class="row-subtitle mono">
-                            {short(item.txid)}
-                          </div>
+                          <a
+                            class="row-subtitle mono"
+                            href={transactionExplorerUrl(item.txid)}
+                            target="_blank"
+                            rel="noreferrer"
+                            >{short(item.txid)}</a
+                          >
                         </div>
                         <span class="spacer"></span><strong
                           class:item-in={item.amount > 0}
@@ -1822,8 +1865,7 @@
                   <div>
                     <Check size={16} /><span
                       ><strong>Secrets are not persisted</strong><small
-                        >Passwords, passphrases, and seed words stay in memory
-                        only.</small
+                        >No seed, passwords or passphrases are stored.</small
                       ></span
                     >
                   </div>
@@ -2138,7 +2180,7 @@
                       >{#each filteredHistory as item}<tr
                           ><td class="mono"
                             ><a
-                              href={`${endpoint.replace(/\/api$/, '')}/tx/${encodeURIComponent(item.txid)}`}
+                              href={transactionExplorerUrl(item.txid)}
                               target="_blank"
                               rel="noreferrer">{short(item.txid, 11, 10)}</a
                             ></td
@@ -2364,16 +2406,31 @@
                   <div class="divider"></div>
                   <div class="summary-line">
                     <span>Wallet state</span><span
-                      class:green={deviceAuthenticated}
+                      class:green={deviceWalletConfigured &&
+                        deviceAuthenticated}
                       class:warning={!deviceAuthenticated}
                       class="badge"
-                      ><span class="status-dot"></span>{deviceAuthenticated
-                        ? 'Unlocked'
-                        : 'Locked'}</span
+                      ><span class="status-dot"></span>{!deviceWalletConfigured
+                        ? 'Not configured'
+                        : deviceAuthenticated
+                          ? 'Unlocked'
+                          : 'Locked'}</span
                     >
                   </div>
                   <div class="inline section">
-                    {#if !deviceAuthenticated}<button
+                    {#if !deviceWalletConfigured}<button
+                        class="btn primary"
+                        onclick={() => openDeviceAction('wipe')}
+                        >Create (TRNG)</button
+                      ><button
+                        class="btn ghost"
+                        onclick={() => openDeviceAction('dice')}
+                        >Create (dice)</button
+                      ><button
+                        class="btn ghost"
+                        onclick={() => openDeviceAction('restore')}
+                        >Restore seed</button
+                      >{:else if !deviceAuthenticated}<button
                         class="btn primary"
                         onclick={() => (showDeviceAction = 'unlock')}
                         ><LockKeyhole size={16} /> Unlock</button
@@ -2433,7 +2490,7 @@
                     </p>
                   </div>
                 </div>
-                <div class="action-grid">
+                <div class="action-grid device-actions">
                   <button onclick={openSeedBackup} disabled={!deviceConnected}
                     ><Eye /><span
                       ><strong>View seed backup</strong><small
@@ -2450,8 +2507,16 @@
                     class="destructive"
                     onclick={() => openDeviceAction('wipe')}
                     ><Trash2 /><span
-                      ><strong>Reset wallet</strong><small
-                        >Replace it with a newly generated seed</small
+                      ><strong>Reset Wallet (use TRNG)</strong><small
+                        >Generate entropy on the ESP32</small
+                      ></span
+                    ></button
+                  ><button
+                    class="destructive"
+                    onclick={() => openDeviceAction('dice')}
+                    ><Dices /><span
+                      ><strong>Reset Wallet (use dice)</strong><small
+                        >Enter 100 rolls on the device</small
                       ></span
                     ></button
                   >
@@ -2801,6 +2866,40 @@
 </Modal>
 
 <Modal
+  open={showDeviceAction === 'new'}
+  title="Set up Bowser HWW"
+  onclose={closeDeviceAction}
+>
+  <div class="stack">
+    <p class="muted">
+      This device does not have a wallet yet. Create a new wallet or restore an
+      existing seed.
+    </p>
+    <div class="action-grid">
+      <button onclick={() => openDeviceAction('restore')}
+        ><Upload /><span
+          ><strong>Restore seed</strong><small
+            >Restore wallet from mnemonic</small
+          ></span
+        ></button
+      ><button onclick={() => openDeviceAction('wipe')}
+        ><RefreshCw /><span
+          ><strong>Create Wallet (use TRNG)</strong><small
+            >Generate entropy on the ESP32</small
+          ></span
+        ></button
+      ><button onclick={() => openDeviceAction('dice')}
+        ><Dices /><span
+          ><strong>Create Wallet (use dice)</strong><small
+            >Enter 100 rolls on the device</small
+          ></span
+        ></button
+      >
+    </div>
+  </div>
+</Modal>
+
+<Modal
   open={showDeviceAction === 'unlock'}
   title="Unlock Bowser HWW"
   onclose={closeUnlockDialog}
@@ -2905,25 +3004,45 @@
 </Modal>
 
 <Modal
-  open={showDeviceAction === 'wipe'}
-  title="Reset Bowser HWW"
+  open={showDeviceAction === 'wipe' || showDeviceAction === 'dice'}
+  title={deviceWalletConfigured ? 'Reset Bowser HWW' : 'Create Bowser wallet'}
   onclose={closeDeviceAction}
 >
   <div class="stack">
-    <div class="callout warning">
-      This permanently replaces the current wallet with a newly generated
-      wallet. Verify your existing backup first.
-    </div>
+    {#if showDeviceAction === 'dice'}<div
+        class:warning={deviceWalletConfigured}
+        class="callout"
+      >
+        Enter 100 physical dice rolls using the controls on your Bowser HWW. The
+        rolls and seed words never enter this browser.
+      </div>{:else if deviceWalletConfigured}<div class="callout warning">
+        This permanently replaces the current wallet with a newly generated
+        wallet. Verify your existing backup first.
+      </div>{:else}<div class="callout">
+        The seed is generated on your Bowser HWW. Write down and verify every
+        word shown on the device before receiving funds.
+      </div>{/if}
     <PasswordInput
-      id="wipe-password"
-      label="Wallet password"
+      id="reset-password"
+      label={deviceWalletConfigured ? 'New wallet password' : 'Wallet password'}
       bind:value={devicePassword}
       autocomplete="off"
     />
     <div class="form-actions">
       <button class="btn ghost" onclick={closeDeviceAction}>Cancel</button
-      ><button class="btn danger" onclick={deviceWipe} disabled={!!busy}
-        ><Trash2 size={16} /> Reset device</button
+      ><button
+        class:danger={deviceWalletConfigured}
+        class:primary={!deviceWalletConfigured}
+        class="btn"
+        onclick={() =>
+          deviceReset(showDeviceAction === 'dice' ? 'dice' : 'trng')}
+        disabled={!!busy}
+        >{#if showDeviceAction === 'dice'}<Dices
+            size={16}
+          />{:else if deviceWalletConfigured}<Trash2
+            size={16}
+          />{:else}<RefreshCw size={16} />{/if}
+        {deviceWalletConfigured ? 'Reset device' : 'Create wallet'}</button
       >
     </div>
   </div>
@@ -3216,6 +3335,9 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
   }
+  .action-grid.device-actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
   .action-grid button {
     display: flex;
     align-items: center;
@@ -3394,6 +3516,9 @@
       grid-template-columns: 1fr;
     }
     .action-grid {
+      grid-template-columns: 1fr;
+    }
+    .action-grid.device-actions {
       grid-template-columns: 1fr;
     }
   }

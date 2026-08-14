@@ -1,8 +1,6 @@
 unsigned long lastTickTime = 0;
 int counter = 10;
 
-int button1State = HIGH;
-int button2State = HIGH;
 int lineNumber = 0;
 
 
@@ -61,6 +59,8 @@ EventData awaitSerialEvent() {
       EventData buttonEvent = checkButtonsState();
       if (buttonEvent.type == EVENT_BUTTON_ACTION) return buttonEvent;
 
+      delay(5);
+
     }
     counter = -1;
     String data = Serial.readStringUntil('\n');
@@ -70,18 +70,8 @@ EventData awaitSerialEvent() {
 }
 
 EventData checkButtonsState() {
-  int button1NewState = digitalRead(global.button1Pin);
-  if (button1NewState != button1State) {
-    logInfo("button 1: " + String(button1NewState));
-    button1State = button1NewState;
-    return { EVENT_BUTTON_ACTION, "1 " + String(button1NewState)};
-  }
-
-  int button2NewState = digitalRead(global.button2Pin);
-  if (button2NewState != button2State) {
-    logInfo("button 2: " + String(button2NewState));
-    button2State = button2NewState;
-    return { EVENT_BUTTON_ACTION, "2 " + String(button2NewState)};
-  }
+  char key = pollInputKey();
+  if (key == '#') return {EVENT_BUTTON_ACTION, "confirm"};
+  if (key == '*') return {EVENT_BUTTON_ACTION, "cancel"};
   return {"", ""};
 }

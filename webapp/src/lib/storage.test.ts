@@ -164,7 +164,7 @@ describe('persistence allowlists', () => {
     saveSettings({
       network: 'Testnet',
       mempoolMainnet: 'https://mempool.space/api',
-      mempoolTestnet: 'https://mempool.space/testnet/api',
+      mempoolTestnet: 'https://mempool.space/testnet4/api',
       denomination: 'sats',
       receiveGap: 20,
       changeGap: 5,
@@ -249,6 +249,6 @@ describe('persistence allowlists', () => {
 
     const settings = loadSettings()
     expect(settings.mempoolMainnet).toBe('https://mempool.space/api')
-    expect(settings.mempoolTestnet).toBe('https://mempool.space/testnet/api')
+    expect(settings.mempoolTestnet).toBe('https://mempool.space/testnet4/api')
   })
 })

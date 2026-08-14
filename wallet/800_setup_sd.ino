@@ -1,6 +1,18 @@
 void setupSD() {
-  SPI.begin(SD_SCLK, SD_MISO, SD_MOSI, SD_CS);
-  if (!SD.begin(SD_CS)) {
+  if (!BOARD.hasSdCard) {
+    global.hasCommandsFile = false;
+    global.commands = "";
+    return;
+  }
+
+  SPIClass &sdSpi = boardSdSpi();
+  sdSpi.begin(
+    BOARD.sdClockPin,
+    BOARD.sdMisoPin,
+    BOARD.sdMosiPin,
+    BOARD.sdChipSelectPin
+  );
+  if (!SD.begin(BOARD.sdChipSelectPin, sdSpi)) {
     logInfo("No SD Card detected");
     return;
   }

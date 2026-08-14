@@ -17,7 +17,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout tagged source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -35,14 +35,13 @@ jobs:
           tar -xzf "${cli_archive}" -C "${cli_directory}"
           echo "${cli_directory}" >> "${GITHUB_PATH}"
 
-      - name: Install pinned ESP32 platform
+      - name: Configure ESP32 platform index
         shell: bash
         run: |
           arduino-cli config init
           arduino-cli config add board_manager.additional_urls \
             https://espressif.github.io/arduino-esp32/package_esp32_index.json
           arduino-cli core update-index
-          arduino-cli core install esp32:esp32@2.0.17
 
       - name: Validate firmware version
         id: firmware
@@ -54,48 +53,43 @@ jobs:
           test "${GITHUB_REF_NAME}" = "v${firmware_version}"
           echo "version=${firmware_version}" >> "${GITHUB_OUTPUT}"
 
-      - name: Compile firmware from checked-out source
+      - name: Test firmware safety helpers
         shell: bash
         run: |
-          arduino-cli compile --clean \
-            --fqbn esp32:esp32:lilygo_t_display \
-            --libraries "${GITHUB_WORKSPACE}/libraries" \
-            --build-path "${GITHUB_WORKSPACE}/firmware-build" \
-            "${GITHUB_WORKSPACE}/wallet"
+          g++ -std=c++11 -Wall -Wextra -Werror -pedantic \
+            tests/input_debounce_test.cpp \
+            -o "${RUNNER_TEMP}/input_debounce_test"
+          "${RUNNER_TEMP}/input_debounce_test"
+          g++ -std=c++11 -Wall -Wextra -Werror -pedantic \
+            tests/rng_health_test.cpp \
+            -o "${RUNNER_TEMP}/rng_health_test"
+          "${RUNNER_TEMP}/rng_health_test"
 
-      - name: Package source-built firmware
+      - name: Compile and package every supported board
         shell: bash
         run: |
           firmware_version="${{ steps.firmware.outputs.version }}"
-          firmware_dir="built-firmware/v${firmware_version}"
-          core_dir="${HOME}/.arduino15/packages/esp32/hardware/esp32/2.0.17"
-          mkdir -p "${firmware_dir}"
-          cp firmware-build/wallet.ino.bin "${firmware_dir}/wallet.ino.bin"
-          cp firmware-build/wallet.ino.bootloader.bin "${firmware_dir}/bootloader.bin"
-          cp firmware-build/wallet.ino.partitions.bin "${firmware_dir}/wallet.ino.partitions.bin"
-          cp "${core_dir}/tools/partitions/boot_app0.bin" "${firmware_dir}/boot_app0.bin"
-          python3 tools/esp_image_hash.py "${firmware_dir}/wallet.ino.bin" \
-            > "${firmware_dir}/ESP_IMAGE_SHA256.txt"
-          printf '%s\n' \
-            '{' \
-            '  "name": "Bowser HWW",' \
-            "  \"version\": \"${firmware_version}\"," \
-            '  "funding_url": "https://github.com/lnbits/hardware-wallet",' \
-            '  "new_install_prompt_erase": true,' \
-            '  "new_install_improv_wait_time": 0,' \
-            '  "builds": [' \
-            '    {' \
-            '      "chipFamily": "ESP32",' \
-            '      "parts": [' \
-            '        { "path": "bootloader.bin", "offset": 4096 },' \
-            '        { "path": "wallet.ino.partitions.bin", "offset": 32768 },' \
-            '        { "path": "boot_app0.bin", "offset": 57344 },' \
-            '        { "path": "wallet.ino.bin", "offset": 65536 }' \
-            '      ]' \
-            '    }' \
-            '  ]' \
-            '}' > "${firmware_dir}/manifest.json"
-          python3 -m json.tool "${firmware_dir}/manifest.json" > /dev/null
+          # Coming soon:
+          # esp32_2432s028r esp32_3248s035r waveshare_esp32_c6_lcd_1_3
+          for target in lilygo_tdisplay esp32_3248s035c; do
+            tools/build_firmware.sh "${target}" "firmware-build/${target}"
+            python3 tools/package_firmware.py \
+              "${target}" "${firmware_version}" "firmware-build/${target}" \
+              "built-firmware/v${firmware_version}/${target}" \
+              --boot-app0 "${HOME}/.arduino15/packages/esp32/hardware/esp32/2.0.17/tools/partitions/boot_app0.bin"
+          done
+
+          # C6 publishing is coming soon.
+          # target="waveshare_esp32_c6_lcd_1_3"
+          # tools/build_firmware.sh "${target}" "firmware-build/${target}"
+          # python3 tools/package_firmware.py \
+          #   "${target}" "${firmware_version}" "firmware-build/${target}" \
+          #   "built-firmware/v${firmware_version}/${target}" \
+          #   --boot-app0 "${HOME}/.arduino15/packages/esp32/hardware/esp32/3.3.11/tools/partitions/boot_app0.bin"
+
+          for manifest in built-firmware/v${firmware_version}/*/manifest.json; do
+            python3 -m json.tool "${manifest}" > /dev/null
+          done
 
       - name: Upload source-built firmware artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -155,8 +149,11 @@ jobs:
         run: |
           test -f pages/index.html
           test -f pages/installer/index.html
-          test -f pages/installer/firmware/esp32/current/manifest.json
-          test -f pages/installer/firmware/esp32/current/ESP_IMAGE_SHA256.txt
+          # Coming soon: esp32_2432s028r esp32_3248s035r waveshare_esp32_c6_lcd_1_3
+          for target in lilygo_tdisplay esp32_3248s035c; do
+            test -f "pages/installer/firmware/esp32/current/${target}/manifest.json"
+            test -f "pages/installer/firmware/esp32/current/${target}/ESP_IMAGE_SHA256.txt"
+          done
           test -f pages/webapp/index.html
           test -f pages/.nojekyll
 
@@ -201,38 +198,47 @@ jobs:
         run: |
           firmware_version="${GITHUB_REF_NAME}"
           firmware_dir="built-firmware/${firmware_version}"
-          firmware_bin="${firmware_dir}/wallet.ino.bin"
-          test -f "${firmware_bin}"
-          firmware_hash="$(python3 tools/esp_image_hash.py "${firmware_bin}")"
-          published_hash="$(tr -d '[:space:]' < "${firmware_dir}/ESP_IMAGE_SHA256.txt")"
-          test "${firmware_hash}" = "${published_hash}"
-
           mkdir -p release-assets
-          cp "${firmware_bin}" "release-assets/Bowser-HWW-firmware-${firmware_version}.bin"
-          cp "${firmware_dir}/ESP_IMAGE_SHA256.txt" "release-assets/Bowser-HWW-firmware-${firmware_version}-ESP_IMAGE_SHA256.txt"
-          zip -j "release-assets/Bowser-HWW-firmware-${firmware_version}.zip" "${firmware_dir}"/*
+          : > release-hashes.txt
+          # Coming soon: esp32_2432s028r esp32_3248s035r waveshare_esp32_c6_lcd_1_3
+          for target in lilygo_tdisplay esp32_3248s035c; do
+            target_dir="${firmware_dir}/${target}"
+            firmware_bin="${target_dir}/wallet.ino.bin"
+            test -f "${firmware_bin}"
+            firmware_hash="$(python3 tools/esp_image_hash.py "${firmware_bin}")"
+            published_hash="$(tr -d '[:space:]' < "${target_dir}/ESP_IMAGE_SHA256.txt")"
+            test "${firmware_hash}" = "${published_hash}"
+
+            cp "${firmware_bin}" "release-assets/Bowser-HWW-${firmware_version}-${target}.bin"
+            cp "${target_dir}/ESP_IMAGE_SHA256.txt" \
+              "release-assets/Bowser-HWW-${firmware_version}-${target}-ESP_IMAGE_SHA256.txt"
+            zip -j "release-assets/Bowser-HWW-${firmware_version}-${target}.zip" "${target_dir}"/*
+            printf '%s %s\n' "${target}" "${firmware_hash}" >> release-hashes.txt
+          done
 
           echo "version=${firmware_version}" >> "${GITHUB_OUTPUT}"
-          echo "hash=${firmware_hash}" >> "${GITHUB_OUTPUT}"
 
       - name: Write firmware verification notes
         env:
           FIRMWARE_VERSION: ${{ steps.firmware.outputs.version }}
-          FIRMWARE_HASH: ${{ steps.firmware.outputs.hash }}
         shell: bash
         run: |
-          printf '%s\n' \
+          {
+            printf '%s\n' \
             '<!-- bowser-firmware:start -->' \
             "## Bowser HWW firmware ${FIRMWARE_VERSION}" \
             '' \
             'This firmware was compiled from the tagged source by the release workflow.' \
             '' \
-            'ESP application image SHA-256:' \
-            '' \
-            "\`${FIRMWARE_HASH}\`" \
-            '' \
+            'ESP application image SHA-256 by board:' \
+            ''
+            while read -r target firmware_hash; do
+              printf -- '- `%s`: `%s`\n' "${target}" "${firmware_hash}"
+            done < release-hashes.txt
+            printf '%s\n' '' \
             'Compare this value with the SHA-256 shown on the device and by the web installer.' \
-            '<!-- bowser-firmware:end -->' > release-firmware.md
+            '<!-- bowser-firmware:end -->'
+          } > release-firmware.md
 
       - name: Create or update GitHub release
         env:

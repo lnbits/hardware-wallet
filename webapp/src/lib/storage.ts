@@ -152,7 +152,7 @@ export const saveAddresses = (addresses: AddressRecord[]) =>
 const defaultSettings = {
   network: 'Mainnet' as NetworkName,
   mempoolMainnet: 'https://mempool.space/api',
-  mempoolTestnet: 'https://mempool.space/testnet/api',
+  mempoolTestnet: 'https://mempool.space/testnet4/api',
   denomination: 'sats' as 'sats' | 'btc',
   receiveGap: 20,
   changeGap: 5,
