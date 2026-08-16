@@ -154,11 +154,11 @@ CommandResponse executeTrng(String commandData) {
 
   tft.fillRect(0, 0, tft.width(), titleHeight + 2, TFT_BLACK);
   String verdict = looksHealthy ? "healthy" : "unexpected";
-  String complete = "Chi2 " + String(chiSquared, 1) + " " + verdict;
+  String resultLabel = "Chi2 " + String(chiSquared, 1) + " " + verdict;
   tft.setTextColor(looksHealthy ? TFT_GREEN : TFT_RED, TFT_BLACK);
-  tft.setTextSize(uiFittedTextSize(complete, 2, tft.width() - 4));
+  tft.setTextSize(uiFittedTextSize(resultLabel, 2, tft.width() - 4));
   tft.setCursor(2, 0);
-  tft.print(complete);
+  tft.print(resultLabel);
 
   String result = "1 " + String(sampleCount) + " " +
     String(chiSquared, 2) + " " + String(minimumCount) + " " +

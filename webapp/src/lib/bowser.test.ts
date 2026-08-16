@@ -105,7 +105,7 @@ describe('Bowser encrypted transport framing', () => {
       verdict: 'healthy',
       looksHealthy: true,
     })
-    expect(request).toHaveBeenCalledWith('/trng', [], true, 15 * 60_000)
+    expect(request).toHaveBeenCalledWith('/trng', [], true, 60_000)
 
     request.mockResolvedValue('1 5000 nope 34 69 healthy')
     await expect(bowser.testTrng()).rejects.toThrow(

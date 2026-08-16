@@ -436,7 +436,7 @@ export class BowserDevice implements DeviceAdapter {
   async testTrng() {
     // The device returns the summary when the fixed sample is complete. Its
     // histogram remains visible until dismissed on the hardware screen.
-    const response = await this.request('/trng', [], true, 15 * 60_000)
+    const response = await this.request('/trng', [], true, 60_000)
     const [status, sampleCount, statistic, minimum, maximum, verdict, ...rest] =
       response.trim().split(/\s+/)
     const samples = Number(sampleCount)

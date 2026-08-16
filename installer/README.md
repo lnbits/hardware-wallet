@@ -30,7 +30,7 @@ Set a version label for the local manifests. It does not need to be a released
 version when testing locally:
 
 ```bash
-firmware_version=0.7.1-local
+firmware_version=0.8.1-local
 ```
 
 Build and package the classic ESP32 targets first, while core 2.0.17 is
