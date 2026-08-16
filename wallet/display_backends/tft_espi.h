@@ -12,3 +12,10 @@
 #endif
 
 using BowserDisplay = TFT_eSPI;
+
+inline void beginBowserDisplay(BowserDisplay &display) {
+#ifdef BOWSER_TFT_ESPI_PREINIT_SPI
+  SPI.begin(TFT_SCLK, TFT_MISO, TFT_MOSI, -1);
+#endif
+  display.init();
+}

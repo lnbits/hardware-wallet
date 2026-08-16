@@ -81,8 +81,8 @@
             <option value="esp32_3248s035c">
               ESP32-3248S035C capacitive touch
             </option>
-            <option value="waveshare_esp32_c6_lcd_1_3" disabled>
-              Waveshare ESP32-C6-LCD-1.3 — Coming soon
+            <option value="waveshare_esp32_c6_lcd_1_3">
+              Waveshare ESP32-C6-LCD-1.3
             </option>
           </select>
 
@@ -181,6 +181,7 @@
         const supportedTargets = new Set([
           "lilygo_tdisplay",
           "esp32_3248s035c",
+          "waveshare_esp32_c6_lcd_1_3",
         ]);
         const requestedTarget = new URLSearchParams(location.search).get(
           "board",

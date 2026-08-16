@@ -12,7 +12,7 @@ Release status:
 | `esp32_2432s028r` | **Coming soon** |
 | `esp32_3248s035r` | **Coming soon** |
 | `esp32_3248s035c` | Available |
-| `waveshare_esp32_c6_lcd_1_3` | **Coming soon** |
+| `waveshare_esp32_c6_lcd_1_3` | Available |
 
 Coming-soon profiles remain available for local development, but are not
 published by the web installer release workflow.

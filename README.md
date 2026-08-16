@@ -128,7 +128,7 @@ arduino-cli upload --verbose \
   wallet
 ```
 
-For the Waveshare ESP32-C6-LCD-1.3 *(coming soon)*:
+For the Waveshare ESP32-C6-LCD-1.3:
 
 ```bash
 ./tools/build_firmware.sh waveshare_esp32_c6_lcd_1_3
@@ -189,7 +189,11 @@ spread through the application as conditional compilation.
 | `esp32_2432s028r` | **Coming soon** | ESP32-2432S028R, 320×240 landscape | Resistive touchscreen with contextual on-screen controls and dice keypad | On-board |
 | `esp32_3248s035r` | **Coming soon** | ESP32-3248S035R, 480×320 landscape | Resistive touchscreen with contextual on-screen controls and dice keypad | On-board |
 | `esp32_3248s035c` | Available | ESP32-3248S035C, 480×320 landscape | Capacitive touchscreen with contextual on-screen controls and dice keypad | On-board |
-| `waveshare_esp32_c6_lcd_1_3` | **Coming soon** | Waveshare ESP32-C6-LCD-1.3, 240×240 | BOOT: tap to accept/advance, hold to cancel/back | On-board |
+| `waveshare_esp32_c6_lcd_1_3` | Available | Waveshare ESP32-C6-LCD-1.3, 240×240 | BOOT: tap to accept/advance, hold to cancel/back | On-board |
+
+The one-button Waveshare C6 supports TRNG wallet creation and seed restore. Its
+device-only dice flow is unavailable because the board has no numeric or touch
+input for entering rolls 1–6.
 
 The build script pins the toolchain and fully qualified board name for every
 target:
@@ -200,7 +204,7 @@ target:
 | `esp32_2432s028r` | **Coming soon** | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
 | `esp32_3248s035r` | **Coming soon** | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
 | `esp32_3248s035c` | Available | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
-| `waveshare_esp32_c6_lcd_1_3` | **Coming soon** | `esp32:esp32@3.3.11` | `esp32:esp32:esp32c6:CDCOnBoot=cdc` |
+| `waveshare_esp32_c6_lcd_1_3` | Available | `esp32:esp32@3.3.11` | `esp32:esp32:esp32c6:CDCOnBoot=cdc` |
 
 All targets use the vendored, unmodified TFT_eSPI 2.5.44 runtime source. The
 C6 profile selects TFT_eSPI's portable SPI backend because its optimized C6

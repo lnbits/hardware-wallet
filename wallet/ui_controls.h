@@ -27,5 +27,6 @@ struct UiTouchButton {
 void beginUiScreen(UiControls controls = UiControls::None, bool confirmEnabled = true);
 void setUiControls(UiControls controls, bool confirmEnabled = true);
 int16_t uiContentHeight();
+uint32_t uiScreenRevision();
 char keyAtTouchPoint(uint16_t x, uint16_t y);
 void clearUiTouchButtons();

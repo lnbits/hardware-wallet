@@ -50,9 +50,7 @@ EventData awaitSerialEvent() {
           counter--;
           lastTickTime = millis();
           logo(counter);
-        } else if (counter == 0) {
-          logo(counter);
-          counter--;
+          if (counter == 0) counter = -1;
         }
       }
 

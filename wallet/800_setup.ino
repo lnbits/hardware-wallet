@@ -11,7 +11,7 @@ void setup() {
   }
 
   // Display details come from the selected board profile and TFT setup.
-  tft.init();
+  beginBowserDisplay(tft);
   tft.setRotation(BOARD.displayRotation);
   tft.invertDisplay(BOARD.invertDisplay);
   if (BOARD.backlightPin >= 0) {

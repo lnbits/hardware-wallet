@@ -6,9 +6,9 @@ The installer loads the unmodified
 [`esp-web-tools@10.4.0`](https://www.npmjs.com/package/esp-web-tools/v/10.4.0)
 release from unpkg for every available board.
 
-Before changing this pin, verify automatic connection and flashing without
-using the BOOT button on the T-Display and ESP32-3248S035C. The other profiles
-are coming soon.
+Before changing this pin, verify connection and flashing on every available
+board. The T-Display and ESP32-3248S035C must continue to connect automatically
+without using their BOOT buttons. The other profiles are coming soon.
 
 ## Build and package local firmware
 
@@ -24,7 +24,7 @@ installation is not required. It deliberately uses these target definitions:
 | `esp32_2432s028r` | **Coming soon** | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
 | `esp32_3248s035r` | **Coming soon** | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
 | `esp32_3248s035c` | Available | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
-| `waveshare_esp32_c6_lcd_1_3` | **Coming soon** | `esp32:esp32@3.3.11` | `esp32:esp32:esp32c6:CDCOnBoot=cdc` |
+| `waveshare_esp32_c6_lcd_1_3` | Available | `esp32:esp32@3.3.11` | `esp32:esp32:esp32c6:CDCOnBoot=cdc` |
 
 Set a version label for the local manifests. It does not need to be a released
 version when testing locally:
@@ -84,8 +84,8 @@ python3 tools/package_firmware.py \
   --boot-app0 "${HOME}/.arduino15/packages/esp32/hardware/esp32/2.0.17/tools/partitions/boot_app0.bin"
 ```
 
-The Waveshare C6 target is **coming soon**. Developers can build and package it
-last; its build switches the installed core to 3.3.11:
+Build and package the Waveshare C6 target last; its build switches the
+installed core to 3.3.11:
 
 ```bash
 ./tools/build_firmware.sh \
