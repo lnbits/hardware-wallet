@@ -164,7 +164,9 @@
   let showReceive = false
   let showPsbt = false
   let showDeviceAction:
-    'new' | 'unlock' | 'restore' | 'seed' | 'dice' | 'wipe' | null = null
+    'new' | 'unlock' | 'restore' | 'seed' | 'dice' | 'wipe' | 'trng' | null =
+    null
+  let trngResult: Awaited<ReturnType<BowserDevice['testTrng']>> | null = null
   let qrData = ''
   let qrAddress: AddressRecord | null = null
 
@@ -512,6 +514,7 @@
     restorePasswordConfirmation = ''
     restoreWords = emptyMnemonicWords()
     seedWord = { position: 1 }
+    trngResult = null
   }
 
   function openDeviceAction(action: 'restore' | 'wipe' | 'dice') {
@@ -1602,6 +1605,32 @@
     }
   }
 
+  async function runTrngTest() {
+    if (!(device instanceof BowserDevice)) return
+    if (busy) return
+    busy = 'Running TRNG visual check; continue on the device when complete…'
+    try {
+      const result = await device.testTrng()
+      trngResult = result
+      showDeviceAction = 'trng'
+      notify(
+        'TRNG visual check complete',
+        result.looksHealthy ? 'success' : 'error',
+        result.looksHealthy
+          ? 'The sampled distribution looks healthy.'
+          : 'The sampled distribution was outside the expected range.',
+      )
+    } catch (error) {
+      notify(
+        'TRNG visual check failed',
+        'error',
+        error instanceof Error ? error.message : String(error),
+      )
+    } finally {
+      busy = ''
+    }
+  }
+
   async function fetchSeedWord(position = seedWord.position) {
     if (!(device instanceof BowserDevice)) return
     if (seedLoading) return
@@ -2523,6 +2552,30 @@
               </section>
               <section class="card section">
                 <div class="card-header">
+                  <div>
+                    <h2>Device diagnostics</h2>
+                    <p class="muted">
+                      Inspect the hardware RNG distribution directly on the
+                      Bowser screen.
+                    </p>
+                  </div>
+                </div>
+                <div class="action-grid">
+                  <button onclick={runTrngTest} disabled={!!busy}
+                    ><Activity /><span
+                      ><strong>Run TRNG visual check</strong><small
+                        >Live 1–100 histogram; no raw values leave the device</small
+                      ></span
+                    ></button
+                  >
+                </div>
+                <div class="callout section">
+                  This fixed 5,000-sample check can expose hardware RNG
+                  distribution failures.
+                </div>
+              </section>
+              <section class="card section">
+                <div class="card-header">
                   <h2>Serial console</h2>
                   <button class="btn ghost" onclick={() => (serialLog = [])}
                     >Clear</button
@@ -2865,6 +2918,56 @@
 </Modal>
 
 <Modal
+  open={showDeviceAction === 'trng'}
+  title="TRNG diagnostic result"
+  onclose={closeDeviceAction}
+>
+  {#if trngResult}<div class="stack">
+      <div class:warning={!trngResult.looksHealthy} class="callout">
+        {#if trngResult.looksHealthy}<ShieldCheck size={18} />
+          <strong>Distribution looks healthy</strong>
+        {:else}<Activity size={18} />
+          <strong>Unexpected distribution — do not create a wallet yet</strong>
+        {/if}
+      </div>
+      <div class="security-list">
+        <div>
+          <strong>Samples</strong><span
+            >{trngResult.samples.toLocaleString()} across 100 bins</span
+          >
+        </div>
+        <div>
+          <strong>Expected per bin</strong><span>50</span>
+        </div>
+        <div>
+          <strong>Observed range</strong><span
+            >{trngResult.minimumCount}–{trngResult.maximumCount}</span
+          >
+        </div>
+        <div>
+          <strong>Chi-squared</strong><span
+            ><b>{trngResult.chiSquared.toFixed(2)}</b></span
+          >
+        </div>
+      </div>
+      <div class="callout trng-threshold-tip">
+        <strong>Chi-squared expected interval: 61.137–148.230</strong>
+        <span>Below 61.137: suspiciously uniform</span>
+        <span>Above 148.230: excessively uneven</span>
+        <span>Between them: healthy 💚</span>
+      </div>
+      <div class="callout">
+        This checks the device’s hardware RNG for obvious distribution problems,
+        but a passing result cannot guarantee future wallet entropy. For an
+        independent, auditable entropy source, use 100 physical dice rolls.
+      </div>
+      <div class="form-actions">
+        <button class="btn primary" onclick={closeDeviceAction}>Close</button>
+      </div>
+    </div>{/if}
+</Modal>
+
+<Modal
   open={showDeviceAction === 'new'}
   title="Set up Bowser HWW"
   onclose={closeDeviceAction}
@@ -3195,6 +3298,13 @@
   .security-list small {
     color: var(--muted);
     font-weight: 400;
+  }
+  .trng-threshold-tip {
+    display: grid;
+    gap: 3px;
+  }
+  .trng-threshold-tip strong {
+    color: var(--green-bright);
   }
   .account-icon,
   .device-icon {

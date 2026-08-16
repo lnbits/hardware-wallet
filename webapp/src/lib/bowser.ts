@@ -433,6 +433,41 @@ export class BowserDevice implements DeviceAdapter {
     this.events.state()
   }
 
+  async testTrng() {
+    // The device returns the summary when the fixed sample is complete. Its
+    // histogram remains visible until dismissed on the hardware screen.
+    const response = await this.request('/trng', [], true, 15 * 60_000)
+    const [status, sampleCount, statistic, minimum, maximum, verdict, ...rest] =
+      response.trim().split(/\s+/)
+    const samples = Number(sampleCount)
+    const chiSquared = Number(statistic)
+    const minimumCount = Number(minimum)
+    const maximumCount = Number(maximum)
+    if (
+      status !== '1' ||
+      rest.length !== 0 ||
+      !Number.isInteger(samples) ||
+      samples !== 5000 ||
+      !Number.isFinite(chiSquared) ||
+      chiSquared < 0 ||
+      !Number.isInteger(minimumCount) ||
+      minimumCount < 0 ||
+      !Number.isInteger(maximumCount) ||
+      maximumCount < minimumCount ||
+      maximumCount > samples ||
+      (verdict !== 'healthy' && verdict !== 'unexpected')
+    )
+      throw new Error('Bowser HWW did not complete the TRNG visual check')
+    return {
+      samples,
+      chiSquared,
+      minimumCount,
+      maximumCount,
+      verdict,
+      looksHealthy: verdict === 'healthy',
+    }
+  }
+
   async help() {
     await this.send('/help')
   }

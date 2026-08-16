@@ -86,6 +86,9 @@ CommandResponse executeCommand(Command c) {
   if (c.cmd == COMMAND_XPUB)
     return executeXpub(c.data);
 
+  if (c.cmd == COMMAND_TRNG)
+    return executeTrng(c.data);
+
   // Never echo decrypted command arguments into serial or SD diagnostics.
   // A typo in a password/restore command must not turn its secret into a log.
   return executeUnknown(c.cmd);

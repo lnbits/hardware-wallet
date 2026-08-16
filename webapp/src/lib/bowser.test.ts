@@ -88,6 +88,37 @@ describe('Bowser encrypted transport framing', () => {
     expect(bowser.authenticated).toBe(true)
   })
 
+  it('accepts the TRNG result as soon as sampling completes', async () => {
+    const bowser = device()
+    const request = vi.fn().mockResolvedValue('1 5000 103.42 34 69 healthy')
+    ;(
+      bowser as unknown as {
+        request: typeof request
+      }
+    ).request = request
+
+    await expect(bowser.testTrng()).resolves.toEqual({
+      samples: 5000,
+      chiSquared: 103.42,
+      minimumCount: 34,
+      maximumCount: 69,
+      verdict: 'healthy',
+      looksHealthy: true,
+    })
+    expect(request).toHaveBeenCalledWith('/trng', [], true, 15 * 60_000)
+
+    request.mockResolvedValue('1 5000 nope 34 69 healthy')
+    await expect(bowser.testTrng()).rejects.toThrow(
+      'did not complete the TRNG visual check',
+    )
+
+    request.mockResolvedValue('1 5000 160.25 22 83 unexpected')
+    await expect(bowser.testTrng()).resolves.toMatchObject({
+      verdict: 'unexpected',
+      looksHealthy: false,
+    })
+  })
+
   it('accepts only an on-device seed-display acknowledgement', async () => {
     const bowser = device()
     const request = vi.fn().mockResolvedValue('7 displayed')

@@ -15,6 +15,7 @@ const String COMMAND_SEED = "/seed";
 const String COMMAND_SEND_PSBT = "/psbt";
 const String COMMAND_SIGN_PSBT = "/sign";
 const String COMMAND_XPUB = "/xpub";
+const String COMMAND_TRNG = "/trng";
 const String COMMAND_CONFIRM_NEXT = "/confirm-next";
 const String COMMAND_CANCEL = "/cancel";
 const String COMMAND_PAIR = "/pair";

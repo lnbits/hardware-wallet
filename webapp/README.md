@@ -16,7 +16,9 @@ requested directly from a configurable mempool-compatible API.
 - Local PSBT construction, hardware signing, signed PSBT import, finalization, and broadcasting
 - Persistent receive/change cursors that prevent address reuse, including after reloads
 - Signed-PSBT identity and signature checks before finalization or broadcasting
-- Bowser login/logout, address verification, seed review, restore, reset, help, and serial console
+- Bowser login/logout, address verification, seed review, fixed-sample visual
+  TRNG distribution check with an aggregate chi-squared result, restore, reset,
+  help, and serial console
 - Responsive static build for GitHub Pages
 
 Transaction building supports multiple recipients, fee recommendations and a

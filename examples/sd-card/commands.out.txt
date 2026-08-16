@@ -28,6 +28,11 @@
 # /seed displays the mnemonic only on the hardware screen and writes no output
 # to this file.
 
+# Visual hardware-RNG check. Only aggregate results are written; raw RNG values
+# and individual histogram bins remain on the hardware display.
+/trng 1 5000 <chi-squared> <minimum-bin-count> <maximum-bin-count> <healthy-or-unexpected>
+/trng 0 <reason>
+
 # PSBT acceptance or failure
 /psbt 1
 /psbt psbt_parse_failed

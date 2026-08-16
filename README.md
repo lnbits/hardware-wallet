@@ -253,6 +253,7 @@ Each command is documented in its implementation file:
 - `/seed` — [719_show_seed.ino](wallet/719_show_seed.ino)
 - `/xpub` — [715_cmd_xpub.ino](wallet/715_cmd_xpub.ino)
 - `/address` — [722_show_address.ino](wallet/722_show_address.ino)
+- `/trng` — [724_cmd_trng.ino](wallet/724_cmd_trng.ino)
 - `/help` — [711_cmd_help.ino](wallet/711_cmd_help.ino)
 
 ## Run from a microSD card (air-gapped)
@@ -317,6 +318,28 @@ previous `/pair` command disabled persistence for SD restores. The existing
 `/seed` command also keeps the mnemonic off the microSD card: it displays one
 word at a time on the hardware screen. Use the board's next/previous controls
 to review it. Advancing from word 24 finishes the review.
+
+### Visual hardware-RNG check
+
+Run `/trng` through an encrypted WebSerial session or place it in
+`commands.in.txt`. The device runs its production RNG health gate, then draws a
+live 100-bin histogram from fresh hardware-random values in the range 1–100.
+It collects exactly 5,000 observations (50 expected per bin), then calculates a
+chi-squared statistic with 99 degrees of freedom. The chart and result stay on
+screen until dismissed using the device's next/accept control, while the
+aggregate result is returned to WebSerial or written to the SD card as soon as
+the calculation finishes.
+
+The device reports `healthy` when the statistic is within the conservative
+two-sided 99.8% interval 61.137–148.230, using the
+[NIST chi-squared critical values](https://www.itl.nist.gov/div898/handbook/eda/section3/eda3674.htm)
+for 99 degrees of freedom. The histogram and statistic can expose obvious
+distribution failures, but are not proof that future output is
+cryptographically unpredictable or a full entropy-source validation. Raw RNG
+values and individual bin counts never leave the device. `commands.out.txt`
+receives only `/trng 1 5000 <chi-squared> <minimum> <maximum> <verdict>` after
+success. The diagnostic does not create, reset, or modify a wallet or its seed
+material.
 
 ## Entropy lines (the important bit)
 
