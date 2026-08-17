@@ -1,4 +1,6 @@
 #### commands file found ####
+Welcome
+Row, row, row your boat
 received command: /pair
 Pairing
 Not encrypted

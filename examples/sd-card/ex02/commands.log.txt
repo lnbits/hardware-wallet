@@ -1,4 +1,6 @@
 #### commands file found ####
+Welcome
+Row, row, row your boat
 received command: /password
 Password correct!
 Ready to sign sir!
