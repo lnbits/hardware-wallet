@@ -90,7 +90,7 @@ export class BowserDevice implements DeviceAdapter {
       const ping = await this.request('/ping', [location.host], false)
       const [status, deviceId] = ping.split(' ')
       if (status !== '0' || !deviceId)
-        throw new Error('Bowser HWW returned an invalid ping response')
+        throw new Error('Bowser Wallet returned an invalid ping response')
       this.deviceId = deviceId
       await this.pair()
       this.connected = true
@@ -249,7 +249,7 @@ export class BowserDevice implements DeviceAdapter {
     secure = true,
     timeout = 12_000,
   ) {
-    if (!this.writer) throw new Error('Bowser HWW is not connected')
+    if (!this.writer) throw new Error('Bowser Wallet is not connected')
     if (this.pending.has(command))
       throw new Error(`${command} is already pending`)
     const result = new Promise<string>((resolve, reject) => {
@@ -275,7 +275,7 @@ export class BowserDevice implements DeviceAdapter {
     args: Array<string | number> = [],
     secure = true,
   ) {
-    if (!this.writer) throw new Error('Bowser HWW is not connected')
+    if (!this.writer) throw new Error('Bowser Wallet is not connected')
     const message = [command, ...args].join(' ')
     const line = secure ? this.encrypt(message) : message
     this.events.log(`→ ${command}`)
@@ -377,7 +377,7 @@ export class BowserDevice implements DeviceAdapter {
     )
     const [status, derivedAddress] = response.split(' ')
     if (status !== '1' || derivedAddress !== address)
-      throw new Error('The address returned by Bowser HWW did not match')
+      throw new Error('The address returned by Bowser Wallet did not match')
   }
 
   async showSeed(position: number) {
@@ -390,7 +390,7 @@ export class BowserDevice implements DeviceAdapter {
       parsedPosition > 24 ||
       status !== 'displayed'
     )
-      throw new Error('Bowser HWW did not confirm on-device seed display')
+      throw new Error('Bowser Wallet did not confirm on-device seed display')
     return { position: parsedPosition }
   }
 
@@ -402,7 +402,7 @@ export class BowserDevice implements DeviceAdapter {
       60_000,
     )
     if (response.trim() !== '1')
-      throw new Error('Bowser HWW did not restore the wallet')
+      throw new Error('Bowser Wallet did not restore the wallet')
     this.walletConfigured = true
     this.authenticated = true
     this.events.state()
@@ -411,7 +411,7 @@ export class BowserDevice implements DeviceAdapter {
   async wipe(password: string) {
     const response = await this.request('/wipe', [password], true, 60_000)
     if (response.trim() !== '1')
-      throw new Error('Bowser HWW did not reset the wallet')
+      throw new Error('Bowser Wallet did not reset the wallet')
     this.walletConfigured = true
     this.authenticated = true
     this.events.state()
@@ -427,7 +427,7 @@ export class BowserDevice implements DeviceAdapter {
       15 * 60_000,
     )
     if (response.trim() !== '1')
-      throw new Error('Bowser HWW did not create the dice wallet')
+      throw new Error('Bowser Wallet did not create the dice wallet')
     this.walletConfigured = true
     this.authenticated = true
     this.events.state()
@@ -457,7 +457,7 @@ export class BowserDevice implements DeviceAdapter {
       maximumCount > samples ||
       (verdict !== 'healthy' && verdict !== 'unexpected')
     )
-      throw new Error('Bowser HWW did not complete the TRNG visual check')
+      throw new Error('Bowser Wallet did not complete the TRNG visual check')
     return {
       samples,
       chiSquared,
@@ -477,12 +477,13 @@ export class BowserDevice implements DeviceAdapter {
   }
 
   async sign(transaction: UnsignedTransaction) {
-    if (!this.authenticated) throw new Error('Unlock Bowser HWW before signing')
+    if (!this.authenticated)
+      throw new Error('Unlock Bowser Wallet before signing')
     if (
       transaction.inputs.some((input) => input.accountType === 'p2tr') ||
       transaction.outputs.some((output) => output.accountType === 'p2tr')
     )
-      throw new Error('Bowser HWW does not support Taproot signing')
+      throw new Error('Bowser Wallet does not support Taproot signing')
     const accepted = await this.request(
       '/psbt',
       [transaction.network, transaction.psbt],

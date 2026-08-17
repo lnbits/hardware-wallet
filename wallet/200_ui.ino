@@ -68,7 +68,7 @@ void logo(int counter) {
   bool pairing = counter > 0;
   int16_t contentHeight = tft.height();
   int16_t titleY = max(4, contentHeight / 5);
-  String title = "Bowser HWW";
+  String title = "Bowser Wallet";
   String fittedTitle = pairing ? title + " 9" : title;
   uint8_t titleSize = uiFittedTextSize(fittedTitle, 3, tft.width() - 8);
 

@@ -19,7 +19,6 @@ void setup() {
     digitalWrite(BOARD.backlightPin, BOARD.backlightOnLevel);
   }
   showBootLogo();
-  delay(1500);
 
   h.begin();
   FlashFS.begin(FORMAT_ON_FAIL);
@@ -30,13 +29,9 @@ void setup() {
   // Secure connection not established yet. Sendin in clear text.
   Serial.println(COMMAND_PASSWORD_CLEAR +  " 1");
 
-  startThinkingAnimation();
   loadFiles();
-  updateThinkingAnimation();
   updateDeviceConfig();
-  updateThinkingAnimation();
   setupSD();
-  stopThinkingAnimation();
   waitForFirmwareHashConfirmation();
 
   // Give WebSerial the full pairing window after device setup is complete.

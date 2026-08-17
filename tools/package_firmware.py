@@ -70,7 +70,7 @@ def main() -> int:
         firmware_hash + "\n", encoding="ascii"
     )
     manifest = {
-        "name": f"Bowser HWW — {args.target}",
+        "name": f"Bowser Wallet — {args.target}",
         "version": args.version,
         "funding_url": "https://github.com/lnbits/hardware-wallet",
         "new_install_prompt_erase": True,

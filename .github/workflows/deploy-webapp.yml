@@ -208,10 +208,10 @@ jobs:
             published_hash="$(tr -d '[:space:]' < "${target_dir}/ESP_IMAGE_SHA256.txt")"
             test "${firmware_hash}" = "${published_hash}"
 
-            cp "${firmware_bin}" "release-assets/Bowser-HWW-${firmware_version}-${target}.bin"
+            cp "${firmware_bin}" "release-assets/Bowser-Wallet-${firmware_version}-${target}.bin"
             cp "${target_dir}/ESP_IMAGE_SHA256.txt" \
-              "release-assets/Bowser-HWW-${firmware_version}-${target}-ESP_IMAGE_SHA256.txt"
-            zip -j "release-assets/Bowser-HWW-${firmware_version}-${target}.zip" "${target_dir}"/*
+              "release-assets/Bowser-Wallet-${firmware_version}-${target}-ESP_IMAGE_SHA256.txt"
+            zip -j "release-assets/Bowser-Wallet-${firmware_version}-${target}.zip" "${target_dir}"/*
             printf '%s %s\n' "${target}" "${firmware_hash}" >> release-hashes.txt
           done
 
@@ -225,7 +225,7 @@ jobs:
           {
             printf '%s\n' \
             '<!-- bowser-firmware:start -->' \
-            "## Bowser HWW firmware ${FIRMWARE_VERSION}" \
+            "## Bowser Wallet firmware ${FIRMWARE_VERSION}" \
             '' \
             'This firmware was compiled from the tagged source by the release workflow.' \
             '' \

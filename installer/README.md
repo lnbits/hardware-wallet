@@ -1,4 +1,4 @@
-# Bowser HWW web installer
+# Bowser Wallet web installer
 
 ## Pinned browser flashers
 

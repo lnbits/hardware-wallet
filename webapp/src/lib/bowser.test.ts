@@ -202,7 +202,7 @@ describe('Bowser encrypted transport framing', () => {
     ).request = vi.fn().mockResolvedValue('sensitive-device-response')
 
     await expect(bowser.restore('password', 'mnemonic')).rejects.toThrow(
-      'Bowser HWW did not restore the wallet',
+      'Bowser Wallet did not restore the wallet',
     )
   })
 })

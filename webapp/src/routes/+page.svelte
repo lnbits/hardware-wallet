@@ -612,13 +612,13 @@
   async function connect() {
     if (busy) return
     serialLog = []
-    busy = 'Connecting Bowser HWW…'
+    busy = 'Connecting Bowser Wallet…'
     try {
       device = new BowserDevice({
         confirmPair: (code) =>
           ask(
             'Confirm secure pairing',
-            `Does your Bowser HWW show code ${code}?`,
+            `Does your Bowser Wallet show code ${code}?`,
             'Only approve when both codes match.',
             'Codes match',
           ),
@@ -653,10 +653,10 @@
       syncAddressWatcher()
       scheduleWalletScan()
       if (device.walletConfigured) {
-        notify('Bowser HWW connected', 'success')
+        notify('Bowser Wallet connected', 'success')
       } else {
         notify(
-          'New Bowser HWW connected',
+          'New Bowser Wallet connected',
           'info',
           'Create a new wallet or restore an existing seed.',
         )
@@ -1466,7 +1466,7 @@
       showDeviceAction = null
       devicePassword = ''
       devicePassphrase = ''
-      notify('Bowser HWW unlocked', 'success')
+      notify('Bowser Wallet unlocked', 'success')
     } catch (error) {
       notify(
         'Unlock failed',
@@ -1527,7 +1527,7 @@
       await device.restore(devicePassword, mnemonic)
       closeDeviceAction()
       notify(
-        'Wallet restored on Bowser HWW',
+        'Wallet restored on Bowser Wallet',
         'success',
         'Remove or replace any local accounts belonging to the previous seed.',
       )
@@ -1564,7 +1564,7 @@
           ? `This generates a new wallet using ${entropyLabel}.`
           : 'This permanently replaces the wallet stored on the device.',
         usingDice
-          ? 'Enter 100 dice rolls and review the seed entirely on your Bowser HWW.'
+          ? 'Enter 100 dice rolls and review the seed entirely on your Bowser Wallet.'
           : creatingWallet
             ? 'Write down and verify the seed backup shown by the device.'
             : 'Only continue if your seed backup is verified.',
@@ -1824,7 +1824,7 @@
                 </div>
                 <div class="metric-meta">
                   {deviceConnected
-                    ? 'Bowser HWW'
+                    ? 'Bowser Wallet'
                     : 'Connect when ready to sign'}
                 </div>
               </div>
@@ -1982,7 +1982,7 @@
                   <h2>No {network} accounts yet</h2>
                   <p>
                     Import a BIP44, 49, 84, or 86 xpub, or fetch BIP44, 49, or
-                    84 account data from Bowser HWW.
+                    84 account data from Bowser Wallet.
                   </p>
                   <button
                     class="btn primary"
@@ -2243,7 +2243,7 @@
                 <h1>New payment</h1>
                 <p class="lede">
                   Construct a PSBT locally, review every output, then sign with
-                  Bowser HWW.
+                  Bowser Wallet.
                 </p>
               </div>
               <span class="badge green">{amount(selectedTotal)} selected</span>
@@ -2425,7 +2425,7 @@
                     <span class="device-icon"><Radio size={32} /></span>
                     <div>
                       <div class="eyebrow">Connected</div>
-                      <h2>Bowser HWW</h2>
+                      <h2>Bowser Wallet</h2>
                       <p class="muted">
                         Device {short((device as BowserDevice).deviceId)}
                       </p>
@@ -2588,7 +2588,7 @@
                 <div>
                   <span class="empty-icon"><Usb /></span>
                   <h2>No signing device connected</h2>
-                  <p>Connect Bowser HWW over WebSerial.</p>
+                  <p>Connect Bowser Wallet over WebSerial.</p>
                   <button class="btn primary" onclick={connect}
                     ><Cable size={17} /> Connect device</button
                   >
@@ -2742,7 +2742,7 @@
         />
       </div>{:else}<div class="callout">
         <Usb size={17} /> The account xpub and fingerprint will be requested from
-        the connected device. Bowser HWW must be unlocked.
+        the connected device. Bowser Wallet must be unlocked.
       </div>{/if}
     <div class="form-actions">
       <button class="btn ghost" onclick={() => (showAccount = false)}
@@ -2869,13 +2869,13 @@
             !!busy ||
             unsignedTx.inputs.some((input) => input.accountType === 'p2tr') ||
             unsignedTx.outputs.some((output) => output.accountType === 'p2tr')}
-          ><KeyRound size={16} /> Sign with Bowser HWW</button
+          ><KeyRound size={16} /> Sign with Bowser Wallet</button
         >
       </div>
       {#if unsignedTx.inputs.some((input) => input.accountType === 'p2tr') || unsignedTx.outputs.some((output) => output.accountType === 'p2tr')}<div
           class="callout warning"
         >
-          Bowser HWW does not sign Taproot transactions. Export this PSBT and
+          Bowser Wallet does not sign Taproot transactions. Export this PSBT and
           use a Taproot-capable signer, then import the signed PSBT below.
         </div>{/if}
       <div class="divider"></div>
@@ -2969,7 +2969,7 @@
 
 <Modal
   open={showDeviceAction === 'new'}
-  title="Set up Bowser HWW"
+  title="Set up Bowser Wallet"
   onclose={closeDeviceAction}
 >
   <div class="stack">
@@ -3003,7 +3003,7 @@
 
 <Modal
   open={showDeviceAction === 'unlock'}
-  title="Unlock Bowser HWW"
+  title="Unlock Bowser Wallet"
   onclose={closeUnlockDialog}
 >
   <div class="stack">
@@ -3033,7 +3033,7 @@
 
 <Modal
   open={showDeviceAction === 'restore'}
-  title="Restore Bowser HWW"
+  title="Restore Bowser Wallet"
   wide
   onclose={closeDeviceAction}
 >
@@ -3107,7 +3107,9 @@
 
 <Modal
   open={showDeviceAction === 'wipe' || showDeviceAction === 'dice'}
-  title={deviceWalletConfigured ? 'Reset Bowser HWW' : 'Create Bowser wallet'}
+  title={deviceWalletConfigured
+    ? 'Reset Bowser Wallet'
+    : 'Create Bowser wallet'}
   onclose={closeDeviceAction}
 >
   <div class="stack">
@@ -3115,13 +3117,13 @@
         class:warning={deviceWalletConfigured}
         class="callout"
       >
-        Enter 100 physical dice rolls using the controls on your Bowser HWW. The
-        rolls and seed words never enter this browser.
+        Enter 100 physical dice rolls using the controls on your Bowser Wallet.
+        The rolls and seed words never enter this browser.
       </div>{:else if deviceWalletConfigured}<div class="callout warning">
         This permanently replaces the current wallet with a newly generated
         wallet. Verify your existing backup first.
       </div>{:else}<div class="callout">
-        The seed is generated on your Bowser HWW. Write down and verify every
+        The seed is generated on your Bowser Wallet. Write down and verify every
         word shown on the device before receiving funds.
       </div>{/if}
     <PasswordInput
@@ -3157,7 +3159,7 @@
 >
   <div class="seed-word">
     <span>Word {seedWord.position} of 24</span>
-    <strong>Displayed on Bowser HWW</strong>
+    <strong>Displayed on Bowser Wallet</strong>
   </div>
   <div class="inline centered section">
     <button

@@ -54,6 +54,8 @@ String walletHmacHex(const uint8_t *key, const String &data) {
 }
 
 String walletPasswordVerifier(const uint8_t *authenticationKey) {
+  // Immutable storage-domain label, not user-facing branding. Renaming it
+  // would make existing v2 wallet records reject their correct password.
   return walletHmacHex(
     authenticationKey,
     "Bowser HWW password verifier v2"
