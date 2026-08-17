@@ -4,7 +4,9 @@ __pycache__/
 /build/
 /firmware-build/
 /built-firmware/
-/installer/firmware/esp32/current/*/
+# Generated cleanly by tools/rebuild_installer_firmware.sh. Never track a
+# "current" binary: a checkout must not restore firmware from another source tree.
+/installer/firmware/esp32/current/*
 /libraries/uBitcoin/tests/build/
 
 # TFT_eSPI is vendored as Arduino runtime source only. Keep upstream examples,

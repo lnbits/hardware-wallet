@@ -2,6 +2,67 @@
 //===============================UI STUFF=================================//
 //========================================================================//
 
+const uint32_t THINKING_FRAME_INTERVAL_MS = 250;
+bool thinkingAnimationActive = false;
+uint8_t thinkingFrameIndex = 0;
+uint32_t thinkingFrameChangedAt = 0;
+
+void drawThinkingFrame(uint8_t frameIndex) {
+  int16_t frameSize = min(
+    int16_t(THINKING_FRAME_WIDTH),
+    min(tft.width(), uiContentHeight())
+  );
+  int16_t x = (tft.width() - frameSize) / 2;
+  int16_t y = (uiContentHeight() - frameSize) / 2;
+  bool previousSwapBytes = tft.getSwapBytes();
+  tft.setSwapBytes(true);
+  if (frameSize == THINKING_FRAME_WIDTH) {
+    tft.pushImage(
+      x,
+      y,
+      THINKING_FRAME_WIDTH,
+      THINKING_FRAME_HEIGHT,
+      THINKING_FRAMES[frameIndex]
+    );
+  } else {
+    uint16_t row[THINKING_FRAME_WIDTH];
+    const uint16_t *frame = THINKING_FRAMES[frameIndex];
+    for (int16_t targetY = 0; targetY < frameSize; targetY++) {
+      int16_t sourceY = uint32_t(targetY) * THINKING_FRAME_HEIGHT / frameSize;
+      for (int16_t targetX = 0; targetX < frameSize; targetX++) {
+        int16_t sourceX = uint32_t(targetX) * THINKING_FRAME_WIDTH / frameSize;
+        row[targetX] = pgm_read_word(
+          &frame[sourceY * THINKING_FRAME_WIDTH + sourceX]
+        );
+      }
+      tft.pushImage(x, y + targetY, frameSize, 1, row);
+    }
+  }
+  tft.setSwapBytes(previousSwapBytes);
+}
+
+void startThinkingAnimation() {
+  beginUiScreen();
+  thinkingAnimationActive = true;
+  thinkingFrameIndex = 0;
+  thinkingFrameChangedAt = millis();
+  drawThinkingFrame(thinkingFrameIndex);
+}
+
+void updateThinkingAnimation() {
+  if (!thinkingAnimationActive) return;
+  uint32_t now = millis();
+  if (uint32_t(now - thinkingFrameChangedAt) < THINKING_FRAME_INTERVAL_MS) return;
+
+  thinkingFrameIndex = (thinkingFrameIndex + 1) % THINKING_FRAME_COUNT;
+  thinkingFrameChangedAt = now;
+  drawThinkingFrame(thinkingFrameIndex);
+}
+
+void stopThinkingAnimation() {
+  thinkingAnimationActive = false;
+}
+
 void logo(int counter) {
   static uint32_t pairingLayoutRevision = UINT32_MAX;
   bool pairing = counter > 0;
@@ -29,10 +90,35 @@ void logo(int counter) {
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
     tft.print(subTitle);
 
-    String version = "version: " + env.version + " / " + BOARD.id;
-    tft.setTextSize(uiFittedTextSize(version, 1, tft.width() - 8));
-    tft.setCursor(4, max(40, contentHeight - 20));
+    String version = "firmware " + env.version;
+    String fingerprint = "fingerprint ending ";
+    if (global.firmwareFingerprintEnding == "") {
+      fingerprint += "unavailable";
+    } else {
+      String ending = global.firmwareFingerprintEnding;
+      ending.toUpperCase();
+      fingerprint += ending;
+    }
+    uint8_t fingerprintSize = uiFittedTextSize(
+      fingerprint,
+      1,
+      tft.width() - 8
+    );
+    uint8_t versionSize = uiFittedTextSize(version, 1, tft.width() - 8);
+    int16_t fingerprintY = max(
+      40,
+      contentHeight - uiTextPixelHeight(fingerprintSize) - 2
+    );
+    int16_t versionY = max(
+      40,
+      fingerprintY - uiTextPixelHeight(versionSize) - 2
+    );
+    tft.setTextSize(versionSize);
+    tft.setCursor(4, versionY);
     tft.print(version);
+    tft.setTextSize(fingerprintSize);
+    tft.setCursor(4, fingerprintY);
+    tft.print(fingerprint);
     pairingLayoutRevision = pairing ? uiScreenRevision() : UINT32_MAX;
   }
 

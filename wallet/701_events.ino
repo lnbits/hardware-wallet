@@ -45,14 +45,18 @@ EventData awaitSerialEvent() {
       if (idle == true) {
         if  ((millis() - waitTime) > 60 * 1000) {
           idle = false;
+          stopThinkingAnimation();
           logo(0);
         } else if  (counter > 0 && ((millis() - lastTickTime) > 1000)) {
           counter--;
           lastTickTime = millis();
+          stopThinkingAnimation();
           logo(counter);
           if (counter == 0) counter = -1;
         }
       }
+
+      updateThinkingAnimation();
 
       EventData buttonEvent = checkButtonsState();
       if (buttonEvent.type == EVENT_BUTTON_ACTION) return buttonEvent;

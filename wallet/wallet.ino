@@ -26,6 +26,7 @@
 #include "PSBT.h"
 #include "qrcoded.h"
 #include "bowser_logo.h"
+#include "thinking_animation.h"
 extern "C" {
 #include "utility/trezor/pbkdf2.h"
 }
@@ -54,6 +55,7 @@ struct GlobalState {
   String passwordVerifier;
   String mnemonic;
   String passphrase;
+  String firmwareFingerprintEnding;
   String passwordSalt;
   String encryptedMnemonic;
   String mnemonicMac;
@@ -82,6 +84,7 @@ GlobalState global = {
   false,
   false,
   true,
+  "",
   "",
   "",
   "",

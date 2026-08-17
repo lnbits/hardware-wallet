@@ -39,10 +39,13 @@ The standalone [Bowser Wallet webapp](https://lnbits.github.io/hardware-wallet/w
 
 Use the [LNbits Hardware Wallet web installer](https://lnbits.github.io/hardware-wallet).
 
-After installation, the web installer and the device both show the SHA-256 of
-the installed application image. Compare all 64 characters with the firmware
-SHA-256 published in the corresponding board asset in the GitHub release, then
-accept using the device's keypad, touchscreen, or button.
+On the first boot of each exact firmware build, the web installer and the
+device both show the SHA-256 of the installed application image. Compare all
+64 characters with the firmware SHA-256 published in the corresponding board
+asset in the GitHub release, then accept using the device's keypad,
+touchscreen, or button. The device remembers that build and displays the last
+eight hash characters on its logo screen; ordinary reboots skip the full hash
+calculation and confirmation screen.
 
 ### Build from source with Arduino CLI (tinfoil)
 
@@ -158,8 +161,14 @@ Every tagged release compiles the firmware from that tag in GitHub Actions,
 then publishes that exact source-built image and its ESP application image hash
 in the GitHub release notes and as an `ESP_IMAGE_SHA256.txt` release asset. The
 same CI-built files are deployed to the web installer. The hash is also
-calculated from the running application partition by the device when it boots.
-Compare all three values; they should be identical.
+calculated from the running application partition by the device on the first
+boot of that exact build. Compare all three values; they should be identical.
+The device stores the build identity and last eight hash characters after
+confirmation, so later boots can show the fingerprint ending without hashing
+the full application partition again. A different build is detected even when
+its human-readable firmware version has not changed. Erasing or reformatting
+device storage also clears the record and intentionally triggers verification
+again.
 
 You can independently verify the firmware file included in this repository:
 
