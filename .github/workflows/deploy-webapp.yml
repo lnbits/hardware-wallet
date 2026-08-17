@@ -64,6 +64,7 @@ jobs:
             tests/rng_health_test.cpp \
             -o "${RUNNER_TEMP}/rng_health_test"
           "${RUNNER_TEMP}/rng_health_test"
+          tools/test_libwally.sh
 
       - name: Compile and package every supported board
         shell: bash

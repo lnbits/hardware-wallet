@@ -278,6 +278,14 @@ device asks for one final physical confirmation before producing a signature.
 `#`, the positive touch button, or a short button press accepts; `*`, the
 negative touch button, or a long press rejects.
 
+The signer currently accepts PSBT v0 with `SIGHASH_ALL`, standard P2PKH,
+P2WPKH, and P2SH-P2WPKH inputs, plus standard P2SH, P2WSH, and P2SH-P2WSH
+multisig. It preserves the coordinator's PSBT metadata and adds this device's
+partial signatures without finalizing the transaction. Taproot, PSBT v2,
+nonstandard scripts, and alternate sighash modes are rejected explicitly.
+Multisig outputs are reviewed as external outputs unless and until Bowser has a
+registered multisig wallet policy that can prove they are change.
+
 Wallets created by current firmware are stored as an authenticated encrypted
 record. Separate encryption and authentication keys are derived from the
 password with a random salt and PBKDF2-HMAC-SHA256; the stored verifier is not
@@ -359,7 +367,8 @@ material.
   ESP32 does not expose its raw physical-noise samples to this firmware.
 - Dice wallet creation hashes the exact 100-character dice-roll buffer with
   SHA-256, then passes the resulting 32 bytes directly as BIP39 entropy to
-  [`mnemonicFromEntropy()`](wallet/723_cmd_create.ino#L30-L44).
+  libwally's BIP39 mnemonic encoder in
+  [`executeCreate()`](wallet/723_cmd_create.ino).
 
 ## Troubleshooting
 
@@ -372,5 +381,5 @@ material.
 Questions? Join the [LNbits Telegram group](https://t.me/lnbits) or the
 [MakerBits Telegram group](https://t.me/makerbits).
 
-This project uses the
-[uBitcoin library](https://www.arduino.cc/reference/en/libraries/ubitcoin/).
+Bitcoin key, address, and PSBT operations use the pinned
+[libwally-core](https://github.com/ElementsProject/libwally-core) dependency.

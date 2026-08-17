@@ -20,7 +20,18 @@ void setup() {
   }
   showBootLogo();
 
-  h.begin();
+  if (wally_init(0) != WALLY_OK) {
+    showMessage("Startup failed", "Crypto init error");
+    while (true) delay(1000);
+  }
+  uint8_t secpRandomizer[WALLY_SECP_RANDOMIZE_LEN] = {0};
+  if (!deriveHealthyHardwareEntropy(secpRandomizer, sizeof(secpRandomizer)) ||
+      wally_secp_randomize(secpRandomizer, sizeof(secpRandomizer)) != WALLY_OK) {
+    clearSensitiveBytes(secpRandomizer, sizeof(secpRandomizer));
+    showMessage("Startup failed", "RNG init error");
+    while (true) delay(1000);
+  }
+  clearSensitiveBytes(secpRandomizer, sizeof(secpRandomizer));
   FlashFS.begin(FORMAT_ON_FAIL);
   setupInputHardware();
 
@@ -67,16 +78,12 @@ void updateDeviceConfig() {
     // create random unique ID
     const int uuidSize = 32;
     uint8_t uuid[uuidSize] = {0};
-    String tempMnemonic = generateStrongerMnemonic(24);
-    if (
-      tempMnemonic == "" ||
-      mnemonicToEntropy(tempMnemonic, uuid, uuidSize) != uuidSize
-    ) {
+    if (!deriveHealthyHardwareEntropy(uuid, uuidSize)) {
       clearSensitiveBytes(uuid, sizeof(uuid));
       logInfo("Device ID creation aborted: RNG health check failed");
       return;
     }
-    global.deviceId = toHex(uuid, uuidSize);
+    global.deviceId = bytesToHexString(uuid, uuidSize);
     clearSensitiveBytes(uuid, sizeof(uuid));
     writeFile(SPIFFS, global.deviceMetaFileName.c_str(), global.deviceId);
   }

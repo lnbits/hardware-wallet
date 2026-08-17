@@ -20,15 +20,14 @@
 
 #include <Wire.h>
 #include "display.h"
-#include <Hash.h>
 #include <ArduinoJson.h>
-#include "Bitcoin.h"
-#include "PSBT.h"
+#include <libwally.h>
 #include "qrcoded.h"
 #include "bowser_logo.h"
 #include "thinking_animation.h"
 extern "C" {
-#include "utility/trezor/pbkdf2.h"
+#include <secp256k1.h>
+#include <secp256k1_ecdh.h>
 }
 
 #include <aes.h>
@@ -41,7 +40,6 @@ extern "C" {
 
 fs::SPIFFSFS &FlashFS = SPIFFS;
 
-SHA256 h;
 BowserDisplay tft;
 
 

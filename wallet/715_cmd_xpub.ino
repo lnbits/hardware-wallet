@@ -24,27 +24,36 @@ CommandResponse executeXpub(String commandData) {
     path = "m/84'/0'/0'";
   }
 
-  const Network * network;
-  if (networkName == "Mainnet") {
-    network = &Mainnet;
-  } else if (networkName == "Testnet") {
-    network = &Testnet;
-  } else {
+  bool mainnet = false;
+  if (!isMainnetName(networkName, &mainnet)) {
     return {"Unknown Network",  "Must be Mainnet or Testnet"};
   }
 
   if (!path) {
     return {"Derivation path missing!", "XPUB not generated"};
   }
+  if (!standardPathMatchesNetwork(path, mainnet)) {
+    return {"Invalid path", "Purpose/network mismatch"};
+  }
 
-  HDPrivateKey hd(global.mnemonic, global.passphrase, network);
-  if (!hd) {
+  struct ext_key root = {};
+  struct ext_key account = {};
+  if (!mnemonicIsValid(global.mnemonic) || !deriveRootKey(mainnet, &root)) {
     sendCommandOutput(COMMAND_XPUB, "0 invalid_mnemonic");
     return {"Invalid Mnemonic", ""};
   }
-  HDPrivateKey account = hd.derive(path);
-  String xpub = account.xpub();
-  sendCommandOutput(COMMAND_XPUB, "1 " + xpub + " " + hd.fingerprint());
+  if (!derivePathKey(&root, path, &account)) {
+    clearSensitiveBytes((uint8_t *)&root, sizeof(root));
+    return {"Invalid path", "XPUB not generated"};
+  }
+  String xpub = serializeAccountPublicKey(&account, mainnet, path);
+  String fingerprint = rootFingerprint(&root);
+  clearSensitiveBytes((uint8_t *)&account, sizeof(account));
+  clearSensitiveBytes((uint8_t *)&root, sizeof(root));
+  if (xpub == "" || fingerprint == "") {
+    return {"XPUB failed", "Could not serialize key"};
+  }
+  sendCommandOutput(COMMAND_XPUB, "1 " + xpub + " " + fingerprint);
 
   EventData event = toggleDatanAndQR(xpub, true);
 

@@ -18,8 +18,8 @@ String getRunningFirmwareBuildId() {
   }
   if (!hasNonZeroByte) return "";
 
-  return toHex(description.app_elf_sha256,
-               sizeof(description.app_elf_sha256));
+  return bytesToHexString(description.app_elf_sha256,
+                          sizeof(description.app_elf_sha256));
 }
 
 bool firmwareBuildWasConfirmed(const String &buildId) {
@@ -47,7 +47,7 @@ String getRunningFirmwareSha256() {
     return "";
   }
 
-  String firmwareHash = toHex(digest, sizeof(digest));
+  String firmwareHash = bytesToHexString(digest, sizeof(digest));
   clearSensitiveBytes(digest, sizeof(digest));
   return firmwareHash;
 }

@@ -100,7 +100,11 @@ bool deriveHealthyHardwareEntropy(uint8_t *output, size_t outputLength) {
   // Condition the complete, health-checked sample into at most 256 bits. No
   // password verifier, pairing secret, or other wallet/session state enters
   // this derivation.
-  sha256((uint8_t *)samples, sizeof(samples), digest);
+  if (wally_sha256((uint8_t *)samples, sizeof(samples), digest, sizeof(digest)) != WALLY_OK) {
+    clearSensitiveBytes(digest, sizeof(digest));
+    clearSensitiveBytes((uint8_t *)samples, sizeof(samples));
+    return false;
+  }
   memcpy(output, digest, outputLength);
   clearSensitiveBytes(digest, sizeof(digest));
   clearSensitiveBytes((uint8_t *)samples, sizeof(samples));
@@ -108,15 +112,12 @@ bool deriveHealthyHardwareEntropy(uint8_t *output, size_t outputLength) {
 }
 
 String generateStrongerMnemonic(int wordCount) {
+  const size_t entropyLength = getMnemonicBytesForWordCount(wordCount);
+  if (entropyLength == 0) return "";
   uint8_t entropy[32] = {0};
-  if (!deriveHealthyHardwareEntropy(entropy, sizeof(entropy))) return "";
+  if (!deriveHealthyHardwareEntropy(entropy, entropyLength)) return "";
 
-  const char *mnemonicChars = generateMnemonic(
-    wordCount,
-    entropy,
-    sizeof(entropy)
-  );
-  String mnemonic = mnemonicChars == NULL ? "" : String(mnemonicChars);
+  String mnemonic = mnemonicFromBytes(entropy, entropyLength);
   clearSensitiveBytes(entropy, sizeof(entropy));
   return mnemonic;
 }

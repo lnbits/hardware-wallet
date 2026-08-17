@@ -1,8 +1,12 @@
 String hashStringData(String key) {
-  byte hash[64] = { 0 };
-  int hashLen = 0;
-  hashLen = sha256(key, hash);
-  String result = toHex(hash, hashLen);
+  byte hash[SHA256_LEN] = { 0 };
+  if (wally_sha256(
+        (const uint8_t *)key.c_str(), key.length(), hash, sizeof(hash)
+      ) != WALLY_OK) {
+    clearSensitiveBytes(hash, sizeof(hash));
+    return "";
+  }
+  String result = bytesToHexString(hash, sizeof(hash));
   clearSensitiveBytes(hash, sizeof(hash));
   return result;
 }
@@ -25,7 +29,7 @@ String encryptData(byte key[32], byte iv[16], String msg) {
 
   AES_CBC_encrypt_buffer(&ctx, messageBin, sizeof(messageBin));
 
-  String result = toHex(messageBin, sizeof(messageBin));
+  String result = bytesToHexString(messageBin, sizeof(messageBin));
   clearSensitiveBytes(messageBin, sizeof(messageBin));
   return result;
 }
@@ -36,15 +40,11 @@ String encryptDataWithIv(byte key[32], String msg) {
   // create random initialization vector
   const int ivSize = 16;
   uint8_t iv[ivSize] = {0};
-  String tempMnemonic = generateStrongerMnemonic(12);
-  if (
-    tempMnemonic == "" ||
-    mnemonicToEntropy(tempMnemonic, iv, ivSize) != ivSize
-  ) {
+  if (!deriveHealthyHardwareEntropy(iv, ivSize)) {
     clearSensitiveBytes(iv, sizeof(iv));
     return "";
   }
-  String ivHex = toHex(iv, ivSize);
+  String ivHex = bytesToHexString(iv, ivSize);
 
   String messageHex = encryptData(key, iv, data);
   clearSensitiveBytes(iv, sizeof(iv));
@@ -56,7 +56,10 @@ String encryptDataWithIv(byte key[32], String msg) {
 String decryptData(byte key[32], byte iv[16], String messageHex) {
   int byteSize =  messageHex.length() / 2;
   byte messageBin[byteSize + 1];
-  fromHex(messageHex, messageBin, byteSize);
+  if (!hexStringToBytes(messageHex, messageBin, byteSize)) {
+    clearSensitiveBytes(messageBin, sizeof(messageBin));
+    return "";
+  }
 
 
   AES_ctx ctx;
@@ -75,7 +78,10 @@ String decryptDataWithIv(byte key[32], String messageWithIvHex) {
   String ivHex = messageWithIvHex.substring(messageWithIvHex.length() - ivSize * 2, messageWithIvHex.length());
 
   uint8_t iv[ivSize];
-  fromHex(ivHex, iv, ivSize);
+  if (!hexStringToBytes(ivHex, iv, ivSize)) {
+    clearSensitiveBytes(iv, sizeof(iv));
+    return "";
+  }
   String decryptedData = decryptData(key, iv, messageHex);
   clearSensitiveBytes(iv, sizeof(iv));
 

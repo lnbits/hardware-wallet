@@ -53,43 +53,61 @@ CommandResponse pair(
     return {"Pairing refused", "Invalid public key"};
   }
 
-  String tempMnemonic = generateStrongerMnemonic(24);
   byte dhe_secret[32] = {0};
-  if (
-    tempMnemonic == "" ||
-    mnemonicToEntropy(tempMnemonic, dhe_secret, sizeof(dhe_secret)) != sizeof(dhe_secret)
-  ) {
+  if (!deriveHealthyHardwareEntropy(dhe_secret, sizeof(dhe_secret))) {
     clearSensitiveBytes(dhe_secret, sizeof(dhe_secret));
     Serial.println(COMMAND_PAIR + " 1 rng_failure");
     return {"RNG failure", "Pairing aborted"};
   }
 
-  PrivateKey dhPrivateKey(dhe_secret);
-  clearSensitiveBytes(dhe_secret, sizeof(dhe_secret));
-  if (!dhPrivateKey) {
+  uint8_t compressedPublicKey[EC_PUBLIC_KEY_LEN] = {0};
+  uint8_t publicKey[EC_PUBLIC_KEY_UNCOMPRESSED_LEN] = {0};
+  if (wally_ec_public_key_from_private_key(
+        dhe_secret, sizeof(dhe_secret), compressedPublicKey, sizeof(compressedPublicKey)
+      ) != WALLY_OK ||
+      wally_ec_public_key_decompress(
+        compressedPublicKey, sizeof(compressedPublicKey), publicKey, sizeof(publicKey)
+      ) != WALLY_OK) {
+    clearSensitiveBytes(dhe_secret, sizeof(dhe_secret));
+    clearSensitiveBytes(compressedPublicKey, sizeof(compressedPublicKey));
+    clearSensitiveBytes(publicKey, sizeof(publicKey));
     Serial.println(COMMAND_PAIR + " 1 rng_failure");
     return {"RNG failure", "Pairing aborted"};
   }
-  PublicKey dhPublicKey = dhPrivateKey.publicKey();
 
-  byte publicKeyBin[64] = {0};
-  if (fromHex(publicKeyHex, publicKeyBin, sizeof(publicKeyBin)) != sizeof(publicKeyBin)) {
+  byte publicKeyBin[EC_PUBLIC_KEY_UNCOMPRESSED_LEN] = {0};
+  publicKeyBin[0] = 0x04;
+  if (!hexStringToBytes(publicKeyHex, publicKeyBin + 1, sizeof(publicKeyBin) - 1)) {
     clearSensitiveBytes(publicKeyBin, sizeof(publicKeyBin));
+    clearSensitiveBytes(dhe_secret, sizeof(dhe_secret));
+    clearSensitiveBytes(compressedPublicKey, sizeof(compressedPublicKey));
+    clearSensitiveBytes(publicKey, sizeof(publicKey));
     Serial.println(COMMAND_PAIR + " 1 invalid_public_key");
     return {"Pairing refused", "Invalid public key"};
   }
-  PublicKey otherDhPublicKey(publicKeyBin, false);
-  if (!otherDhPublicKey) {
+  if (!legacyCompatibleEcdh(
+        dhe_secret, publicKeyBin, global.dhe_shared_secret
+      )) {
     clearSensitiveBytes(publicKeyBin, sizeof(publicKeyBin));
+    clearSensitiveBytes(dhe_secret, sizeof(dhe_secret));
+    clearSensitiveBytes(compressedPublicKey, sizeof(compressedPublicKey));
+    clearSensitiveBytes(publicKey, sizeof(publicKey));
     Serial.println(COMMAND_PAIR + " 1 invalid_public_key");
     return {"Pairing refused", "Invalid public key"};
   }
-  dhPrivateKey.ecdh(otherDhPublicKey, global.dhe_shared_secret, false);
   clearSensitiveBytes(publicKeyBin, sizeof(publicKeyBin));
+  clearSensitiveBytes(dhe_secret, sizeof(dhe_secret));
+  clearSensitiveBytes(compressedPublicKey, sizeof(compressedPublicKey));
 
-  Serial.println(COMMAND_PAIR + " 0 " + toHex(dhPublicKey.point, sizeof(dhPublicKey.point)));
-
-  String sharedSecretHex =  toHex(global.dhe_shared_secret, sizeof(global.dhe_shared_secret));
+  String devicePublicKeyHex = bytesToHexString(publicKey + 1, sizeof(publicKey) - 1);
+  clearSensitiveBytes(publicKey, sizeof(publicKey));
+  String sharedSecretHex = bytesToHexString(global.dhe_shared_secret, sizeof(global.dhe_shared_secret));
+  if (devicePublicKeyHex == "" || sharedSecretHex == "") {
+    clearSensitiveBytes(global.dhe_shared_secret, sizeof(global.dhe_shared_secret));
+    Serial.println(COMMAND_PAIR + " 1 crypto_failure");
+    return {"Pairing failed", "Crypto memory error"};
+  }
+  Serial.println(COMMAND_PAIR + " 0 " + devicePublicKeyHex);
 
   // Do not let a malformed unauthenticated request mutate session policy.
   if (persistSecrets == "false") global.persistSecrets = false;
