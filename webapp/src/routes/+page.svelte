@@ -622,22 +622,6 @@
             'Only approve when both codes match.',
             'Codes match',
           ),
-        confirmOutput: (output, index, total) =>
-          ask(
-            `Confirm output ${index + 1} of ${total}`,
-            `${amount(output.amount)} to ${output.change ? 'your change address' : output.address}`,
-            output.change
-              ? output.address
-              : 'Check this address on the hardware wallet display.',
-            'Next',
-          ),
-        confirmFee: (fee, rate) =>
-          ask(
-            'Confirm network fee',
-            amount(fee),
-            `${rate} sat/vB · confirm the same fee on your device`,
-            'Sign transaction',
-          ),
         log: (line) => (serialLog = [...serialLog.slice(-149), line]),
         state: () => (deviceRevision += 1),
       })
@@ -1380,7 +1364,7 @@
       )
     )
       return
-    busy = 'Waiting for hardware wallet…'
+    busy = 'Review every output and the fee on Bowser Wallet…'
     try {
       const result = await device.sign(unsignedTx)
       signedPsbt = result.psbt

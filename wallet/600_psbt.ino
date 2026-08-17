@@ -6,7 +6,7 @@ PSBT parseBase64Psbt(String psbtBase64) {
 }
 
 void printOutputDetails(PSBT psbt, HDPrivateKey hd, int index, const Network * network) {
-  beginUiScreen(global.hasCommandsFile ? UiControls::ConfirmCancel : UiControls::None);
+  beginUiScreen(UiControls::ConfirmCancel);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setCursor(4, 2);
   String outputHeading = "Output " + String(index);
@@ -39,7 +39,7 @@ void printOutputDetails(PSBT psbt, HDPrivateKey hd, int index, const Network * n
 }
 
 void printFeeDetails(uint64_t fee) {
-  beginUiScreen(global.hasCommandsFile ? UiControls::ConfirmCancel : UiControls::None);
+  beginUiScreen(UiControls::ConfirmCancel);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setCursor(4, max(8, uiContentHeight() / 3));
   String feeLabel = "Fee: " + int64ToString(fee) + " sat";
@@ -51,9 +51,8 @@ void printFeeDetails(uint64_t fee) {
   tft.println(" sat");
 }
 
-void printSdReviewControls() {
+void printPhysicalReviewControls() {
   if (BOARD.hasTouchscreen) {
-    setUiControls(UiControls::ConfirmCancel);
     return;
   }
   tft.setTextColor(TFT_WHITE, TFT_BLACK);

@@ -14,6 +14,7 @@ requested directly from a configurable mempool-compatible API.
   refresh, full gap-limit scans, transaction history export, sats/BTC display,
   and coin control
 - Local PSBT construction, hardware signing, signed PSBT import, finalization, and broadcasting
+- Device-only advancement through every PSBT output and fee before signing
 - Persistent receive/change cursors that prevent address reuse, including after reloads
 - Signed-PSBT identity and signature checks before finalization or broadcasting
 - Bowser login/logout, address verification, seed review, fixed-sample visual

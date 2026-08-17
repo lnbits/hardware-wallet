@@ -16,6 +16,8 @@ const String COMMAND_SEND_PSBT = "/psbt";
 const String COMMAND_SIGN_PSBT = "/sign";
 const String COMMAND_XPUB = "/xpub";
 const String COMMAND_TRNG = "/trng";
+// Deprecated compatibility input. It is ignored after physical PSBT review
+// and can never advance a trusted-display screen.
 const String COMMAND_CONFIRM_NEXT = "/confirm-next";
 const String COMMAND_CANCEL = "/cancel";
 const String COMMAND_PAIR = "/pair";

@@ -11,12 +11,6 @@ type Pending = {
 
 export interface BowserEvents {
   confirmPair: (fingerprint: string) => Promise<boolean>
-  confirmOutput: (
-    output: UnsignedTransaction['outputs'][number],
-    index: number,
-    total: number,
-  ) => Promise<boolean>
-  confirmFee: (fee: number, feeRate: number) => Promise<boolean>
   log: (line: string) => void
   state: () => void
 }
@@ -472,10 +466,6 @@ export class BowserDevice implements DeviceAdapter {
     await this.send('/help')
   }
 
-  async cancel() {
-    await this.send('/cancel')
-  }
-
   async sign(transaction: UnsignedTransaction) {
     if (!this.authenticated)
       throw new Error('Unlock Bowser Wallet before signing')
@@ -488,30 +478,19 @@ export class BowserDevice implements DeviceAdapter {
       '/psbt',
       [transaction.network, transaction.psbt],
       true,
-      60_000,
+      15 * 60_000,
     )
     if (accepted.trim() !== '1')
-      throw new Error(accepted || 'Device could not parse the PSBT')
+      throw new Error(
+        accepted === 'review_rejected'
+          ? 'Transaction review rejected on Bowser Wallet'
+          : accepted || 'Device could not parse or review the PSBT',
+      )
 
-    for (let index = 0; index < transaction.outputs.length; index++) {
-      if (
-        !(await this.events.confirmOutput(
-          transaction.outputs[index],
-          index,
-          transaction.outputs.length,
-        ))
-      ) {
-        await this.cancel()
-        throw new Error('Transaction canceled')
-      }
-      await this.send('/confirm-next')
-    }
-    if (!(await this.events.confirmFee(transaction.fee, transaction.feeRate))) {
-      await this.cancel()
-      throw new Error('Transaction canceled')
-    }
     const signed = await this.request('/sign', [], true, 120_000)
     const [count, psbt] = signed.split(' ')
+    if (count === 'review_rejected')
+      throw new Error('Transaction signing rejected on Bowser Wallet')
     if (!psbt || Number(count) < 1)
       throw new Error('No transaction inputs were signed')
     return { psbt }

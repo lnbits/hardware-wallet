@@ -271,11 +271,12 @@ Each command is documented in its implementation file:
    - `commands.out.txt` contains command results such as signed PSBTs.
    - `commands.log.txt` contains diagnostic logs.
 
-When signing an SD-card PSBT, the device displays every destination and amount,
-then the fee, and requires a physical approval for each item. It asks for one
-final physical confirmation before producing a signature. `#`, the positive
-touch button, or a short button press accepts; `*`, the negative touch button,
-or a long press rejects.
+When signing a PSBT over either WebSerial or microSD, the device displays every
+destination and amount, then the fee, and requires a physical approval for each
+item. The serial host cannot advance these trusted-display review screens. The
+device asks for one final physical confirmation before producing a signature.
+`#`, the positive touch button, or a short button press accepts; `*`, the
+negative touch button, or a long press rejects.
 
 Wallets created by current firmware are stored as an authenticated encrypted
 record. Separate encryption and authentication keys are derived from the

@@ -40,7 +40,6 @@ CommandResponse executeSignPsbt(String commandData) {
     sendCommandOutput(COMMAND_SEND_PSBT, "psbt_parse_failed");
     return {"Failed parsing",  "Send PSBT again"};
   }
-
   HDPrivateKey hd(global.mnemonic, global.passphrase, network);
   // check if it is valid
   if (!hd) {
@@ -48,7 +47,14 @@ CommandResponse executeSignPsbt(String commandData) {
     return {"Invalid Mnemonic", ""};
   }
 
-  sendCommandOutput(COMMAND_SEND_PSBT, "1");
+  // SD signing is a single command, so preserve its acknowledgement before the
+  // on-device review. WebSerial keeps the /psbt request pending until every
+  // output and the fee have been physically reviewed. This prevents the host
+  // from treating a parse acknowledgement as approval to skip trusted-display
+  // review.
+  if (global.hasCommandsFile == true) {
+    sendCommandOutput(COMMAND_SEND_PSBT, "1");
+  }
 
   for (int i = 0; i < psbt.tx.outputsNumber; i++) {
     CommandResponse outRes = confirmOutputDetails(psbt, hd, i, network);
@@ -58,6 +64,10 @@ CommandResponse executeSignPsbt(String commandData) {
   CommandResponse feeRes = confirmFeeDetails(psbt.fee());
   if (feeRes.message != "") return feeRes;
 
+  if (global.hasCommandsFile == false) {
+    sendCommandOutput(COMMAND_SEND_PSBT, "1");
+  }
+
   return signPsbt(psbt, hd);
 
 }
@@ -65,58 +75,35 @@ CommandResponse executeSignPsbt(String commandData) {
 
 CommandResponse confirmOutputDetails(PSBT psbt, HDPrivateKey hd, int index, const Network * network) {
   if (global.hasCommandsFile == true) {
-    CommandResponse result = writeOutputToFile(psbt, hd, index, network);
-    printOutputDetails(psbt, hd, index, network);
-    printSdReviewControls();
-    if (awaitPhysicalReviewApproval() == false) {
-      sendCommandOutput(COMMAND_SEND_PSBT, "review_rejected");
-      return {"Operation canceled", "Output rejected"};
-    }
-    return result;
+    writeOutputToFile(psbt, index, network);
   }
-  return showOutputForConfirmation(psbt, hd, index, network);
-}
-
-CommandResponse showOutputForConfirmation(PSBT psbt, HDPrivateKey hd, int index, const Network * network) {
   printOutputDetails(psbt, hd, index, network);
-
-  EventData event = awaitEvent();
-  if (event.type != EVENT_SERIAL_DATA) {
-    return {"Operation Canceled", "button pressed" };
-  };
-  String data = event.data;
-
-  Command c = decryptAndExtractCommand(data);
-  if (c.cmd == COMMAND_CANCEL) {
-    return {"Operation Canceled", "`/help` for details" };
-  }
-  if (c.cmd != COMMAND_CONFIRM_NEXT) {
-    return executeUnknown("Expected: " + COMMAND_CONFIRM_NEXT);
+  printPhysicalReviewControls();
+  if (awaitPhysicalReviewApproval() == false) {
+    sendCommandOutput(COMMAND_SEND_PSBT, "review_rejected");
+    return {"Operation canceled", "Output rejected"};
   }
   return {"", ""};
 }
 
-CommandResponse writeOutputToFile(PSBT psbt, HDPrivateKey hd, int index, const Network * network) {
+void writeOutputToFile(PSBT psbt, int index, const Network * network) {
   String sats = int64ToString(psbt.tx.txOuts[index].amount);
   String output = "Output " + String(index) + "\n" +
                   "Address: " + psbt.tx.txOuts[index].address(network) + "\n" +
                   "Amount: " + sats + " sat";
 
   commandOutToFile(output);
-  return {"", ""};
 }
 
 CommandResponse confirmFeeDetails(uint64_t fee) {
   if (global.hasCommandsFile == true) {
     writeFeeToFile(fee);
-    printFeeDetails(fee);
-    printSdReviewControls();
-    if (awaitPhysicalReviewApproval() == false) {
-      sendCommandOutput(COMMAND_SEND_PSBT, "review_rejected");
-      return {"Operation canceled", "Fee rejected"};
-    }
-  } else {
-    printFeeDetails(fee);
+  }
+  printFeeDetails(fee);
+  printPhysicalReviewControls();
+  if (awaitPhysicalReviewApproval() == false) {
+    sendCommandOutput(COMMAND_SEND_PSBT, "review_rejected");
+    return {"Operation canceled", "Fee rejected"};
   }
   return {"", ""};
 }
@@ -150,20 +137,26 @@ CommandResponse signPsbtToFile(PSBT psbt, HDPrivateKey hd) {
 }
 
 CommandResponse confirmAndSignPsbt(PSBT psbt, HDPrivateKey hd) {
-  EventData event = awaitEvent();
-  if (event.type != EVENT_SERIAL_DATA) {
-    return {"Operation Canceled", "`/help` for details" };
-  }
-  String data = event.data;
-
-  Command c = decryptAndExtractCommand(data);
-  if (c.cmd == COMMAND_SIGN_PSBT) {
-    showConfirmCancelMessage("Confirm signing", "Check outputs and fee");
-    armInputForPrompt();
+  while (true) {
     EventData event = awaitEvent();
-    if (event.type != EVENT_BUTTON_ACTION || event.data != "confirm") {
-      return {"Operation Canceled", "" };
-    };
+    if (event.type != EVENT_SERIAL_DATA) continue;
+
+    Command c = decryptAndExtractCommand(event.data);
+    // Compatibility with older web clients. The command no longer advances
+    // trusted-display review and is ignored until the client asks to sign.
+    if (c.cmd == COMMAND_CONFIRM_NEXT) continue;
+    if (c.cmd == COMMAND_CANCEL) {
+      return {"Operation Canceled", "`/help` for details" };
+    }
+    if (c.cmd != COMMAND_SIGN_PSBT) {
+      return executeUnknown("Expected: " + COMMAND_SIGN_PSBT);
+    }
+
+    showConfirmCancelMessage("Confirm signing", "Outputs and fee reviewed");
+    if (awaitPhysicalReviewApproval() == false) {
+      sendCommandOutput(COMMAND_SIGN_PSBT, "review_rejected");
+      return {"Operation Canceled", "Signing rejected" };
+    }
 
     showMessage("Please wait", "Signing PSBT...");
 
@@ -172,8 +165,4 @@ CommandResponse confirmAndSignPsbt(PSBT psbt, HDPrivateKey hd) {
     sendCommandOutput(COMMAND_SIGN_PSBT,  String(signedInputCount) + " " + psbt.toBase64());
     return { "Signed inputs:", String(signedInputCount) };
   }
-  if (c.cmd == COMMAND_CANCEL) {
-    return { "Operation Canceled",  "`/help` for details" };
-  }
-  return  executeUnknown("Expected: " + COMMAND_SIGN_PSBT);
 }
