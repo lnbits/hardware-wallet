@@ -2,12 +2,17 @@
 //================================COMMANDS================================//
 //========================================================================//
 
-CommandResponse cmdRes = {"Welcome", "Row, row, row your boat"};
+CommandResponse cmdRes = {"", ""};
+bool waitingAnimationPending = true;
 
 
 void listenForCommands() {
-  if (cmdRes.message != "" || cmdRes.subMessage != "")
+  if (waitingAnimationPending) {
+    startThinkingAnimation();
+    waitingAnimationPending = false;
+  } else if (cmdRes.message != "" || cmdRes.subMessage != "") {
     showMessage(cmdRes.message, cmdRes.subMessage);
+  }
 
 
   // if the command does not handle an event then it bubbles it up
@@ -15,6 +20,7 @@ void listenForCommands() {
   if (isNotCommandEvent(event.type)) {
     event = awaitEvent();
   }
+  stopThinkingAnimation();
 
   if (isNotCommandEvent(event.type)) return;
 

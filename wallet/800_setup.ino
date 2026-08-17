@@ -30,14 +30,18 @@ void setup() {
   // Secure connection not established yet. Sendin in clear text.
   Serial.println(COMMAND_PASSWORD_CLEAR +  " 1");
 
-  if (loadFiles() == false)
-    showMessage("Failed to open files",  "Reset or 'help'");
+  startThinkingAnimation();
+  loadFiles();
+  updateThinkingAnimation();
   updateDeviceConfig();
+  updateThinkingAnimation();
   setupSD();
+  stopThinkingAnimation();
   waitForFirmwareHashConfirmation();
 
   // Give WebSerial the full pairing window after device setup is complete.
   global.startTime = millis();
+  lastTickTime = global.startTime;
 }
 
 bool loadFiles() {

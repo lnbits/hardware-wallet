@@ -26,6 +26,7 @@
 #include "PSBT.h"
 #include "qrcoded.h"
 #include "bowser_logo.h"
+#include "thinking_animation.h"
 extern "C" {
 #include "utility/trezor/pbkdf2.h"
 }
