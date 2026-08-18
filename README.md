@@ -10,7 +10,7 @@ Using generic, widely available hardware is a huge gain against the supply chain
 
 WebSerial mode is intended for smaller day-to-day amounts. For more sensitive use, the air-gapped microSD and keypad mode with dice-generated entropy is recommended. For significant funds, consider a mature, independently audited hardware wallet such as [Trezor](https://trezor.io/) or [Jade](https://shop.lnbits.com/product/blockstream-jade-plus).
 
-Maintainers are not responsible for any loss of funds.
+**Although the maintainers have worked hard to build a functional signer, they are not responsible for any loss of funds. Point your agent at this repo and ask it to audit.**
 
 ## What you need
 
