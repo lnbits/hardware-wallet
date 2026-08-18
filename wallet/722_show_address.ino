@@ -19,23 +19,33 @@ CommandResponse executeShowAddress(String addressData) {
   String address = getWordAtPosition(addressData, 2);
 
 
-  const Network * network;
-  if (networkName == "Mainnet") {
-    network = &Mainnet;
-  } else if (networkName == "Testnet") {
-    network = &Testnet;
-  } else {
+  bool mainnet = false;
+  if (!isMainnetName(networkName, &mainnet)) {
     return {"Unknown Network",  "Must be Mainnet or Testnet"};
   }
 
   if (isEmptyParam(path)) {
     return {"Derivation path missing!", "Address cannot be derived"};
   }
+  if (!standardPathMatchesNetwork(path, mainnet)) {
+    return {"Invalid path", "Purpose/network mismatch"};
+  }
 
-  HDPrivateKey hd(global.mnemonic, global.passphrase, network);
-
-  HDPrivateKey pK = hd.derive(path);
-  String derivedAddress = pK.address();
+  struct ext_key root = {};
+  struct ext_key derived = {};
+  if (!mnemonicIsValid(global.mnemonic) || !deriveRootKey(mainnet, &root)) {
+    return {"Invalid mnemonic", "Address cannot be derived"};
+  }
+  if (!derivePathKey(&root, path, &derived)) {
+    clearSensitiveBytes((uint8_t *)&root, sizeof(root));
+    return {"Invalid path", "Address cannot be derived"};
+  }
+  String derivedAddress = addressForDerivedKey(&derived, path, mainnet);
+  clearSensitiveBytes((uint8_t *)&derived, sizeof(derived));
+  clearSensitiveBytes((uint8_t *)&root, sizeof(root));
+  if (derivedAddress == "") {
+    return {"Unsupported path", "Use BIP44, BIP49, BIP84 or BIP86"};
+  }
 
   if (isEmptyParam(address)) {
     logInfo("Address cannot be validated. Path: " + path + " address: " + derivedAddress );

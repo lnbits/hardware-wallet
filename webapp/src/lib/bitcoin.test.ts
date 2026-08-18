@@ -80,8 +80,8 @@ const build = (recipientAmount = 40_000) =>
     },
   })
 
-const buildForType = async (type: Exclude<AccountType, 'p2tr'>) => {
-  const purpose = { p2pkh: 44, p2sh: 49, p2wpkh: 84 }[type]
+const buildForType = async (type: AccountType) => {
+  const purpose = { p2pkh: 44, p2sh: 49, p2wpkh: 84, p2tr: 86 }[type]
   const path = `m/${purpose}'/0'/0'`
   const node = root.derivePath(path)
   const typedAccount: WalletAccount = {
@@ -132,7 +132,23 @@ const buildForType = async (type: Exclude<AccountType, 'p2tr'>) => {
   const signed = bitcoin.Psbt.fromBase64(unsigned.psbt, {
     network: bitcoin.networks.bitcoin,
   })
-  signed.signAllInputsHD(root)
+  if (type === 'p2tr') {
+    const child = root.derivePath(`${path}/0/0`)
+    let privateKey = child.privateKey!
+    if (child.publicKey[0] === 0x03) privateKey = ecc.privateNegate(privateKey)
+    const tweak = bitcoin.crypto.taggedHash(
+      'TapTweak',
+      child.publicKey.slice(1, 33),
+    )
+    const tweakedPrivateKey = ecc.privateAdd(privateKey, tweak)!
+    signed.signInput(0, {
+      publicKey: ecc.pointFromScalar(tweakedPrivateKey, true)!,
+      sign: (hash) => ecc.sign(hash, tweakedPrivateKey),
+      signSchnorr: (hash) => ecc.signSchnorr(hash, tweakedPrivateKey),
+    })
+  } else {
+    signed.signAllInputsHD(root)
+  }
   return finalizePsbt(signed.toBase64(), 'Mainnet', unsigned.psbt)
 }
 
@@ -200,7 +216,7 @@ describe('Bitcoin transaction construction', () => {
     expect(finalized.txid).toMatch(/^[0-9a-f]{64}$/)
   })
 
-  it.each(['p2pkh', 'p2sh', 'p2wpkh'] as const)(
+  it.each(['p2pkh', 'p2sh', 'p2wpkh', 'p2tr'] as const)(
     'constructs and finalizes Bowser-supported %s spends',
     async (type) => {
       const finalized = await buildForType(type)

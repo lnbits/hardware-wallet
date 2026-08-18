@@ -25,15 +25,20 @@ Waveshare ESP32-C6 profile selects TFT_eSPI's unmodified portable SPI backend.
 That selection is contained in the board setup; the vendored library remains
 an exact upstream snapshot.
 
-## Existing cryptographic and QR dependencies
+## libwally-core
 
-The display-library upgrade does not modify uBitcoin, QRCode, tiny-AES-c, or
-ArduinoJson. ArduinoJson 6.19.0 matches its upstream source. uBitcoin contains
-historical project changes and upgrades, QRCode is the modified LNPoS-derived
-version, and tiny-AES-c is configured for AES-256 instead of its upstream
-AES-128 default. Preserve and audit those differences before replacing these
-dependencies with newer upstream snapshots.
+- Upstream: <https://github.com/ElementsProject/libwally-core>
+- Release: 1.5.6 (`release_1.5.6`)
+- Commit: `0c41f38fb1c201786e9c3ac9eae4f5f80c051399`
+- Runtime source modifications: none
 
-ESP32 core 3.3.x declares `esp_random()` in `esp_random.h`. The C6 build forces
-that official core header into C translation units so the existing uBitcoin
-snapshot continues to call the hardware RNG without modifying the dependency.
+Bowser uses libwally directly for hashes, HMAC, PBKDF2, BIP39, BIP32,
+secp256k1, addresses, and PSBT parsing/signing/serialization. Build details and
+the pinned secp256k1-zkp revision are documented in `libwally/UPSTREAM.md`.
+The Bitcoin-only, English-only amalgamated build is shared by every board.
+
+## Other dependencies
+
+ArduinoJson 6.19.0 matches its upstream source. QRCode is the modified
+LNPoS-derived version. tiny-AES-c remains configured for AES-256 instead of its
+upstream AES-128 default so existing encrypted wallet records remain readable.

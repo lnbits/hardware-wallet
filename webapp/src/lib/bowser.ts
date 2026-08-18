@@ -11,6 +11,12 @@ type Pending = {
 
 export interface BowserEvents {
   confirmPair: (fingerprint: string) => Promise<boolean>
+  confirmOutput: (
+    output: UnsignedTransaction['outputs'][number],
+    index: number,
+    total: number,
+  ) => Promise<boolean>
+  confirmFee: (fee: number, feeRate: number) => Promise<boolean>
   log: (line: string) => void
   state: () => void
 }
@@ -21,7 +27,16 @@ const PUBLIC_COMMANDS = new Set([
   '/new',
   '/password-clear',
   '/ping',
+  '/psbt-begin',
+  '/psbt-chunk',
 ])
+
+const PSBT_SERIAL_CHUNK_LENGTH = 64
+// Password verification performs 100,000 PBKDF2-HMAC-SHA256 rounds on the
+// device. The 160 MHz ESP32-C6 can take longer than 30 seconds with libwally's
+// portable implementation, so this timeout must cover the cryptographic work
+// rather than the usual serial round-trip.
+const WALLET_UNLOCK_TIMEOUT = 120_000
 
 export class BowserDevice implements DeviceAdapter {
   readonly kind = 'bowser' as const
@@ -223,6 +238,13 @@ export class BowserDevice implements DeviceAdapter {
       if (command === '/password-clear') {
         this.authenticated = false
         this.events.state()
+        // Firmware emits this command in plaintext after every reboot. If it
+        // was not requested by logout, fail an in-flight operation immediately
+        // instead of leaving (for example) /psbt-commit pending for 15 minutes.
+        if (!this.pending.has('/password-clear') && this.pending.size)
+          this.rejectPending(
+            new Error('Bowser Wallet restarted during the operation'),
+          )
       }
       const pending = this.pending.get(command)
       if (pending) {
@@ -341,7 +363,7 @@ export class BowserDevice implements DeviceAdapter {
       '/password',
       [password, passphrase],
       true,
-      30_000,
+      WALLET_UNLOCK_TIMEOUT,
     )
     this.authenticated = response.trim() === '1'
     this.events.state()
@@ -466,19 +488,47 @@ export class BowserDevice implements DeviceAdapter {
     await this.send('/help')
   }
 
+  async cancel() {
+    await this.send('/cancel')
+  }
+
+  private async uploadPsbt(network: NetworkName, psbt: string) {
+    const chunkCount = Math.ceil(psbt.length / PSBT_SERIAL_CHUNK_LENGTH)
+    const started = await this.request(
+      '/psbt-begin',
+      [network, psbt.length],
+      true,
+      20_000,
+    )
+    if (started !== `1 ${chunkCount}`)
+      throw new Error(`PSBT transfer was refused: ${started || 'no response'}`)
+
+    for (let index = 0; index < chunkCount; index++) {
+      const chunk = psbt.slice(
+        index * PSBT_SERIAL_CHUNK_LENGTH,
+        (index + 1) * PSBT_SERIAL_CHUNK_LENGTH,
+      )
+      const accepted = await this.request(
+        '/psbt-chunk',
+        [index, chunk],
+        true,
+        20_000,
+      )
+      if (accepted !== `1 ${index}`)
+        throw new Error(
+          `PSBT chunk ${index + 1} was rejected: ${accepted || 'no response'}`,
+        )
+    }
+
+    return this.request('/psbt-commit', [], true, 15 * 60_000)
+  }
+
   async sign(transaction: UnsignedTransaction) {
     if (!this.authenticated)
       throw new Error('Unlock Bowser Wallet before signing')
-    if (
-      transaction.inputs.some((input) => input.accountType === 'p2tr') ||
-      transaction.outputs.some((output) => output.accountType === 'p2tr')
-    )
-      throw new Error('Bowser Wallet does not support Taproot signing')
-    const accepted = await this.request(
-      '/psbt',
-      [transaction.network, transaction.psbt],
-      true,
-      15 * 60_000,
+    const accepted = await this.uploadPsbt(
+      transaction.network,
+      transaction.psbt,
     )
     if (accepted.trim() !== '1')
       throw new Error(
@@ -486,6 +536,26 @@ export class BowserDevice implements DeviceAdapter {
           ? 'Transaction review rejected on Bowser Wallet'
           : accepted || 'Device could not parse or review the PSBT',
       )
+
+    // The trusted review has already completed physically. Mirror the same
+    // outputs and fee in the webapp as a recap, but never send a command that
+    // advances the hardware display.
+    for (let index = 0; index < transaction.outputs.length; index++) {
+      if (
+        !(await this.events.confirmOutput(
+          transaction.outputs[index],
+          index,
+          transaction.outputs.length,
+        ))
+      ) {
+        await this.cancel()
+        throw new Error('Transaction canceled')
+      }
+    }
+    if (!(await this.events.confirmFee(transaction.fee, transaction.feeRate))) {
+      await this.cancel()
+      throw new Error('Transaction canceled')
+    }
 
     const signed = await this.request('/sign', [], true, 120_000)
     const [count, psbt] = signed.split(' ')

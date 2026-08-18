@@ -17,7 +17,7 @@ String walletRecordPayload(
          saltHex + ":" + verifierHex + ":" + encryptedMnemonic;
 }
 
-void deriveWalletKeys(
+bool deriveWalletKeys(
   const String &password,
   const uint8_t *salt,
   uint32_t iterations,
@@ -25,30 +25,41 @@ void deriveWalletKeys(
   uint8_t *authenticationKey
 ) {
   uint8_t derived[WALLET_KEY_SIZE * 2] = {0};
-  pbkdf2_hmac_sha256(
+  if (wally_pbkdf2_hmac_sha256(
     (const uint8_t *)password.c_str(),
     password.length(),
     salt,
     WALLET_SALT_SIZE,
+    0,
     iterations,
     derived,
     sizeof(derived)
-  );
+  ) != WALLY_OK) {
+    clearSensitiveBytes(derived, sizeof(derived));
+    memset(encryptionKey, 0, WALLET_KEY_SIZE);
+    memset(authenticationKey, 0, WALLET_KEY_SIZE);
+    return false;
+  }
   memcpy(encryptionKey, derived, WALLET_KEY_SIZE);
   memcpy(authenticationKey, derived + WALLET_KEY_SIZE, WALLET_KEY_SIZE);
   clearSensitiveBytes(derived, sizeof(derived));
+  return true;
 }
 
 String walletHmacHex(const uint8_t *key, const String &data) {
   uint8_t mac[32] = {0};
-  sha256Hmac(
+  if (wally_hmac_sha256(
     key,
     WALLET_KEY_SIZE,
     (const uint8_t *)data.c_str(),
     data.length(),
-    mac
-  );
-  String result = toHex(mac, sizeof(mac));
+    mac,
+    sizeof(mac)
+  ) != WALLY_OK) {
+    clearSensitiveBytes(mac, sizeof(mac));
+    return "";
+  }
+  String result = bytesToHexString(mac, sizeof(mac));
   clearSensitiveBytes(mac, sizeof(mac));
   return result;
 }
@@ -182,20 +193,25 @@ bool initializeProtectedWallet(
     clearSensitiveBytes(salt, sizeof(salt));
     return false;
   }
-  deriveWalletKeys(
+  if (!deriveWalletKeys(
     password,
     salt,
     WALLET_KDF_ITERATIONS,
     encryptionKey,
     authenticationKey
-  );
+  )) {
+    clearSensitiveBytes(salt, sizeof(salt));
+    clearSensitiveBytes(encryptionKey, sizeof(encryptionKey));
+    clearSensitiveBytes(authenticationKey, sizeof(authenticationKey));
+    return false;
+  }
 
-  String saltHex = toHex(salt, sizeof(salt));
+  String saltHex = bytesToHexString(salt, sizeof(salt));
   String verifierHex = walletPasswordVerifier(authenticationKey);
   String encryptedMnemonic = encryptDataWithIv(encryptionKey, mnemonic);
   clearSensitiveBytes(salt, sizeof(salt));
   clearSensitiveBytes(encryptionKey, sizeof(encryptionKey));
-  if (encryptedMnemonic == "") {
+  if (saltHex == "" || verifierHex == "" || encryptedMnemonic == "") {
     clearSensitiveBytes(authenticationKey, sizeof(authenticationKey));
     return false;
   }
@@ -208,6 +224,7 @@ bool initializeProtectedWallet(
   );
   String mnemonicMac = walletHmacHex(authenticationKey, payload);
   clearSensitiveBytes(authenticationKey, sizeof(authenticationKey));
+  if (mnemonicMac == "") return false;
   String record = payload + ":" + mnemonicMac;
 
   if (persistSecrets && !writeProtectedWalletRecord(record)) return false;
@@ -231,14 +248,14 @@ bool unlockProtectedWallet(const String &password) {
     uint8_t legacyKey[WALLET_KEY_SIZE] = {0};
     if (
       !isStrictHex(legacyPasswordHash) ||
-      fromHex(legacyPasswordHash, legacyKey, sizeof(legacyKey)) != sizeof(legacyKey)
+      !hexStringToBytes(legacyPasswordHash, legacyKey, sizeof(legacyKey))
     ) {
       clearSensitiveBytes(legacyKey, sizeof(legacyKey));
       return false;
     }
     String mnemonic = decryptDataWithIv(legacyKey, global.encryptedMnemonic);
     clearSensitiveBytes(legacyKey, sizeof(legacyKey));
-    if (!checkMnemonic(mnemonic)) {
+    if (!mnemonicIsValid(mnemonic)) {
       mnemonic = "";
       return false;
     }
@@ -258,16 +275,21 @@ bool unlockProtectedWallet(const String &password) {
   uint8_t authenticationKey[WALLET_KEY_SIZE] = {0};
   if (
     global.passwordSalt.length() != WALLET_SALT_SIZE * 2 ||
-    fromHex(global.passwordSalt, salt, sizeof(salt)) != sizeof(salt)
+    !hexStringToBytes(global.passwordSalt, salt, sizeof(salt))
   ) return false;
 
-  deriveWalletKeys(
+  if (!deriveWalletKeys(
     password,
     salt,
     global.passwordKdfIterations,
     encryptionKey,
     authenticationKey
-  );
+  )) {
+    clearSensitiveBytes(salt, sizeof(salt));
+    clearSensitiveBytes(encryptionKey, sizeof(encryptionKey));
+    clearSensitiveBytes(authenticationKey, sizeof(authenticationKey));
+    return false;
+  }
   clearSensitiveBytes(salt, sizeof(salt));
 
   String verifierHex = walletPasswordVerifier(authenticationKey);
@@ -289,7 +311,7 @@ bool unlockProtectedWallet(const String &password) {
 
   String mnemonic = decryptDataWithIv(encryptionKey, global.encryptedMnemonic);
   clearSensitiveBytes(encryptionKey, sizeof(encryptionKey));
-  if (!checkMnemonic(mnemonic)) {
+  if (!mnemonicIsValid(mnemonic)) {
     mnemonic = "";
     return false;
   }

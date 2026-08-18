@@ -38,13 +38,19 @@ CommandResponse executeCreate(String password) {
   }
 
   uint8_t entropy[32];
-  sha256((uint8_t *)rolls, sizeof(rolls), entropy);
+  if (wally_sha256(
+        (uint8_t *)rolls, sizeof(rolls), entropy, sizeof(entropy)
+      ) != WALLY_OK) {
+    clearSensitiveBytes((uint8_t *)rolls, sizeof(rolls));
+    clearSensitiveBytes(entropy, sizeof(entropy));
+    sendCommandOutput(COMMAND_CREATE, "0");
+    return {"Cannot create", "Entropy hash failed"};
+  }
   clearSensitiveBytes((uint8_t *)rolls, sizeof(rolls));
 
-  const char *mnemonicChars = mnemonicFromEntropy(entropy, sizeof(entropy));
-  String mnemonic = mnemonicChars == NULL ? "" : String(mnemonicChars);
+  String mnemonic = mnemonicFromBytes(entropy, sizeof(entropy));
   clearSensitiveBytes(entropy, sizeof(entropy));
-  if (mnemonic == "" || checkMnemonic(mnemonic) == false) {
+  if (mnemonic == "" || !mnemonicIsValid(mnemonic)) {
     sendCommandOutput(COMMAND_CREATE, "0");
     return {"Cannot create", "Mnemonic error"};
   }

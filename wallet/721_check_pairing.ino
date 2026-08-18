@@ -5,7 +5,7 @@
    @return CommandResponse
 */
 CommandResponse executeCheckPairing(String encryptedData) {
-  String sharedSecret = toHex(global.dhe_shared_secret, sizeof(global.dhe_shared_secret));
+  String sharedSecret = bytesToHexString(global.dhe_shared_secret, sizeof(global.dhe_shared_secret));
 
   if (sharedSecret.equals("0000000000000000000000000000000000000000000000000000000000000000")) {
     return {"Ready", "For encrypted connection"};
