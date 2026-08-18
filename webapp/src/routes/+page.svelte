@@ -46,7 +46,7 @@
     parseAmountInput,
     type Denomination,
   } from '$lib/amount'
-  import { BowserDevice } from '$lib/bowser'
+  import { BowserDevice, type PsbtReviewStep } from '$lib/bowser'
   import {
     accountTypeLabel,
     createPsbt,
@@ -55,8 +55,8 @@
     dustThresholdForAddress,
     estimateVsize,
     extractXpub,
-    finalizePsbt,
     parseTransaction,
+    processSignedPsbt,
     validateXpub,
     validateAddress,
   } from '$lib/bitcoin'
@@ -160,6 +160,7 @@
   let scanController: AbortController | null = null
   let toasts: Toast[] = []
   let confirmation: Confirmation | null = null
+  let psbtReview: PsbtReviewStep | null = null
   let showAccount = false
   let showReceive = false
   let showPsbt = false
@@ -217,6 +218,7 @@
   let changeAccountId = ''
   let unsignedTx: UnsignedTransaction | null = null
   let signedPsbt = ''
+  let signedPsbtProgress = ''
   let signedTxHex = ''
   let finalTx: ReturnType<typeof parseTransaction> | null = null
   let broadcastTxid = ''
@@ -250,6 +252,10 @@
     (sum, recipient) => sum + recipientAmountSats(recipient),
     0,
   )
+  $: unsignedSignerCount = unsignedTx
+    ? new Set(unsignedTx.inputs.map((input) => input.fingerprint.toLowerCase()))
+        .size
+    : 0
   $: filteredAddresses = networkAddresses.filter((item) =>
     `${item.address} ${item.accountName} ${item.note}`
       .toLowerCase()
@@ -622,22 +628,7 @@
             'Only approve when both codes match.',
             'Codes match',
           ),
-        confirmOutput: (output, index, total) =>
-          ask(
-            `Reviewed output ${index + 1} of ${total}`,
-            `${amount(output.amount)} to ${output.change ? 'your change address' : output.address}`,
-            output.change
-              ? `${output.address} · approved on Bowser Wallet`
-              : 'This address was approved on the Bowser Wallet display.',
-            'Next',
-          ),
-        confirmFee: (fee, rate) =>
-          ask(
-            'Reviewed network fee',
-            amount(fee),
-            `${rate} sat/vB · approved on Bowser Wallet`,
-            'Continue to signing',
-          ),
+        psbtReview: (step) => (psbtReview = step),
         log: (line) => (serialLog = [...serialLog.slice(-149), line]),
         state: () => (deviceRevision += 1),
       })
@@ -1355,6 +1346,7 @@
       }
       unsignedTx = built
       signedPsbt = ''
+      signedPsbtProgress = ''
       signedTxHex = ''
       finalTx = null
       showPsbt = true
@@ -1382,13 +1374,26 @@
       return
     busy = 'Review every output and the fee on Bowser Wallet…'
     try {
-      const result = await device.sign(unsignedTx)
-      signedPsbt = result.psbt
-      const finalized = finalizePsbt(
+      const psbtToSign = signedPsbt.trim()
+        ? processSignedPsbt(signedPsbt, unsignedTx.network, unsignedTx.psbt)
+            .psbt
+        : unsignedTx.psbt
+      const result = await device.sign({ ...unsignedTx, psbt: psbtToSign })
+      const processed = processSignedPsbt(
         result.psbt,
         unsignedTx.network,
         unsignedTx.psbt,
       )
+      signedPsbt = processed.psbt
+      if (!processed.transaction) {
+        signedTxHex = ''
+        finalTx = null
+        signedPsbtProgress = `${processed.signedInputs} of ${processed.totalInputs} inputs carry signatures. Export this PSBT for the remaining signer.`
+        notify('PSBT partially signed', 'success', signedPsbtProgress)
+        return
+      }
+      signedPsbtProgress = ''
+      const finalized = processed.transaction
       signedTxHex = finalized.hex
       finalTx = parseTransaction(finalized.hex)
       notify('Transaction signed', 'success')
@@ -1406,11 +1411,21 @@
   function importSignedPsbt() {
     try {
       if (!unsignedTx) throw new Error('Build or load the unsigned PSBT first')
-      const finalized = finalizePsbt(
+      const processed = processSignedPsbt(
         signedPsbt,
         unsignedTx.network,
         unsignedTx.psbt,
       )
+      signedPsbt = processed.psbt
+      if (!processed.transaction) {
+        signedTxHex = ''
+        finalTx = null
+        signedPsbtProgress = `${processed.signedInputs} of ${processed.totalInputs} inputs carry signatures. Export this PSBT for the remaining signer.`
+        notify('PSBT partially signed', 'success', signedPsbtProgress)
+        return
+      }
+      signedPsbtProgress = ''
+      const finalized = processed.transaction
       signedTxHex = finalized.hex
       finalTx = parseTransaction(finalized.hex)
       notify('Signed PSBT finalized', 'success')
@@ -1980,9 +1995,7 @@
                 <div>
                   <span class="empty-icon"><WalletCards /></span>
                   <h2>No {network} accounts yet</h2>
-                  <p>
-                    Import or fetch BIP44, 49, 84, or 86 account data.
-                  </p>
+                  <p>Import or fetch BIP44, 49, 84, or 86 account data.</p>
                   <button
                     class="btn primary"
                     onclick={() =>
@@ -2843,6 +2856,11 @@
           >
         </table>
       </div>
+      {#if unsignedSignerCount > 1}<div class="callout warning">
+          <FileKey size={17} /> These inputs belong to {unsignedSignerCount}
+          different wallet fingerprints. Each wallet must sign this PSBT before it
+          can be finalized.
+        </div>{/if}
       <div class="field">
         <label for="unsigned-psbt">Unsigned PSBT</label><textarea
           id="unsigned-psbt"
@@ -2872,15 +2890,32 @@
         <label for="signed-psbt">Import signed PSBT</label><textarea
           id="signed-psbt"
           bind:value={signedPsbt}
+          oninput={() => (signedPsbtProgress = '')}
           placeholder="Paste a signed base64 PSBT from another signer…"
         ></textarea>
       </div>
-      <button
-        class="btn ghost"
-        onclick={importSignedPsbt}
-        disabled={!signedPsbt}
-        ><Upload size={15} /> Finalize imported PSBT</button
-      >{#if signedTxHex}<div class="callout">
+      {#if signedPsbtProgress}<div class="callout warning">
+          <FileKey size={17} />
+          {signedPsbtProgress}
+        </div>{/if}
+      <div class="inline">
+        <button
+          class="btn ghost"
+          onclick={() => copyWithNotify(signedPsbt, 'Signed PSBT')}
+          disabled={!signedPsbt}><Copy size={15} /> Copy signed PSBT</button
+        ><button
+          class="btn ghost"
+          onclick={() =>
+            signedPsbt && downloadText('bowser-signed.psbt', signedPsbt)}
+          disabled={!signedPsbt}><Download size={15} /> Download</button
+        ><span class="spacer"></span><button
+          class="btn ghost"
+          onclick={importSignedPsbt}
+          disabled={!signedPsbt}
+          ><Upload size={15} /> Finalize signed PSBT</button
+        >
+      </div>
+      {#if signedTxHex}<div class="callout">
           <Check size={17} /> Signed transaction ready ·
           <span class="mono">{short(finalTx?.txid || '')}</span>
         </div>
@@ -3168,6 +3203,40 @@
 </Modal>
 
 <Modal
+  open={!!psbtReview}
+  title={psbtReview?.stage === 'output'
+    ? `Review output ${psbtReview.index + 1} of ${psbtReview.total}`
+    : psbtReview?.stage === 'fee'
+      ? 'Review network fee'
+      : 'Confirm signing'}
+  closable={false}
+  onclose={() => undefined}
+>
+  {#if psbtReview}
+    <div class="confirmation">
+      <span class="confirmation-icon"><LoaderCircle class="spin" /></span>
+      {#if psbtReview.stage === 'output'}
+        <h2>{amount(psbtReview.output.amount)}</h2>
+        <p class="muted">
+          {psbtReview.output.change ? 'Change address' : 'Recipient address'}
+        </p>
+        <div class="callout mono">{psbtReview.output.address}</div>
+      {:else if psbtReview.stage === 'fee'}
+        <h2>{amount(psbtReview.fee)}</h2>
+        <p class="muted">{psbtReview.feeRate} sat/vB</p>
+      {:else}
+        <h2>Outputs and fee reviewed</h2>
+        <p class="muted">Approve the final signing prompt on the device.</p>
+      {/if}
+      <div class="callout section">
+        <ShieldCheck size={18} /> Confirm this step on Bowser Wallet. This dialog
+        advances automatically from the device.
+      </div>
+    </div>
+  {/if}
+</Modal>
+
+<Modal
   open={!!confirmation}
   title={confirmation?.title || 'Confirm'}
   onclose={() => answerConfirmation(false)}
@@ -3192,7 +3261,7 @@
     </div>{/if}
 </Modal>
 
-{#if busy || scanning}<div class="busy">
+{#if (busy || scanning) && !psbtReview}<div class="busy">
     <LoaderCircle class="spin" size={19} /><span
       >{busy || 'Scanning blockchain…'}</span
     >{#if scanning && scanProgress}<small>Scan: {scanProgress}</small>{/if}

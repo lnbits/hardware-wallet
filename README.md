@@ -8,7 +8,7 @@ All of the software and hardware designs are free, libre and open source (FLOSS)
 
 Using generic, widely available hardware is a huge gain against the supply chain attack from purpose built devices, but it does not eliminate supply-chain risk entirely. Because the device has no secure element, it should be stored securely when not in use and treated as physically sensitive.
 
-WebSerial mode is intended for smaller day-to-day amounts. For more sensitive use, the air-gapped microSD and keypad mode with dice-generated entropy is recommended. For significant funds, consider a mature, independently audited hardware wallet such as [Trezor](https://trezor.io/).
+WebSerial mode is intended for smaller day-to-day amounts. For more sensitive use, the air-gapped microSD and keypad mode with dice-generated entropy is recommended. For significant funds, consider a mature, independently audited hardware wallet such as [Trezor](https://trezor.io/) or [Jade](https://shop.lnbits.com/product/blockstream-jade-plus).
 
 Maintainers are not responsible for any loss of funds.
 

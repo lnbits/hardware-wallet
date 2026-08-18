@@ -11,7 +11,7 @@ String hashStringData(String key) {
   return result;
 }
 
-String encryptData(byte key[32], byte iv[16], String msg) {
+String encryptData(byte key[32], byte iv[16], const String &msg) {
   // String has a trailing `null` character
   // String.getBytes() can overwrite the last character with `null`.
   // Add some extra-padding for safety
@@ -20,21 +20,24 @@ String encryptData(byte key[32], byte iv[16], String msg) {
   // Pad data for encryption. Length must be multiple of 16.
   while (data.length() % 16 != 0) data += " ";
 
-  int byteSize = data.length();
-  byte messageBin[byteSize];
+  const size_t byteSize = data.length();
+  if (byteSize == 0 || byteSize % 16 != 0) return "";
+  byte *messageBin = (byte *)malloc(byteSize);
+  if (messageBin == NULL) return "";
   data.getBytes(messageBin, byteSize);
 
   AES_ctx ctx;
   AES_init_ctx_iv(&ctx, key, iv);
 
-  AES_CBC_encrypt_buffer(&ctx, messageBin, sizeof(messageBin));
+  AES_CBC_encrypt_buffer(&ctx, messageBin, byteSize);
 
-  String result = bytesToHexString(messageBin, sizeof(messageBin));
-  clearSensitiveBytes(messageBin, sizeof(messageBin));
+  String result = bytesToHexString(messageBin, byteSize);
+  clearSensitiveBytes(messageBin, byteSize);
+  free(messageBin);
   return result;
 }
 
-String encryptDataWithIv(byte key[32], String msg) {
+String encryptDataWithIv(byte key[32], const String &msg) {
   String data = String(msg.length()) + " " + msg;
 
   // create random initialization vector
@@ -53,11 +56,15 @@ String encryptDataWithIv(byte key[32], String msg) {
 }
 
 
-String decryptData(byte key[32], byte iv[16], String messageHex) {
-  int byteSize =  messageHex.length() / 2;
-  byte messageBin[byteSize + 1];
+String decryptData(byte key[32], byte iv[16], const String &messageHex) {
+  if (messageHex.length() == 0 || messageHex.length() % 32 != 0 ||
+      !isStrictHex(messageHex)) return "";
+  const size_t byteSize = messageHex.length() / 2;
+  byte *messageBin = (byte *)malloc(byteSize + 1);
+  if (messageBin == NULL) return "";
   if (!hexStringToBytes(messageHex, messageBin, byteSize)) {
-    clearSensitiveBytes(messageBin, sizeof(messageBin));
+    clearSensitiveBytes(messageBin, byteSize + 1);
+    free(messageBin);
     return "";
   }
 
@@ -68,12 +75,16 @@ String decryptData(byte key[32], byte iv[16], String messageHex) {
   messageBin[byteSize] = '\0';
 
   String result = String((char *)messageBin).substring(0, byteSize);
-  clearSensitiveBytes(messageBin, sizeof(messageBin));
+  clearSensitiveBytes(messageBin, byteSize + 1);
+  free(messageBin);
   return result;
 }
 
-String decryptDataWithIv(byte key[32], String messageWithIvHex) {
-  int ivSize = 16;
+String decryptDataWithIv(byte key[32], const String &messageWithIvHex) {
+  const size_t ivSize = 16;
+  if (messageWithIvHex.length() < ivSize * 2 + 32 ||
+      (messageWithIvHex.length() - ivSize * 2) % 32 != 0 ||
+      !isStrictHex(messageWithIvHex)) return "";
   String messageHex = messageWithIvHex.substring(0, messageWithIvHex.length() - ivSize * 2);
   String ivHex = messageWithIvHex.substring(messageWithIvHex.length() - ivSize * 2, messageWithIvHex.length());
 
@@ -85,7 +96,17 @@ String decryptDataWithIv(byte key[32], String messageWithIvHex) {
   String decryptedData = decryptData(key, iv, messageHex);
   clearSensitiveBytes(iv, sizeof(iv));
 
-  Command c = extractCommand(decryptedData);
-  int commandLength = c.cmd.toInt();
-  return c.data.substring(0, commandLength);
+  const int separator = decryptedData.indexOf(' ');
+  if (separator <= 0) return "";
+  size_t commandLength = 0;
+  for (int i = 0; i < separator; i++) {
+    const char c = decryptedData[i];
+    if (c < '0' || c > '9') return "";
+    const size_t digit = (size_t)(c - '0');
+    if (commandLength > (SIZE_MAX - digit) / 10) return "";
+    commandLength = commandLength * 10 + digit;
+  }
+  const size_t payloadStart = (size_t)separator + 1;
+  if (commandLength > decryptedData.length() - payloadStart) return "";
+  return decryptedData.substring(payloadStart, payloadStart + commandLength);
 }

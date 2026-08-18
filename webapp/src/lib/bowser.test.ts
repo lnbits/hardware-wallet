@@ -5,8 +5,7 @@ import type { UnsignedTransaction } from './types'
 const device = () =>
   new BowserDevice({
     confirmPair: async () => true,
-    confirmOutput: async () => true,
-    confirmFee: async () => true,
+    psbtReview: vi.fn(),
     log: vi.fn(),
     state: vi.fn(),
   })
@@ -170,13 +169,63 @@ describe('Bowser encrypted transport framing', () => {
     )
   })
 
-  it('shows the browser PSBT recap without sending hardware review advances', async () => {
-    const confirmOutput = vi.fn().mockResolvedValue(true)
-    const confirmFee = vi.fn().mockResolvedValue(true)
+  it('mirrors device PSBT review stages using local transaction details', async () => {
+    const psbtReview = vi.fn()
     const bowser = new BowserDevice({
       confirmPair: async () => true,
-      confirmOutput,
-      confirmFee,
+      psbtReview,
+      log: vi.fn(),
+      state: vi.fn(),
+    }) as unknown as TransportInternals & {
+      signingTransaction: UnsignedTransaction | null
+    }
+    const transaction: UnsignedTransaction = {
+      network: 'Mainnet',
+      psbt: 'unsigned',
+      inputs: [],
+      outputs: [
+        { address: 'bc1precipient', amount: 1000 },
+        { address: 'bc1qchange', amount: 500, change: true },
+      ],
+      fee: 100,
+      feeRate: 2,
+      vsize: 50,
+    }
+    bowser.signingTransaction = transaction
+
+    await bowser.handleLine('/psbt-review output 0 2')
+    await bowser.handleLine('/psbt-review output 1 2')
+    await bowser.handleLine('/psbt-review fee')
+    await bowser.handleLine('/psbt-review sign')
+    await bowser.handleLine('/psbt-review output 2 2')
+
+    expect(psbtReview.mock.calls).toEqual([
+      [
+        {
+          stage: 'output',
+          output: transaction.outputs[0],
+          index: 0,
+          total: 2,
+        },
+      ],
+      [
+        {
+          stage: 'output',
+          output: transaction.outputs[1],
+          index: 1,
+          total: 2,
+        },
+      ],
+      [{ stage: 'fee', fee: 100, feeRate: 2 }],
+      [{ stage: 'sign' }],
+    ])
+  })
+
+  it('signs without sending hardware review advances', async () => {
+    const psbtReview = vi.fn()
+    const bowser = new BowserDevice({
+      confirmPair: async () => true,
+      psbtReview,
       log: vi.fn(),
       state: vi.fn(),
     })
@@ -256,56 +305,9 @@ describe('Bowser encrypted transport framing', () => {
       15 * 60_000,
     )
     expect(request).toHaveBeenNthCalledWith(6, '/sign', [], true, 120_000)
-    expect(confirmOutput).toHaveBeenCalledTimes(2)
-    expect(confirmFee).toHaveBeenCalledWith(100, 2)
+    expect(psbtReview).toHaveBeenNthCalledWith(1, null)
+    expect(psbtReview).toHaveBeenLastCalledWith(null)
     expect(send).not.toHaveBeenCalled()
-  })
-
-  it('can cancel from the browser recap without advancing device review', async () => {
-    const bowser = new BowserDevice({
-      confirmPair: async () => true,
-      confirmOutput: async () => false,
-      confirmFee: async () => true,
-      log: vi.fn(),
-      state: vi.fn(),
-    })
-    bowser.authenticated = true
-    const request = vi.fn(
-      async (command: string, args: Array<string | number> = []) => {
-        if (command === '/psbt-begin') return '1 1'
-        if (command === '/psbt-chunk') return `1 ${args[0]}`
-        if (command === '/psbt-commit') return '1'
-        throw new Error(`Unexpected command: ${command}`)
-      },
-    )
-    const send = vi.fn()
-    ;(
-      bowser as unknown as {
-        request: typeof request
-        send: typeof send
-      }
-    ).request = request
-    ;(
-      bowser as unknown as {
-        send: typeof send
-      }
-    ).send = send
-    const transaction = {
-      network: 'Testnet',
-      psbt: 'A'.repeat(64),
-      inputs: [],
-      outputs: [{ address: 'tb1qrecipient', amount: 1000 }],
-      fee: 100,
-      feeRate: 2,
-      vsize: 50,
-    } satisfies UnsignedTransaction
-
-    await expect(bowser.sign(transaction)).rejects.toThrow(
-      'Transaction canceled',
-    )
-    expect(send).toHaveBeenCalledOnce()
-    expect(send).toHaveBeenCalledWith('/cancel')
-    expect(request).toHaveBeenCalledTimes(3)
   })
 
   it('surfaces the firmware PSBT policy reason', async () => {
@@ -339,8 +341,7 @@ describe('Bowser encrypted transport framing', () => {
   it('reports device PSBT review rejection without requesting a signature', async () => {
     const bowser = new BowserDevice({
       confirmPair: async () => true,
-      confirmOutput: async () => true,
-      confirmFee: async () => true,
+      psbtReview: vi.fn(),
       log: vi.fn(),
       state: vi.fn(),
     })
@@ -414,8 +415,7 @@ describe('Bowser encrypted transport framing', () => {
     const log = vi.fn()
     const bowser = new BowserDevice({
       confirmPair: async () => true,
-      confirmOutput: async () => true,
-      confirmFee: async () => true,
+      psbtReview: vi.fn(),
       log,
       state: vi.fn(),
     }) as unknown as TransportInternals
@@ -434,8 +434,7 @@ describe('Bowser encrypted transport framing', () => {
     const state = vi.fn()
     const bowser = new BowserDevice({
       confirmPair: async () => true,
-      confirmOutput: async () => true,
-      confirmFee: async () => true,
+      psbtReview: vi.fn(),
       log: vi.fn(),
       state,
     }) as unknown as TransportInternals & { walletConfigured: boolean }
@@ -453,8 +452,7 @@ describe('Bowser encrypted transport framing', () => {
   it('fails a pending operation when firmware announces a reboot', async () => {
     const bowser = new BowserDevice({
       confirmPair: async () => true,
-      confirmOutput: async () => true,
-      confirmFee: async () => true,
+      psbtReview: vi.fn(),
       log: vi.fn(),
       state: vi.fn(),
     }) as unknown as TransportInternals
@@ -473,8 +471,7 @@ describe('Bowser encrypted transport framing', () => {
     const log = vi.fn()
     const bowser = new BowserDevice({
       confirmPair: async () => true,
-      confirmOutput: async () => true,
-      confirmFee: async () => true,
+      psbtReview: vi.fn(),
       log,
       state: vi.fn(),
     }) as unknown as TransportInternals

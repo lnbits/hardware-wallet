@@ -80,7 +80,7 @@ void logo(int counter) {
     tft.setCursor(4, titleY);
     tft.print(title);
 
-    String subTitle = pairing ? "Open for pairing" : "ubitcoin powered signer";
+    String subTitle = pairing ? "Open for pairing" : "libwally powered signer";
     tft.setTextSize(uiFittedTextSize(
       subTitle,
       pairing ? 2 : 1,
