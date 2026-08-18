@@ -29,7 +29,7 @@ CommandResponse executeRestore(String commandData) {
     return {"Wrong word count!", "Must be 12, 15, 18, 21 or 24"};
   }
 
-  if (!checkMnemonic(mnemonic)) {
+  if (!mnemonicIsValid(mnemonic)) {
     sendCommandOutput(COMMAND_RESTORE, "0");
     return {"Wrong mnemonic!", "Incorrect checksum"};
   }

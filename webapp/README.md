@@ -1,12 +1,12 @@
 # Bowser Wallet webapp
 
-A static, non-custodial SvelteKit client for Bowser HWW. It has no
+A static, non-custodial SvelteKit client for Bowser Wallet. It has no
 application server: wallet state is kept in the browser and chain data is
 requested directly from a configurable mempool-compatible API.
 
 ## Features
 
-- Session-only encrypted Bowser HWW pairing over WebSerial
+- Session-only encrypted Bowser Wallet pairing over WebSerial
 - BIP44, BIP49, BIP84, and BIP86 watch-only accounts, including xpub/ypub/zpub
   and testnet equivalents
 - Gap-limit address discovery through a configurable mempool-compatible API
@@ -14,9 +14,12 @@ requested directly from a configurable mempool-compatible API.
   refresh, full gap-limit scans, transaction history export, sats/BTC display,
   and coin control
 - Local PSBT construction, hardware signing, signed PSBT import, finalization, and broadcasting
+- Device-only advancement through every PSBT output and fee before signing
 - Persistent receive/change cursors that prevent address reuse, including after reloads
 - Signed-PSBT identity and signature checks before finalization or broadcasting
-- Bowser login/logout, address verification, seed review, restore, reset, help, and serial console
+- Bowser login/logout, address verification, seed review, fixed-sample visual
+  TRNG distribution check with an aggregate chi-squared result, restore, reset,
+  help, and serial console
 - Responsive static build for GitHub Pages
 
 Transaction building supports multiple recipients, fee recommendations and a

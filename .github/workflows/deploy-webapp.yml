@@ -56,6 +56,7 @@ jobs:
       - name: Test firmware safety helpers
         shell: bash
         run: |
+          python3 -m unittest tests/test_package_firmware.py
           g++ -std=c++11 -Wall -Wextra -Werror -pedantic \
             tests/input_debounce_test.cpp \
             -o "${RUNNER_TEMP}/input_debounce_test"
@@ -64,13 +65,14 @@ jobs:
             tests/rng_health_test.cpp \
             -o "${RUNNER_TEMP}/rng_health_test"
           "${RUNNER_TEMP}/rng_health_test"
+          tools/test_libwally.sh
 
       - name: Compile and package every supported board
         shell: bash
         run: |
           firmware_version="${{ steps.firmware.outputs.version }}"
           # Coming soon:
-          # esp32_2432s028r esp32_3248s035r waveshare_esp32_c6_lcd_1_3
+          # esp32_2432s028r esp32_3248s035r
           for target in lilygo_tdisplay esp32_3248s035c; do
             tools/build_firmware.sh "${target}" "firmware-build/${target}"
             python3 tools/package_firmware.py \
@@ -79,13 +81,12 @@ jobs:
               --boot-app0 "${HOME}/.arduino15/packages/esp32/hardware/esp32/2.0.17/tools/partitions/boot_app0.bin"
           done
 
-          # C6 publishing is coming soon.
-          # target="waveshare_esp32_c6_lcd_1_3"
-          # tools/build_firmware.sh "${target}" "firmware-build/${target}"
-          # python3 tools/package_firmware.py \
-          #   "${target}" "${firmware_version}" "firmware-build/${target}" \
-          #   "built-firmware/v${firmware_version}/${target}" \
-          #   --boot-app0 "${HOME}/.arduino15/packages/esp32/hardware/esp32/3.3.11/tools/partitions/boot_app0.bin"
+          target="waveshare_esp32_c6_lcd_1_3"
+          tools/build_firmware.sh "${target}" "firmware-build/${target}"
+          python3 tools/package_firmware.py \
+            "${target}" "${firmware_version}" "firmware-build/${target}" \
+            "built-firmware/v${firmware_version}/${target}" \
+            --boot-app0 "firmware-build/${target}/boot_app0.bin"
 
           for manifest in built-firmware/v${firmware_version}/*/manifest.json; do
             python3 -m json.tool "${manifest}" > /dev/null
@@ -149,8 +150,8 @@ jobs:
         run: |
           test -f pages/index.html
           test -f pages/installer/index.html
-          # Coming soon: esp32_2432s028r esp32_3248s035r waveshare_esp32_c6_lcd_1_3
-          for target in lilygo_tdisplay esp32_3248s035c; do
+          # Coming soon: esp32_2432s028r esp32_3248s035r
+          for target in lilygo_tdisplay esp32_3248s035c waveshare_esp32_c6_lcd_1_3; do
             test -f "pages/installer/firmware/esp32/current/${target}/manifest.json"
             test -f "pages/installer/firmware/esp32/current/${target}/ESP_IMAGE_SHA256.txt"
           done
@@ -200,8 +201,8 @@ jobs:
           firmware_dir="built-firmware/${firmware_version}"
           mkdir -p release-assets
           : > release-hashes.txt
-          # Coming soon: esp32_2432s028r esp32_3248s035r waveshare_esp32_c6_lcd_1_3
-          for target in lilygo_tdisplay esp32_3248s035c; do
+          # Coming soon: esp32_2432s028r esp32_3248s035r
+          for target in lilygo_tdisplay esp32_3248s035c waveshare_esp32_c6_lcd_1_3; do
             target_dir="${firmware_dir}/${target}"
             firmware_bin="${target_dir}/wallet.ino.bin"
             test -f "${firmware_bin}"
@@ -209,10 +210,10 @@ jobs:
             published_hash="$(tr -d '[:space:]' < "${target_dir}/ESP_IMAGE_SHA256.txt")"
             test "${firmware_hash}" = "${published_hash}"
 
-            cp "${firmware_bin}" "release-assets/Bowser-HWW-${firmware_version}-${target}.bin"
+            cp "${firmware_bin}" "release-assets/Bowser-Wallet-${firmware_version}-${target}.bin"
             cp "${target_dir}/ESP_IMAGE_SHA256.txt" \
-              "release-assets/Bowser-HWW-${firmware_version}-${target}-ESP_IMAGE_SHA256.txt"
-            zip -j "release-assets/Bowser-HWW-${firmware_version}-${target}.zip" "${target_dir}"/*
+              "release-assets/Bowser-Wallet-${firmware_version}-${target}-ESP_IMAGE_SHA256.txt"
+            zip -j "release-assets/Bowser-Wallet-${firmware_version}-${target}.zip" "${target_dir}"/*
             printf '%s %s\n' "${target}" "${firmware_hash}" >> release-hashes.txt
           done
 
@@ -226,7 +227,7 @@ jobs:
           {
             printf '%s\n' \
             '<!-- bowser-firmware:start -->' \
-            "## Bowser HWW firmware ${FIRMWARE_VERSION}" \
+            "## Bowser Wallet firmware ${FIRMWARE_VERSION}" \
             '' \
             'This firmware was compiled from the tagged source by the release workflow.' \
             '' \

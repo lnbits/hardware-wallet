@@ -2,32 +2,115 @@
 //===============================UI STUFF=================================//
 //========================================================================//
 
+const uint32_t THINKING_FRAME_INTERVAL_MS = 250;
+bool thinkingAnimationActive = false;
+uint8_t thinkingFrameIndex = 0;
+uint32_t thinkingFrameChangedAt = 0;
+
+void drawThinkingFrame(uint8_t frameIndex) {
+  int16_t frameSize = min(
+    int16_t(THINKING_FRAME_WIDTH),
+    min(tft.width(), uiContentHeight())
+  );
+  int16_t x = (tft.width() - frameSize) / 2;
+  int16_t y = (uiContentHeight() - frameSize) / 2;
+  bool previousSwapBytes = tft.getSwapBytes();
+  tft.setSwapBytes(true);
+  if (frameSize == THINKING_FRAME_WIDTH) {
+    tft.pushImage(
+      x,
+      y,
+      THINKING_FRAME_WIDTH,
+      THINKING_FRAME_HEIGHT,
+      THINKING_FRAMES[frameIndex]
+    );
+  } else {
+    uint16_t row[THINKING_FRAME_WIDTH];
+    const uint16_t *frame = THINKING_FRAMES[frameIndex];
+    for (int16_t targetY = 0; targetY < frameSize; targetY++) {
+      int16_t sourceY = uint32_t(targetY) * THINKING_FRAME_HEIGHT / frameSize;
+      for (int16_t targetX = 0; targetX < frameSize; targetX++) {
+        int16_t sourceX = uint32_t(targetX) * THINKING_FRAME_WIDTH / frameSize;
+        row[targetX] = pgm_read_word(
+          &frame[sourceY * THINKING_FRAME_WIDTH + sourceX]
+        );
+      }
+      tft.pushImage(x, y + targetY, frameSize, 1, row);
+    }
+  }
+  tft.setSwapBytes(previousSwapBytes);
+}
+
+void startThinkingAnimation() {
+  beginUiScreen();
+  thinkingAnimationActive = true;
+  thinkingFrameIndex = 0;
+  thinkingFrameChangedAt = millis();
+  drawThinkingFrame(thinkingFrameIndex);
+}
+
+void updateThinkingAnimation() {
+  if (!thinkingAnimationActive) return;
+  uint32_t now = millis();
+  if (uint32_t(now - thinkingFrameChangedAt) < THINKING_FRAME_INTERVAL_MS) return;
+
+  thinkingFrameIndex = (thinkingFrameIndex + 1) % THINKING_FRAME_COUNT;
+  thinkingFrameChangedAt = now;
+  drawThinkingFrame(thinkingFrameIndex);
+}
+
+void stopThinkingAnimation() {
+  thinkingAnimationActive = false;
+}
+
 void logo(int counter) {
-  String title = "Bowser HWW";
-  String subTitle = "ubitcoin powered signer";
-  if (counter > 0) {
-    title += " " + String(counter);
-    subTitle = "Open for pairing";
+  static uint32_t pairingLayoutRevision = UINT32_MAX;
+  bool pairing = counter > 0;
+  int16_t contentHeight = tft.height();
+  int16_t titleY = max(4, contentHeight / 5);
+  String title = "Bowser Wallet";
+  String fittedTitle = pairing ? title + " 9" : title;
+  uint8_t titleSize = uiFittedTextSize(fittedTitle, 3, tft.width() - 8);
+
+  bool redrawLayout = !pairing || pairingLayoutRevision != uiScreenRevision();
+  if (redrawLayout) {
+    beginUiScreen();
+    tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    tft.setTextSize(titleSize);
+    tft.setCursor(4, titleY);
+    tft.print(title);
+
+    String subTitle = pairing ? "Open for pairing" : "ubitcoin powered signer";
+    tft.setTextSize(uiFittedTextSize(
+      subTitle,
+      pairing ? 2 : 1,
+      tft.width() - 8
+    ));
+    tft.setCursor(4, max(24, contentHeight * 3 / 5));
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    tft.print(subTitle);
+
+    String version = "version: " + env.version + " / " + BOARD.id;
+    tft.setTextSize(uiFittedTextSize(version, 1, tft.width() - 8));
+    tft.setCursor(4, max(40, contentHeight - 20));
+    tft.print(version);
+    pairingLayoutRevision = pairing ? uiScreenRevision() : UINT32_MAX;
   }
 
-  beginUiScreen();
-  int16_t contentHeight = uiContentHeight();
-  tft.setTextColor(TFT_GREEN, TFT_BLACK);
-  tft.setTextSize(uiFittedTextSize(title, 3, tft.width() - 8));
-  tft.setCursor(4, max(4, contentHeight / 5));
-  tft.print(title);
-  tft.setTextSize(uiFittedTextSize(
-    subTitle,
-    counter > 0 ? 2 : 1,
-    tft.width() - 8
-  ));
-  tft.setCursor(4, max(24, contentHeight * 3 / 5));
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.print(subTitle);
-  String version = "version: " + env.version + " / " + BOARD.id;
-  tft.setTextSize(uiFittedTextSize(version, 1, tft.width() - 8));
-  tft.setCursor(4, max(40, contentHeight - 20));
-  tft.print(version);
+  if (pairing) {
+    int16_t counterX = 4 + uiTextPixelWidth(title + " ", titleSize);
+    tft.fillRect(
+      counterX,
+      titleY,
+      tft.width() - counterX,
+      uiTextPixelHeight(titleSize),
+      TFT_BLACK
+    );
+    tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    tft.setTextSize(titleSize);
+    tft.setCursor(counterX, titleY);
+    tft.print(counter);
+  }
 }
 
 void showBootLogo() {
@@ -117,7 +200,24 @@ void showConfirmCancelMessage(String message, String additional) {
 }
 
 void printMnemonicWord(String position, String word) {
-  beginUiScreen(UiControls::PreviousNext);
+  static uint32_t seedWordLayoutRevision = UINT32_MAX;
+  if (seedWordLayoutRevision != uiScreenRevision()) {
+    beginUiScreen(UiControls::PreviousNext);
+    seedWordLayoutRevision = uiScreenRevision();
+  }
+
+  int16_t contentHeight = uiContentHeight();
+  int16_t wordY = contentHeight / 2;
+  wordY = wordY < 54 ? wordY : 54;
+  tft.fillRect(0, 0, tft.width(), uiTextPixelHeight(uiTextSize(2)) + 10, TFT_BLACK);
+  tft.fillRect(
+    0,
+    wordY,
+    tft.width(),
+    min(uiTextPixelHeight(uiTextSize(3)) + 2, contentHeight - wordY),
+    TFT_BLACK
+  );
+
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   String heading = "Word " + position + ":";
   tft.setTextSize(uiFittedTextSize(heading, 2, tft.width() - 8));
@@ -125,26 +225,41 @@ void printMnemonicWord(String position, String word) {
   tft.println(heading);
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
   tft.setTextSize(uiFittedTextSize(word, 3, tft.width() - 8));
-  int16_t wordY = uiContentHeight() / 2;
-  tft.setCursor(4, wordY < 54 ? wordY : 54);
+  tft.setCursor(4, wordY);
   tft.println(word);
 }
 
 void showDiceRollProgress(int rollCount, char latestRoll) {
+  static uint32_t diceLayoutRevision = UINT32_MAX;
   bool complete = rollCount == DICE_ROLL_COUNT;
-  beginUiScreen(UiControls::DicePad, complete);
+  bool startOfEntry = rollCount == 0 && latestRoll == 0;
+  bool redrawLayout = startOfEntry || diceLayoutRevision != uiScreenRevision();
+  if (redrawLayout) {
+    beginUiScreen(UiControls::DicePad, complete);
+  } else {
+    setUiControls(UiControls::DicePad, complete);
+  }
+
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   int16_t y = 2;
   uint8_t textSize = uiFittedTextSize("Dice wallet", 2, tft.width() - 8);
-  tft.setTextSize(textSize);
-  tft.setCursor(4, y);
-  tft.println("Dice wallet");
+  if (redrawLayout) {
+    tft.setTextSize(textSize);
+    tft.setCursor(4, y);
+    tft.println("Dice wallet");
+  }
   y += uiTextPixelHeight(textSize) + 2;
   textSize = uiFittedTextSize("Enter rolls 1-6", 2, tft.width() - 8);
-  tft.setTextSize(textSize);
-  tft.setCursor(4, y);
-  tft.println("Enter rolls 1-6");
+  if (redrawLayout) {
+    tft.setTextSize(textSize);
+    tft.setCursor(4, y);
+    tft.println("Enter rolls 1-6");
+  }
   y += uiTextPixelHeight(textSize) + 2;
+
+  // Keep the static instructions and touch controls in place. Only the
+  // progress/status area changes as rolls are added or removed.
+  tft.fillRect(0, y, tft.width(), uiContentHeight() - y, TFT_BLACK);
   String progress = String(rollCount) + "/" + String(DICE_ROLL_COUNT);
   textSize = uiFittedTextSize(progress, 2, tft.width() - 8);
   tft.setTextSize(textSize);
@@ -166,10 +281,31 @@ void showDiceRollProgress(int rollCount, char latestRoll) {
     tft.setTextSize(uiFittedTextSize("* removes last", 2, tft.width() - 8));
     tft.println("* removes last");
   }
+  diceLayoutRevision = uiScreenRevision();
 }
 
 void showDiceMnemonicWord(int position, String word) {
-  beginUiScreen(UiControls::PreviousNext);
+  static uint32_t diceWordLayoutRevision = UINT32_MAX;
+  if (diceWordLayoutRevision != uiScreenRevision()) {
+    beginUiScreen(UiControls::PreviousNext);
+    diceWordLayoutRevision = uiScreenRevision();
+  }
+
+  int16_t contentHeight = uiContentHeight();
+  int16_t wordY = contentHeight / 2;
+  wordY = wordY < 50 ? wordY : 50;
+  tft.fillRect(0, 0, tft.width(), uiTextPixelHeight(uiTextSize(2)) + 6, TFT_BLACK);
+  tft.fillRect(
+    0,
+    wordY,
+    tft.width(),
+    min(uiTextPixelHeight(uiTextSize(3)) + 2, contentHeight - wordY),
+    TFT_BLACK
+  );
+  if (!BOARD.hasTouchscreen) {
+    tft.fillRect(0, contentHeight - 12, tft.width(), 12, TFT_BLACK);
+  }
+
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   String heading = "Write word " + String(position);
   tft.setTextSize(uiFittedTextSize(heading, 2, tft.width() - 8));
@@ -177,14 +313,13 @@ void showDiceMnemonicWord(int position, String word) {
   tft.println(heading);
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
   tft.setTextSize(uiFittedTextSize(word, 3, tft.width() - 8));
-  int16_t wordY = uiContentHeight() / 2;
-  tft.setCursor(4, wordY < 50 ? wordY : 50);
+  tft.setCursor(4, wordY);
   tft.println(word);
   if (!BOARD.hasTouchscreen) {
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
     String guidance = position == 24 ? "* back    # finish" : "* back    # next";
     tft.setTextSize(uiFittedTextSize(guidance, 1, tft.width() - 8));
-    tft.setCursor(4, uiContentHeight() - 12);
+    tft.setCursor(4, contentHeight - 12);
     tft.println(guidance);
   }
 }

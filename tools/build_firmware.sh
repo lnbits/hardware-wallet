@@ -9,6 +9,7 @@ usage() {
 target="${1:-}"
 build_directory="${2:-build/${target}}"
 repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+wally_vendor="${repository_root}/libraries/libwally/vendor"
 
 case "${target}" in
   lilygo_tdisplay)
@@ -52,10 +53,7 @@ case "${target}" in
     profile="waveshare_esp32_c6_lcd_1_3"
     display_backend="display_backends/tft_espi.h"
     tft_setup="${repository_root}/wallet/boards/${profile}/tft_setup.h"
-    # ESP32 core 3.3.x moved the esp_random declaration out of esp_system.h.
-    # Keep the vendored uBitcoin snapshot unchanged and provide the core's
-    # canonical declaration to C translation units at build time.
-    compiler_c_flags="-MMD -c -include esp_random.h"
+    compiler_c_flags="-MMD -c"
     ;;
   *)
     usage
@@ -69,7 +67,14 @@ fi
 
 mkdir -p "${build_directory}"
 
-compiler_flags="-MMD -c -DBOWSER_BOARD_PROFILE=boards/${profile}/profile.h -DBOWSER_DISPLAY_BACKEND=${display_backend}"
+wally_flags="-DWALLY_CORE_BUILD=1 -DBUILD_MINIMAL=1 -DWALLY_ABI_NO_ELEMENTS=1"
+wally_flags+=" -DECMULT_WINDOW_SIZE=4 -DCOMB_BLOCKS=2 -DCOMB_TEETH=5"
+wally_flags+=" -I${wally_vendor} -I${wally_vendor}/src -I${wally_vendor}/include"
+wally_flags+=" -I${wally_vendor}/src/ccan -I${wally_vendor}/src/secp256k1/include"
+wally_flags+=" -fno-strict-aliasing"
+
+compiler_c_flags+=" ${wally_flags}"
+compiler_flags="-MMD -c ${wally_flags} -DBOWSER_BOARD_PROFILE=boards/${profile}/profile.h -DBOWSER_DISPLAY_BACKEND=${display_backend}"
 if [[ -n "${tft_setup}" ]]; then
   compiler_flags+=" -DTFT_ESPI_USER_SETUP_PATH=\"${tft_setup}\""
 fi

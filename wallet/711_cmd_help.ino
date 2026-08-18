@@ -30,6 +30,7 @@ void help()
   printHelpLine("'/password' login by providing a password");
   printHelpLine("'/password-clear' logout");
   printHelpLine("'/seed' will show the seed on the hww display");
+  printHelpLine("'/trng' shows a live 1-100 RNG distribution");
   printHelpLine("'/psbt' will parse valid psbt and show its outputs and fee");
   printHelpLine("'/sign' will sign valid psbt");
   printHelpLine("'/xpub' defaults to Mainnet BIP84 account");
@@ -42,6 +43,7 @@ void help()
   logInfo("'/password' login by providing a password");
   logInfo("'/password-clear' logout");
   logInfo("'/seed' will show the seed on the hww display");
+  logInfo("'/trng' shows a live 1-100 RNG distribution");
   logInfo("'/psbt' will parse valid psbt and show its outputs and fee");
   logInfo("'/sign' will sign valid psbt");
   logInfo("'/xpub' defaults to Mainnet m/84'/0'/0'");

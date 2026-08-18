@@ -128,7 +128,7 @@ arduino-cli upload --verbose \
   wallet
 ```
 
-For the Waveshare ESP32-C6-LCD-1.3 *(coming soon)*:
+For the Waveshare ESP32-C6-LCD-1.3:
 
 ```bash
 ./tools/build_firmware.sh waveshare_esp32_c6_lcd_1_3
@@ -151,6 +151,17 @@ python3 tools/esp_image_hash.py "build/<target>/wallet.ino.bin"
 The web installer shows every planned target, but only available targets are
 selectable. Tagged builds compile and package only those available targets in
 CI; coming-soon profiles remain buildable locally for development.
+
+When testing through the local web installer, use the combined command so the
+installer cannot keep serving an older package after a new compile:
+
+```bash
+./tools/build_installer_firmware.sh <target>
+```
+
+See [the installer instructions](installer/README.md#build-and-package-local-firmware)
+for the supported target names and the command that rebuilds all available
+boards.
 
 ### Verify the firmware release hash
 
@@ -189,7 +200,11 @@ spread through the application as conditional compilation.
 | `esp32_2432s028r` | **Coming soon** | ESP32-2432S028R, 320×240 landscape | Resistive touchscreen with contextual on-screen controls and dice keypad | On-board |
 | `esp32_3248s035r` | **Coming soon** | ESP32-3248S035R, 480×320 landscape | Resistive touchscreen with contextual on-screen controls and dice keypad | On-board |
 | `esp32_3248s035c` | Available | ESP32-3248S035C, 480×320 landscape | Capacitive touchscreen with contextual on-screen controls and dice keypad | On-board |
-| `waveshare_esp32_c6_lcd_1_3` | **Coming soon** | Waveshare ESP32-C6-LCD-1.3, 240×240 | BOOT: tap to accept/advance, hold to cancel/back | On-board |
+| `waveshare_esp32_c6_lcd_1_3` | Available | Waveshare ESP32-C6-LCD-1.3, 240×240 | BOOT: tap to accept/advance, hold to cancel/back | On-board |
+
+The one-button Waveshare C6 supports TRNG wallet creation and seed restore. Its
+device-only dice flow is unavailable because the board has no numeric or touch
+input for entering rolls 1–6.
 
 The build script pins the toolchain and fully qualified board name for every
 target:
@@ -200,7 +215,7 @@ target:
 | `esp32_2432s028r` | **Coming soon** | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
 | `esp32_3248s035r` | **Coming soon** | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
 | `esp32_3248s035c` | Available | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
-| `waveshare_esp32_c6_lcd_1_3` | **Coming soon** | `esp32:esp32@3.3.11` | `esp32:esp32:esp32c6:CDCOnBoot=cdc` |
+| `waveshare_esp32_c6_lcd_1_3` | Available | `esp32:esp32@3.3.11` | `esp32:esp32:esp32c6:CDCOnBoot=cdc` |
 
 All targets use the vendored, unmodified TFT_eSPI 2.5.44 runtime source. The
 C6 profile selects TFT_eSPI's portable SPI backend because its optimized C6
@@ -249,6 +264,7 @@ Each command is documented in its implementation file:
 - `/seed` — [719_show_seed.ino](wallet/719_show_seed.ino)
 - `/xpub` — [715_cmd_xpub.ino](wallet/715_cmd_xpub.ino)
 - `/address` — [722_show_address.ino](wallet/722_show_address.ino)
+- `/trng` — [724_cmd_trng.ino](wallet/724_cmd_trng.ino)
 - `/help` — [711_cmd_help.ino](wallet/711_cmd_help.ino)
 
 ## Run from a microSD card (air-gapped)
@@ -266,11 +282,21 @@ Each command is documented in its implementation file:
    - `commands.out.txt` contains command results such as signed PSBTs.
    - `commands.log.txt` contains diagnostic logs.
 
-When signing an SD-card PSBT, the device displays every destination and amount,
-then the fee, and requires a physical approval for each item. It asks for one
-final physical confirmation before producing a signature. `#`, the positive
-touch button, or a short button press accepts; `*`, the negative touch button,
-or a long press rejects.
+When signing a PSBT over either WebSerial or microSD, the device displays every
+destination and amount, then the fee, and requires a physical approval for each
+item. The serial host cannot advance these trusted-display review screens. The
+device asks for one final physical confirmation before producing a signature.
+`#`, the positive touch button, or a short button press accepts; `*`, the
+negative touch button, or a long press rejects.
+
+The signer accepts PSBT v0 and v2 with `SIGHASH_ALL` (or Taproot's equivalent
+`SIGHASH_DEFAULT`), standard P2PKH, P2WPKH, P2SH-P2WPKH, and BIP86 Taproot
+key-path inputs, plus standard P2SH, P2WSH, and P2SH-P2WSH multisig. It
+preserves the coordinator's PSBT version and metadata and adds this device's
+partial signatures without finalizing the PSBT. Taproot script-path spends,
+nonstandard scripts, and alternate sighash modes are rejected explicitly.
+Multisig outputs are reviewed as external outputs unless and until Bowser has
+a registered multisig wallet policy that can prove they are change.
 
 Wallets created by current firmware are stored as an authenticated encrypted
 record. Separate encryption and authentication keys are derived from the
@@ -314,6 +340,28 @@ previous `/pair` command disabled persistence for SD restores. The existing
 word at a time on the hardware screen. Use the board's next/previous controls
 to review it. Advancing from word 24 finishes the review.
 
+### Visual hardware-RNG check
+
+Run `/trng` through an encrypted WebSerial session or place it in
+`commands.in.txt`. The device runs its production RNG health gate, then draws a
+live 100-bin histogram from fresh hardware-random values in the range 1–100.
+It collects exactly 5,000 observations (50 expected per bin), then calculates a
+chi-squared statistic with 99 degrees of freedom. The chart and result stay on
+screen until dismissed using the device's next/accept control, while the
+aggregate result is returned to WebSerial or written to the SD card as soon as
+the calculation finishes.
+
+The device reports `healthy` when the statistic is within the conservative
+two-sided 99.8% interval 61.137–148.230, using the
+[NIST chi-squared critical values](https://www.itl.nist.gov/div898/handbook/eda/section3/eda3674.htm)
+for 99 degrees of freedom. The histogram and statistic can expose obvious
+distribution failures, but are not proof that future output is
+cryptographically unpredictable or a full entropy-source validation. Raw RNG
+values and individual bin counts never leave the device. `commands.out.txt`
+receives only `/trng 1 5000 <chi-squared> <minimum> <maximum> <verdict>` after
+success. The diagnostic does not create, reset, or modify a wallet or its seed
+material.
+
 ## Entropy lines (the important bit)
 
 - For automatic seed and wallet-salt generation, the wallet obtains random
@@ -331,7 +379,8 @@ to review it. Advancing from word 24 finishes the review.
   ESP32 does not expose its raw physical-noise samples to this firmware.
 - Dice wallet creation hashes the exact 100-character dice-roll buffer with
   SHA-256, then passes the resulting 32 bytes directly as BIP39 entropy to
-  [`mnemonicFromEntropy()`](wallet/723_cmd_create.ino#L30-L44).
+  libwally's BIP39 mnemonic encoder in
+  [`executeCreate()`](wallet/723_cmd_create.ino).
 
 ## Troubleshooting
 
@@ -344,5 +393,5 @@ to review it. Advancing from word 24 finishes the review.
 Questions? Join the [LNbits Telegram group](https://t.me/lnbits) or the
 [MakerBits Telegram group](https://t.me/makerbits).
 
-This project uses the
-[uBitcoin library](https://www.arduino.cc/reference/en/libraries/ubitcoin/).
+Bitcoin key, address, and PSBT operations use the pinned
+[libwally-core](https://github.com/ElementsProject/libwally-core) dependency.

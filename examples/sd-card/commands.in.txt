@@ -52,6 +52,11 @@
 # controls; advance from word 24 to finish.
 # /seed
 
+# Display a live 1-100 hardware-RNG distribution on the device. The fixed 5,000
+# samples are summarized with a chi-squared statistic. Raw values never leave
+# the screen; use the device's next/accept control to dismiss the result.
+# /trng
+
 # Parse, review, and sign a base64 PSBT. Confirm every output, the fee, and the
 # final signing prompt using the device's accept/cancel controls. Do not add a
 # separate /sign command.
@@ -61,7 +66,6 @@
 # WebSerial protocol commands, not commands to place in an SD-card job:
 # /ping <client-name>
 # /check-pairing <encrypted-control-value>
-# /confirm-next
 # /sign
 # /cancel
 

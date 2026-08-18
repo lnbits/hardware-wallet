@@ -2,12 +2,17 @@
 //================================COMMANDS================================//
 //========================================================================//
 
-CommandResponse cmdRes = {"Welcome", "Row, row, row your boat"};
+CommandResponse cmdRes = {"", ""};
+bool waitingAnimationPending = true;
 
 
 void listenForCommands() {
-  if (cmdRes.message != "" || cmdRes.subMessage != "")
+  if (waitingAnimationPending) {
+    startThinkingAnimation();
+    waitingAnimationPending = false;
+  } else if (cmdRes.message != "" || cmdRes.subMessage != "") {
     showMessage(cmdRes.message, cmdRes.subMessage);
+  }
 
 
   // if the command does not handle an event then it bubbles it up
@@ -15,6 +20,7 @@ void listenForCommands() {
   if (isNotCommandEvent(event.type)) {
     event = awaitEvent();
   }
+  stopThinkingAnimation();
 
   if (isNotCommandEvent(event.type)) return;
 
@@ -77,6 +83,15 @@ CommandResponse executeCommand(Command c) {
   if (c.cmd == COMMAND_SEND_PSBT)
     return executeSignPsbt(c.data);
 
+  if (c.cmd == COMMAND_PSBT_BEGIN)
+    return executePsbtTransferBegin(c.data);
+
+  if (c.cmd == COMMAND_PSBT_CHUNK)
+    return executePsbtTransferChunk(c.data);
+
+  if (c.cmd == COMMAND_PSBT_COMMIT)
+    return executePsbtTransferCommit(c.data);
+
   if (c.cmd == COMMAND_RESTORE)
     return executeRestore(c.data);
 
@@ -85,6 +100,9 @@ CommandResponse executeCommand(Command c) {
 
   if (c.cmd == COMMAND_XPUB)
     return executeXpub(c.data);
+
+  if (c.cmd == COMMAND_TRNG)
+    return executeTrng(c.data);
 
   // Never echo decrypted command arguments into serial or SD diagnostics.
   // A typo in a password/restore command must not turn its secret into a log.

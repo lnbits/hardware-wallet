@@ -42,7 +42,7 @@
     {#if connected}
       <span class="device-pill">
         <ShieldCheck size={15} />
-        Bowser HWW
+        Bowser Wallet
         <small>{authenticated ? 'unlocked' : 'locked'}</small>
       </span>
       <button

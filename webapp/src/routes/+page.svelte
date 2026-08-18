@@ -164,7 +164,9 @@
   let showReceive = false
   let showPsbt = false
   let showDeviceAction:
-    'new' | 'unlock' | 'restore' | 'seed' | 'dice' | 'wipe' | null = null
+    'new' | 'unlock' | 'restore' | 'seed' | 'dice' | 'wipe' | 'trng' | null =
+    null
+  let trngResult: Awaited<ReturnType<BowserDevice['testTrng']>> | null = null
   let qrData = ''
   let qrAddress: AddressRecord | null = null
 
@@ -512,6 +514,7 @@
     restorePasswordConfirmation = ''
     restoreWords = emptyMnemonicWords()
     seedWord = { position: 1 }
+    trngResult = null
   }
 
   function openDeviceAction(action: 'restore' | 'wipe' | 'dice') {
@@ -609,31 +612,31 @@
   async function connect() {
     if (busy) return
     serialLog = []
-    busy = 'Connecting Bowser HWW…'
+    busy = 'Connecting Bowser Wallet…'
     try {
       device = new BowserDevice({
         confirmPair: (code) =>
           ask(
             'Confirm secure pairing',
-            `Does your Bowser HWW show code ${code}?`,
+            `Does your Bowser Wallet show code ${code}?`,
             'Only approve when both codes match.',
             'Codes match',
           ),
         confirmOutput: (output, index, total) =>
           ask(
-            `Confirm output ${index + 1} of ${total}`,
+            `Reviewed output ${index + 1} of ${total}`,
             `${amount(output.amount)} to ${output.change ? 'your change address' : output.address}`,
             output.change
-              ? output.address
-              : 'Check this address on the hardware wallet display.',
+              ? `${output.address} · approved on Bowser Wallet`
+              : 'This address was approved on the Bowser Wallet display.',
             'Next',
           ),
         confirmFee: (fee, rate) =>
           ask(
-            'Confirm network fee',
+            'Reviewed network fee',
             amount(fee),
-            `${rate} sat/vB · confirm the same fee on your device`,
-            'Sign transaction',
+            `${rate} sat/vB · approved on Bowser Wallet`,
+            'Continue to signing',
           ),
         log: (line) => (serialLog = [...serialLog.slice(-149), line]),
         state: () => (deviceRevision += 1),
@@ -650,10 +653,10 @@
       syncAddressWatcher()
       scheduleWalletScan()
       if (device.walletConfigured) {
-        notify('Bowser HWW connected', 'success')
+        notify('Bowser Wallet connected', 'success')
       } else {
         notify(
-          'New Bowser HWW connected',
+          'New Bowser Wallet connected',
           'info',
           'Create a new wallet or restore an existing seed.',
         )
@@ -1377,7 +1380,7 @@
       )
     )
       return
-    busy = 'Waiting for hardware wallet…'
+    busy = 'Review every output and the fee on Bowser Wallet…'
     try {
       const result = await device.sign(unsignedTx)
       signedPsbt = result.psbt
@@ -1463,7 +1466,7 @@
       showDeviceAction = null
       devicePassword = ''
       devicePassphrase = ''
-      notify('Bowser HWW unlocked', 'success')
+      notify('Bowser Wallet unlocked', 'success')
     } catch (error) {
       notify(
         'Unlock failed',
@@ -1524,7 +1527,7 @@
       await device.restore(devicePassword, mnemonic)
       closeDeviceAction()
       notify(
-        'Wallet restored on Bowser HWW',
+        'Wallet restored on Bowser Wallet',
         'success',
         'Remove or replace any local accounts belonging to the previous seed.',
       )
@@ -1561,7 +1564,7 @@
           ? `This generates a new wallet using ${entropyLabel}.`
           : 'This permanently replaces the wallet stored on the device.',
         usingDice
-          ? 'Enter 100 dice rolls and review the seed entirely on your Bowser HWW.'
+          ? 'Enter 100 dice rolls and review the seed entirely on your Bowser Wallet.'
           : creatingWallet
             ? 'Write down and verify the seed backup shown by the device.'
             : 'Only continue if your seed backup is verified.',
@@ -1598,6 +1601,32 @@
       )
     } finally {
       devicePassword = ''
+      busy = ''
+    }
+  }
+
+  async function runTrngTest() {
+    if (!(device instanceof BowserDevice)) return
+    if (busy) return
+    busy = 'Running TRNG visual check; continue on the device when complete…'
+    try {
+      const result = await device.testTrng()
+      trngResult = result
+      showDeviceAction = 'trng'
+      notify(
+        'TRNG visual check complete',
+        result.looksHealthy ? 'success' : 'error',
+        result.looksHealthy
+          ? 'The sampled distribution looks healthy.'
+          : 'The sampled distribution was outside the expected range.',
+      )
+    } catch (error) {
+      notify(
+        'TRNG visual check failed',
+        'error',
+        error instanceof Error ? error.message : String(error),
+      )
+    } finally {
       busy = ''
     }
   }
@@ -1795,7 +1824,7 @@
                 </div>
                 <div class="metric-meta">
                   {deviceConnected
-                    ? 'Bowser HWW'
+                    ? 'Bowser Wallet'
                     : 'Connect when ready to sign'}
                 </div>
               </div>
@@ -1952,8 +1981,7 @@
                   <span class="empty-icon"><WalletCards /></span>
                   <h2>No {network} accounts yet</h2>
                   <p>
-                    Import a BIP44, 49, 84, or 86 xpub, or fetch BIP44, 49, or
-                    84 account data from Bowser HWW.
+                    Import or fetch BIP44, 49, 84, or 86 account data.
                   </p>
                   <button
                     class="btn primary"
@@ -2214,7 +2242,7 @@
                 <h1>New payment</h1>
                 <p class="lede">
                   Construct a PSBT locally, review every output, then sign with
-                  Bowser HWW.
+                  Bowser Wallet.
                 </p>
               </div>
               <span class="badge green">{amount(selectedTotal)} selected</span>
@@ -2396,7 +2424,7 @@
                     <span class="device-icon"><Radio size={32} /></span>
                     <div>
                       <div class="eyebrow">Connected</div>
-                      <h2>Bowser HWW</h2>
+                      <h2>Bowser Wallet</h2>
                       <p class="muted">
                         Device {short((device as BowserDevice).deviceId)}
                       </p>
@@ -2523,6 +2551,30 @@
               </section>
               <section class="card section">
                 <div class="card-header">
+                  <div>
+                    <h2>Device diagnostics</h2>
+                    <p class="muted">
+                      Inspect the hardware RNG distribution directly on the
+                      Bowser screen.
+                    </p>
+                  </div>
+                </div>
+                <div class="action-grid">
+                  <button onclick={runTrngTest} disabled={!!busy}
+                    ><Activity /><span
+                      ><strong>Run TRNG visual check</strong><small
+                        >Live 1–100 histogram; no raw values leave the device</small
+                      ></span
+                    ></button
+                  >
+                </div>
+                <div class="callout section">
+                  This fixed 5,000-sample check can expose hardware RNG
+                  distribution failures.
+                </div>
+              </section>
+              <section class="card section">
+                <div class="card-header">
                   <h2>Serial console</h2>
                   <button class="btn ghost" onclick={() => (serialLog = [])}
                     >Clear</button
@@ -2535,7 +2587,7 @@
                 <div>
                   <span class="empty-icon"><Usb /></span>
                   <h2>No signing device connected</h2>
-                  <p>Connect Bowser HWW over WebSerial.</p>
+                  <p>Connect Bowser Wallet over WebSerial.</p>
                   <button class="btn primary" onclick={connect}
                     ><Cable size={17} /> Connect device</button
                   >
@@ -2659,8 +2711,7 @@
           ><option value="p2pkh">Legacy · BIP44</option><option value="p2sh"
             >Nested SegWit · BIP49</option
           ><option value="p2wpkh">Native SegWit · BIP84</option><option
-            value="p2tr"
-            disabled={accountForm.source === 'device'}>Taproot · BIP86</option
+            value="p2tr">Taproot · BIP86</option
           ></select
         >
       </div>
@@ -2689,7 +2740,7 @@
         />
       </div>{:else}<div class="callout">
         <Usb size={17} /> The account xpub and fingerprint will be requested from
-        the connected device. Bowser HWW must be unlocked.
+        the connected device. Bowser Wallet must be unlocked.
       </div>{/if}
     <div class="form-actions">
       <button class="btn ghost" onclick={() => (showAccount = false)}
@@ -2812,19 +2863,10 @@
         ><span class="spacer"></span><button
           class="btn primary"
           onclick={signTransaction}
-          disabled={!deviceConnected ||
-            !!busy ||
-            unsignedTx.inputs.some((input) => input.accountType === 'p2tr') ||
-            unsignedTx.outputs.some((output) => output.accountType === 'p2tr')}
-          ><KeyRound size={16} /> Sign with Bowser HWW</button
+          disabled={!deviceConnected || !!busy}
+          ><KeyRound size={16} /> Sign with Bowser Wallet</button
         >
       </div>
-      {#if unsignedTx.inputs.some((input) => input.accountType === 'p2tr') || unsignedTx.outputs.some((output) => output.accountType === 'p2tr')}<div
-          class="callout warning"
-        >
-          Bowser HWW does not sign Taproot transactions. Export this PSBT and
-          use a Taproot-capable signer, then import the signed PSBT below.
-        </div>{/if}
       <div class="divider"></div>
       <div class="field">
         <label for="signed-psbt">Import signed PSBT</label><textarea
@@ -2865,8 +2907,58 @@
 </Modal>
 
 <Modal
+  open={showDeviceAction === 'trng'}
+  title="TRNG diagnostic result"
+  onclose={closeDeviceAction}
+>
+  {#if trngResult}<div class="stack">
+      <div class:warning={!trngResult.looksHealthy} class="callout">
+        {#if trngResult.looksHealthy}<ShieldCheck size={18} />
+          <strong>Distribution looks healthy</strong>
+        {:else}<Activity size={18} />
+          <strong>Unexpected distribution — do not create a wallet yet</strong>
+        {/if}
+      </div>
+      <div class="security-list">
+        <div>
+          <strong>Samples</strong><span
+            >{trngResult.samples.toLocaleString()} across 100 bins</span
+          >
+        </div>
+        <div>
+          <strong>Expected per bin</strong><span>50</span>
+        </div>
+        <div>
+          <strong>Observed range</strong><span
+            >{trngResult.minimumCount}–{trngResult.maximumCount}</span
+          >
+        </div>
+        <div>
+          <strong>Chi-squared</strong><span
+            ><b>{trngResult.chiSquared.toFixed(2)}</b></span
+          >
+        </div>
+      </div>
+      <div class="callout trng-threshold-tip">
+        <strong>Chi-squared expected interval: 61.137–148.230</strong>
+        <span>Below 61.137: suspiciously uniform</span>
+        <span>Above 148.230: excessively uneven</span>
+        <span>Between them: healthy 💚</span>
+      </div>
+      <div class="callout">
+        This checks the device’s hardware RNG for obvious distribution problems,
+        but a passing result cannot guarantee future wallet entropy. For an
+        independent, auditable entropy source, use 100 physical dice rolls.
+      </div>
+      <div class="form-actions">
+        <button class="btn primary" onclick={closeDeviceAction}>Close</button>
+      </div>
+    </div>{/if}
+</Modal>
+
+<Modal
   open={showDeviceAction === 'new'}
-  title="Set up Bowser HWW"
+  title="Set up Bowser Wallet"
   onclose={closeDeviceAction}
 >
   <div class="stack">
@@ -2900,7 +2992,7 @@
 
 <Modal
   open={showDeviceAction === 'unlock'}
-  title="Unlock Bowser HWW"
+  title="Unlock Bowser Wallet"
   onclose={closeUnlockDialog}
 >
   <div class="stack">
@@ -2930,7 +3022,7 @@
 
 <Modal
   open={showDeviceAction === 'restore'}
-  title="Restore Bowser HWW"
+  title="Restore Bowser Wallet"
   wide
   onclose={closeDeviceAction}
 >
@@ -3004,7 +3096,9 @@
 
 <Modal
   open={showDeviceAction === 'wipe' || showDeviceAction === 'dice'}
-  title={deviceWalletConfigured ? 'Reset Bowser HWW' : 'Create Bowser wallet'}
+  title={deviceWalletConfigured
+    ? 'Reset Bowser Wallet'
+    : 'Create Bowser wallet'}
   onclose={closeDeviceAction}
 >
   <div class="stack">
@@ -3012,13 +3106,13 @@
         class:warning={deviceWalletConfigured}
         class="callout"
       >
-        Enter 100 physical dice rolls using the controls on your Bowser HWW. The
-        rolls and seed words never enter this browser.
+        Enter 100 physical dice rolls using the controls on your Bowser Wallet.
+        The rolls and seed words never enter this browser.
       </div>{:else if deviceWalletConfigured}<div class="callout warning">
         This permanently replaces the current wallet with a newly generated
         wallet. Verify your existing backup first.
       </div>{:else}<div class="callout">
-        The seed is generated on your Bowser HWW. Write down and verify every
+        The seed is generated on your Bowser Wallet. Write down and verify every
         word shown on the device before receiving funds.
       </div>{/if}
     <PasswordInput
@@ -3054,7 +3148,7 @@
 >
   <div class="seed-word">
     <span>Word {seedWord.position} of 24</span>
-    <strong>Displayed on Bowser HWW</strong>
+    <strong>Displayed on Bowser Wallet</strong>
   </div>
   <div class="inline centered section">
     <button
@@ -3195,6 +3289,13 @@
   .security-list small {
     color: var(--muted);
     font-weight: 400;
+  }
+  .trng-threshold-tip {
+    display: grid;
+    gap: 3px;
+  }
+  .trng-threshold-tip strong {
+    color: var(--green-bright);
   }
   .account-icon,
   .device-icon {

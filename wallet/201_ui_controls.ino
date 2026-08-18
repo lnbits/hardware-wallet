@@ -3,6 +3,7 @@ const int MAX_UI_TOUCH_BUTTONS = 8;
 UiTouchButton uiTouchButtons[MAX_UI_TOUCH_BUTTONS];
 uint8_t uiTouchButtonCount = 0;
 int16_t currentUiContentHeight = 0;
+uint32_t currentUiScreenRevision = 0;
 
 int16_t controlsHeight(UiControls controls) {
   if (!BOARD.hasTouchscreen || controls == UiControls::None) return 0;
@@ -72,7 +73,12 @@ int16_t uiContentHeight() {
   return currentUiContentHeight > 0 ? currentUiContentHeight : tft.height();
 }
 
+uint32_t uiScreenRevision() {
+  return currentUiScreenRevision;
+}
+
 void beginUiScreen(UiControls controls, bool confirmEnabled) {
+  currentUiScreenRevision++;
   clearUiTouchButtons();
   currentUiContentHeight = tft.height() - controlsHeight(controls);
   tft.fillScreen(TFT_BLACK);
