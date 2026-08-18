@@ -16,6 +16,7 @@ const String COMMAND_SEND_PSBT = "/psbt";
 const String COMMAND_PSBT_BEGIN = "/psbt-begin";
 const String COMMAND_PSBT_CHUNK = "/psbt-chunk";
 const String COMMAND_PSBT_COMMIT = "/psbt-commit";
+const String COMMAND_PSBT_REVIEW = "/psbt-review";
 const String COMMAND_SIGN_PSBT = "/sign";
 const String COMMAND_XPUB = "/xpub";
 const String COMMAND_TRNG = "/trng";

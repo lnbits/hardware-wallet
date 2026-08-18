@@ -4,12 +4,14 @@
     open = false,
     title = '',
     wide = false,
+    closable = true,
     onclose,
     children,
   } = $props<{
     open: boolean
     title: string
     wide?: boolean
+    closable?: boolean
     onclose: () => void
     children: import('svelte').Snippet
   }>()
@@ -19,7 +21,8 @@
   <div
     class="backdrop"
     role="presentation"
-    onclick={(event) => event.target === event.currentTarget && onclose()}
+    onclick={(event) =>
+      closable && event.target === event.currentTarget && onclose()}
   >
     <div
       class:wide
@@ -30,9 +33,11 @@
     >
       <header>
         <h2>{title}</h2>
-        <button class="icon-btn" aria-label="Close" onclick={onclose}
-          ><X size={18} /></button
-        >
+        {#if closable}
+          <button class="icon-btn" aria-label="Close" onclick={onclose}
+            ><X size={18} /></button
+          >
+        {/if}
       </header>
       <div class="body">{@render children()}</div>
     </div>

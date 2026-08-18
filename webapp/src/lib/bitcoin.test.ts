@@ -7,6 +7,7 @@ import {
   deriveAddress,
   dustThresholdForAddress,
   finalizePsbt,
+  processSignedPsbt,
   validateXpub,
 } from './bitcoin'
 import type { AccountType, UtxoRecord, WalletAccount } from './types'
@@ -214,6 +215,125 @@ describe('Bitcoin transaction construction', () => {
 
     expect(finalized.fee).toBe(1_000)
     expect(finalized.txid).toMatch(/^[0-9a-f]{64}$/)
+  })
+
+  it('preserves and validates a PSBT when only one of two inputs is signed', async () => {
+    const secondAddress = deriveAddress(account, 0, 1)
+    const secondInput: UtxoRecord = {
+      ...input,
+      id: `${'11'.repeat(32)}:1`,
+      txid: '11'.repeat(32),
+      vout: 1,
+      value: 50_000,
+      address: secondAddress.address,
+      path: secondAddress.path,
+      index: 1,
+    }
+    const unsigned = await createPsbt({
+      network: 'Mainnet',
+      inputs: [input, secondInput],
+      recipients: [
+        { id: 'recipient', address: recipientAddress.address, amount: 40_000 },
+      ],
+      change: {
+        address: changeAddress.address,
+        amount: 109_000,
+        path: changeAddress.path,
+        accountType: account.type,
+        xpub: account.xpub,
+        fingerprint: account.fingerprint,
+      },
+      feeRate: 7,
+      fetchTxHex: async () => {
+        throw new Error('SegWit inputs must not fetch a previous transaction')
+      },
+    })
+    const partial = bitcoin.Psbt.fromBase64(unsigned.psbt, {
+      network: bitcoin.networks.bitcoin,
+    })
+    partial.signInputHD(1, root)
+
+    const processed = processSignedPsbt(
+      partial.toBase64(),
+      'Mainnet',
+      unsigned.psbt,
+    )
+
+    expect(processed.signedInputs).toBe(1)
+    expect(processed.totalInputs).toBe(2)
+    expect(processed.transaction).toBeNull()
+    const preserved = bitcoin.Psbt.fromBase64(processed.psbt, {
+      network: bitcoin.networks.bitcoin,
+    })
+    expect(preserved.data.inputs[0].partialSig).toBeUndefined()
+    expect(preserved.data.inputs[1].partialSig).toHaveLength(1)
+    expect(() =>
+      finalizePsbt(processed.psbt, 'Mainnet', unsigned.psbt),
+    ).toThrow('partially signed (1 of 2 inputs carry signatures)')
+
+    const completed = bitcoin.Psbt.fromBase64(processed.psbt, {
+      network: bitcoin.networks.bitcoin,
+    })
+    completed.signInputHD(0, root)
+    const final = processSignedPsbt(
+      completed.toBase64(),
+      'Mainnet',
+      unsigned.psbt,
+    )
+    expect(final.signedInputs).toBe(2)
+    expect(final.transaction?.txid).toMatch(/^[0-9a-f]{64}$/)
+  })
+
+  it('does not mistake inconsistent sighash metadata for a partial PSBT', async () => {
+    const unsigned = await build()
+    const signed = bitcoin.Psbt.fromBase64(unsigned.psbt, {
+      network: bitcoin.networks.bitcoin,
+    })
+    signed.signAllInputsHD(root)
+    signed.updateInput(0, { sighashType: bitcoin.Transaction.SIGHASH_NONE })
+
+    expect(() =>
+      processSignedPsbt(signed.toBase64(), 'Mainnet', unsigned.psbt),
+    ).toThrow('Signed PSBT could not be finalized')
+  })
+
+  it('keeps a standard multisig PSBT partial until its threshold is met', () => {
+    const first = root.derive(20)
+    const secondRoot = bip32.fromSeed(
+      new Uint8Array(32).fill(2),
+      bitcoin.networks.bitcoin,
+    )
+    const second = secondRoot.derive(20)
+    const multisig = bitcoin.payments.p2ms({
+      m: 2,
+      pubkeys: [first.publicKey, second.publicKey],
+      network: bitcoin.networks.bitcoin,
+    })
+    const witness = bitcoin.payments.p2wsh({
+      redeem: multisig,
+      network: bitcoin.networks.bitcoin,
+    })
+    const unsigned = new bitcoin.Psbt({ network: bitcoin.networks.bitcoin })
+      .addInput({
+        hash: '22'.repeat(32),
+        index: 0,
+        witnessUtxo: { script: witness.output!, value: 100_000n },
+        witnessScript: multisig.output!,
+      })
+      .addOutput({ address: recipientAddress.address, value: 99_000n })
+    const expected = unsigned.toBase64()
+    unsigned.signInput(0, first)
+
+    const partial = processSignedPsbt(unsigned.toBase64(), 'Mainnet', expected)
+    expect(partial.signedInputs).toBe(1)
+    expect(partial.transaction).toBeNull()
+
+    const completed = bitcoin.Psbt.fromBase64(partial.psbt, {
+      network: bitcoin.networks.bitcoin,
+    })
+    completed.signInput(0, second)
+    const final = processSignedPsbt(completed.toBase64(), 'Mainnet', expected)
+    expect(final.transaction?.txid).toMatch(/^[0-9a-f]{64}$/)
   })
 
   it.each(['p2pkh', 'p2sh', 'p2wpkh', 'p2tr'] as const)(

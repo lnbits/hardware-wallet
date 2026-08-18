@@ -129,12 +129,12 @@ HwwInitData initHww(String password, String mnemonic, String passphrase, bool pe
   return {global.passwordVerifier, mnemonic, true};
 }
 
-void sendCommandOutput(String command, String commandData) {
+void sendCommandOutput(const String &command, const String &commandData) {
   commandOutToFile(command + " " + commandData);
   serialPrintlnSecure(command + " " + commandData);
 }
 
-void serialPrintlnSecure(String msg) {
+void serialPrintlnSecure(const String &msg) {
   String encryptedHex = encryptDataWithIv(global.dhe_shared_secret, msg);
   if (encryptedHex == "") {
     logInfo("Secure output aborted: RNG health check failed");
@@ -143,13 +143,13 @@ void serialPrintlnSecure(String msg) {
   Serial.println(encryptedHex);
 }
 
-void commandOutToFile(const String msg) {
+void commandOutToFile(const String &msg) {
   if (global.hasCommandsFile == true) {
     appendFile(SD, global.commandsOutFileName.c_str(), msg + "\n");
   }
 }
 
-Command decryptAndExtractCommand(String ecryptedData) {
+Command decryptAndExtractCommand(const String &ecryptedData) {
   String data = decryptDataWithIv(global.dhe_shared_secret, ecryptedData);
   return extractCommand(data);
 }

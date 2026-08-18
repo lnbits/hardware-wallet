@@ -1,4 +1,7 @@
-const size_t BOWSER_PSBT_MAX_BASE64_LENGTH = 65536;
+// Serialization preserves all PSBT metadata and the encrypted response is hex
+// encoded. Keep the accepted size within the smallest board's usable heap so a
+// coordinator cannot force an out-of-memory reboot during signing.
+const size_t BOWSER_PSBT_MAX_BASE64_LENGTH = 16384;
 const size_t BOWSER_PSBT_SERIAL_CHUNK_LENGTH = 64;
 const unsigned long BOWSER_PSBT_TRANSFER_TIMEOUT_MS = 2UL * 60UL * 1000UL;
 
@@ -45,6 +48,14 @@ void sendPsbtTransferResponse(const String &command, const String &data) {
   // These acknowledgements contain only status and indexes. Keeping them
   // plaintext avoids running the hardware RNG once for every 64-byte chunk.
   Serial.println(command + " " + data);
+}
+
+void sendPsbtReviewState(const String &data) {
+  if (global.hasCommandsFile) return;
+  // This contains only a stage and output index. The transaction details stay
+  // in the webapp, so no encryption or hardware-RNG work is needed merely to
+  // mirror the device's trusted-display progress.
+  Serial.println(COMMAND_PSBT_REVIEW + " " + data);
 }
 
 CommandResponse rejectPsbtTransfer(const String &command,
@@ -236,6 +247,9 @@ CommandResponse reviewAndSignPsbt(struct wally_psbt *psbt, struct ext_key *root,
     if (global.hasCommandsFile) writeOutputToFile(psbt, i, mainnet);
     printOutputDetails(psbt, root, i, mainnet);
     printPhysicalReviewControls();
+    sendPsbtReviewState(
+      "output " + String(i) + " " + String(psbt->num_outputs)
+    );
     if (!awaitPhysicalReviewApproval()) {
       sendCommandOutput(reviewResponseCommand, "review_rejected");
       return {"Operation canceled", "Output rejected"};
@@ -244,6 +258,7 @@ CommandResponse reviewAndSignPsbt(struct wally_psbt *psbt, struct ext_key *root,
   if (global.hasCommandsFile) writeFeeToFile(fee);
   printFeeDetails(fee);
   printPhysicalReviewControls();
+  sendPsbtReviewState("fee");
   if (!awaitPhysicalReviewApproval()) {
     sendCommandOutput(reviewResponseCommand, "review_rejected");
     return {"Operation canceled", "Fee rejected"};
@@ -276,6 +291,7 @@ CommandResponse reviewAndSignPsbt(struct wally_psbt *psbt, struct ext_key *root,
       return executeUnknown("Expected: " + COMMAND_SIGN_PSBT);
     }
     showConfirmCancelMessage("Confirm signing", "Outputs and fee reviewed");
+    sendPsbtReviewState("sign");
     if (!awaitPhysicalReviewApproval()) {
       sendCommandOutput(COMMAND_SIGN_PSBT, "review_rejected");
       return {"Operation canceled", "Signing rejected"};
@@ -287,7 +303,7 @@ CommandResponse reviewAndSignPsbt(struct wally_psbt *psbt, struct ext_key *root,
 void writeOutputToFile(const struct wally_psbt *psbt, size_t index, bool mainnet) {
   uint64_t amount = 0;
   readPsbtOutputAmount(psbt, index, &amount);
-  commandOutToFile("Output " + String(index) + "\n" +
+  commandOutToFile("Output " + String(index + 1) + "\n" +
     "Address: " + psbtOutputDescription(psbt, index, mainnet) + "\n" +
     "Amount: " + int64ToString(amount) + " sat");
 }

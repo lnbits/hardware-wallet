@@ -25,7 +25,8 @@
   <div class="password-control">
     <input
       {id}
-      type={visible ? 'text' : 'password'}
+      type="text"
+      class:concealed={!visible}
       bind:value
       {autocomplete}
       {placeholder}
@@ -77,6 +78,12 @@
   input:focus {
     border-color: var(--green);
     box-shadow: 0 0 0 3px rgba(16, 189, 49, 0.1);
+  }
+  input.concealed {
+    /* Bowser sends this device secret over its encrypted serial session; it is
+       not a website login. Keeping a text input visually masked prevents
+       Chromium Password Manager from saving or breach-checking it as one. */
+    -webkit-text-security: disc;
   }
   input[aria-invalid='true'] {
     border-color: var(--danger);

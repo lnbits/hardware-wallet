@@ -382,7 +382,51 @@ export const assertMatchingPsbt = (
     throw new Error('Signed PSBT does not match the transaction under review')
 }
 
-export const finalizePsbt = (
+const signatureValidator = (
+  publicKey: Uint8Array,
+  hash: Uint8Array,
+  signature: Uint8Array,
+) =>
+  publicKey.length === 32
+    ? ecc.verifySchnorr(hash, publicKey, signature)
+    : ecc.verify(hash, publicKey, signature)
+
+const inputHasSignature = (input: bitcoin.Psbt['data']['inputs'][number]) =>
+  !!input.finalScriptSig ||
+  !!input.finalScriptWitness ||
+  !!input.partialSig?.length ||
+  !!input.tapKeySig ||
+  !!input.tapScriptSig?.length
+
+const inputNeedsMoreSignatures = (
+  input: bitcoin.Psbt['data']['inputs'][number],
+) => {
+  if (!inputHasSignature(input)) return true
+  if (input.finalScriptSig || input.finalScriptWitness) return false
+
+  // bitcoinjs-lib can distinguish ordinary unsigned inputs itself, but a
+  // standard multisig input with fewer than m signatures fails finalization in
+  // the same way as malformed metadata. Count only signatures belonging to the
+  // advertised multisig script so corruption is not mislabeled as a harmless
+  // partially signed PSBT.
+  const multisigScript = input.witnessScript || input.redeemScript
+  if (!multisigScript) return false
+  try {
+    const payment = bitcoin.payments.p2ms({ output: multisigScript })
+    if (!payment.m || !payment.pubkeys) return false
+    const scriptPubkeys = new Set(payment.pubkeys.map(bytesToHex))
+    const matchingSignatures = new Set(
+      (input.partialSig || [])
+        .filter(({ pubkey }) => scriptPubkeys.has(bytesToHex(pubkey)))
+        .map(({ pubkey }) => bytesToHex(pubkey)),
+    )
+    return matchingSignatures.size < payment.m
+  } catch {
+    return false
+  }
+}
+
+export const processSignedPsbt = (
   base64: string,
   network: NetworkName,
   expectedBase64?: string,
@@ -397,29 +441,70 @@ export const finalizePsbt = (
       })
     : signed
   if (expectedBase64) psbt.combine(signed)
-  const validator = (
-    publicKey: Uint8Array,
-    hash: Uint8Array,
-    signature: Uint8Array,
-  ) =>
-    publicKey.length === 32
-      ? ecc.verifySchnorr(hash, publicKey, signature)
-      : ecc.verify(hash, publicKey, signature)
-
+  let signedInputs = 0
   psbt.data.inputs.forEach((input, index) => {
-    if (input.finalScriptSig || input.finalScriptWitness) return
-    if (!psbt.validateSignaturesOfInput(index, validator))
+    if (!inputHasSignature(input)) return
+    if (
+      !input.finalScriptSig &&
+      !input.finalScriptWitness &&
+      !psbt.validateSignaturesOfInput(index, signatureValidator)
+    )
       throw new Error(`Invalid signature for input ${index + 1}`)
-    psbt.finalizeInput(index)
+    signedInputs += 1
   })
-  const tx = psbt.extractTransaction()
-  return {
-    hex: tx.toHex(),
-    txid: tx.getId(),
-    vsize: tx.virtualSize(),
-    fee: Number(psbt.getFee()),
-    feeRate: psbt.getFeeRate(),
+
+  if (!signedInputs)
+    throw new Error('No signatures were returned by the signer')
+
+  const mergedBase64 = psbt.toBase64()
+  const incomplete = psbt.data.inputs.some(inputNeedsMoreSignatures)
+  if (incomplete)
+    return {
+      psbt: mergedBase64,
+      signedInputs,
+      totalInputs: psbt.txInputs.length,
+      transaction: null,
+    }
+
+  const finalizing = bitcoin.Psbt.fromBase64(mergedBase64, {
+    network: networkFor(network),
+  })
+  try {
+    finalizing.data.inputs.forEach((input, index) => {
+      if (!input.finalScriptSig && !input.finalScriptWitness)
+        finalizing.finalizeInput(index)
+    })
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error)
+    throw new Error(`Signed PSBT could not be finalized: ${detail}`)
   }
+
+  const tx = finalizing.extractTransaction()
+  return {
+    psbt: mergedBase64,
+    signedInputs,
+    totalInputs: psbt.txInputs.length,
+    transaction: {
+      hex: tx.toHex(),
+      txid: tx.getId(),
+      vsize: tx.virtualSize(),
+      fee: Number(finalizing.getFee()),
+      feeRate: finalizing.getFeeRate(),
+    },
+  }
+}
+
+export const finalizePsbt = (
+  base64: string,
+  network: NetworkName,
+  expectedBase64?: string,
+) => {
+  const processed = processSignedPsbt(base64, network, expectedBase64)
+  if (!processed.transaction)
+    throw new Error(
+      `PSBT is partially signed (${processed.signedInputs} of ${processed.totalInputs} inputs carry signatures)`,
+    )
+  return processed.transaction
 }
 
 export const parseTransaction = (hex: string) => {

@@ -163,7 +163,7 @@ void printOutputDetails(const struct wally_psbt *psbt, const struct ext_key *roo
   beginUiScreen(UiControls::ConfirmCancel);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setCursor(4, 2);
-  String heading = "Output " + String(index);
+  String heading = "Output " + String(index + 1);
   tft.setTextSize(uiFittedTextSize(heading, 2, tft.width() - 8));
   tft.println(heading);
   tft.setTextSize(uiTextSize(1));
@@ -242,25 +242,30 @@ bool validatePsbtPolicy(const struct wally_psbt *psbt, String *reason) {
       const bool hasRedeem = scriptType == WALLY_SCRIPT_TYPE_P2SH &&
         wally_psbt_get_input_redeem_script(psbt, i, redeem, sizeof(redeem), &redeemLength) == WALLY_OK &&
         redeemLength != 0 && wally_scriptpubkey_get_type(redeem, redeemLength, &redeemType) == WALLY_OK;
-      if (scriptType == WALLY_SCRIPT_TYPE_P2SH && hasRedeem &&
-          (redeemType == WALLY_SCRIPT_TYPE_P2WPKH || redeemType == WALLY_SCRIPT_TYPE_MULTISIG)) continue;
-      const bool wrappedWitness = scriptType == WALLY_SCRIPT_TYPE_P2WSH ||
-                                  (hasRedeem && redeemType == WALLY_SCRIPT_TYPE_P2WSH);
-      uint8_t witness[BOWSER_PSBT_MAX_REDEEM_SCRIPT_LEN] = {0};
-      size_t witnessLength = 0, witnessType = WALLY_SCRIPT_TYPE_UNKNOWN;
-      if (!wrappedWitness ||
-          wally_psbt_get_input_witness_script(psbt, i, witness, sizeof(witness), &witnessLength) != WALLY_OK ||
-          witnessLength == 0 || wally_scriptpubkey_get_type(witness, witnessLength, &witnessType) != WALLY_OK ||
-          witnessType != WALLY_SCRIPT_TYPE_MULTISIG) {
-        *reason = "Unsupported redeem script";
-        return false;
+      const bool supportedDirectRedeem =
+        scriptType == WALLY_SCRIPT_TYPE_P2SH && hasRedeem &&
+        (redeemType == WALLY_SCRIPT_TYPE_P2WPKH ||
+         redeemType == WALLY_SCRIPT_TYPE_MULTISIG);
+      if (!supportedDirectRedeem) {
+        const bool wrappedWitness = scriptType == WALLY_SCRIPT_TYPE_P2WSH ||
+                                    (hasRedeem && redeemType == WALLY_SCRIPT_TYPE_P2WSH);
+        uint8_t witness[BOWSER_PSBT_MAX_REDEEM_SCRIPT_LEN] = {0};
+        size_t witnessLength = 0, witnessType = WALLY_SCRIPT_TYPE_UNKNOWN;
+        if (!wrappedWitness ||
+            wally_psbt_get_input_witness_script(psbt, i, witness, sizeof(witness), &witnessLength) != WALLY_OK ||
+            witnessLength == 0 || wally_scriptpubkey_get_type(witness, witnessLength, &witnessType) != WALLY_OK ||
+            witnessType != WALLY_SCRIPT_TYPE_MULTISIG) {
+          *reason = "Unsupported redeem script";
+          return false;
+        }
       }
     }
 
-    // This libwally call validates that non-witness UTXOs match the prevout
-    // txid and that redeem/witness scripts hash to the advertised UTXO. Do it
-    // before displaying amounts so an untrusted coordinator cannot spoof the
-    // fee review with inconsistent metadata.
+    // Resolve the advertised script first, then ask libwally for the actual
+    // script code. The latter validates non-witness UTXO txids and proves that
+    // witness scripts hash to the advertised program. Both checks must happen
+    // before display so a coordinator cannot spoof fee review metadata and
+    // merely rely on signing to fail afterwards.
     uint8_t signingScript[BOWSER_PSBT_MAX_REDEEM_SCRIPT_LEN] = {0};
     size_t signingScriptLength = 0, signingScriptType = WALLY_SCRIPT_TYPE_UNKNOWN;
     if (wally_psbt_get_input_signing_script_len(psbt, i, &signingScriptLength) != WALLY_OK ||
@@ -275,6 +280,14 @@ bool validatePsbtPolicy(const struct wally_psbt *psbt, String *reason) {
          signingScriptType != WALLY_SCRIPT_TYPE_MULTISIG &&
          signingScriptType != WALLY_SCRIPT_TYPE_P2TR)) {
       *reason = "Invalid signing metadata";
+      return false;
+    }
+    size_t scriptCodeLength = 0;
+    if (wally_psbt_get_input_scriptcode_len(
+          psbt, i, signingScript, signingScriptLength, &scriptCodeLength
+        ) != WALLY_OK || scriptCodeLength == 0 ||
+        scriptCodeLength > BOWSER_PSBT_MAX_REDEEM_SCRIPT_LEN) {
+      *reason = "Invalid UTXO/script proof";
       return false;
     }
   }

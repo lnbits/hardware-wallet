@@ -11,15 +11,20 @@ type Pending = {
 
 export interface BowserEvents {
   confirmPair: (fingerprint: string) => Promise<boolean>
-  confirmOutput: (
-    output: UnsignedTransaction['outputs'][number],
-    index: number,
-    total: number,
-  ) => Promise<boolean>
-  confirmFee: (fee: number, feeRate: number) => Promise<boolean>
+  psbtReview: (step: PsbtReviewStep | null) => void
   log: (line: string) => void
   state: () => void
 }
+
+export type PsbtReviewStep =
+  | {
+      stage: 'output'
+      output: UnsignedTransaction['outputs'][number]
+      index: number
+      total: number
+    }
+  | { stage: 'fee'; fee: number; feeRate: number }
+  | { stage: 'sign' }
 
 const PUBLIC_COMMANDS = new Set([
   '/pair',
@@ -29,6 +34,7 @@ const PUBLIC_COMMANDS = new Set([
   '/ping',
   '/psbt-begin',
   '/psbt-chunk',
+  '/psbt-review',
 ])
 
 const PSBT_SERIAL_CHUNK_LENGTH = 64
@@ -51,6 +57,7 @@ export class BowserDevice implements DeviceAdapter {
   private sharedSecret: Uint8Array | null = null
   private privateKey: Uint8Array | null = null
   private pending = new Map<string, Pending>()
+  private signingTransaction: UnsignedTransaction | null = null
   private closing = false
   private events: BowserEvents
   private options: SerialOptions & {
@@ -177,6 +184,8 @@ export class BowserDevice implements DeviceAdapter {
     this.sharedSecret = null
     this.privateKey = null
     this.deviceId = ''
+    this.signingTransaction = null
+    this.events.psbtReview(null)
     this.reader = null
     this.writer = null
     this.readTask = null
@@ -246,6 +255,10 @@ export class BowserDevice implements DeviceAdapter {
             new Error('Bowser Wallet restarted during the operation'),
           )
       }
+      if (command === '/psbt-review') {
+        this.handlePsbtReview(data)
+        return
+      }
       const pending = this.pending.get(command)
       if (pending) {
         this.pending.delete(command)
@@ -257,6 +270,39 @@ export class BowserDevice implements DeviceAdapter {
         `Ignored serial data: ${error instanceof Error ? error.message : String(error)}`,
       )
     }
+  }
+
+  private handlePsbtReview(data: string) {
+    const transaction = this.signingTransaction
+    if (!transaction) return
+    const parts = data.split(' ')
+    if (parts[0] === 'output' && parts.length === 3) {
+      const index = Number(parts[1])
+      const total = Number(parts[2])
+      if (
+        Number.isInteger(index) &&
+        index >= 0 &&
+        index < transaction.outputs.length &&
+        Number.isInteger(total) &&
+        total === transaction.outputs.length
+      )
+        this.events.psbtReview({
+          stage: 'output',
+          output: transaction.outputs[index],
+          index,
+          total,
+        })
+      return
+    }
+    if (data === 'fee') {
+      this.events.psbtReview({
+        stage: 'fee',
+        fee: transaction.fee,
+        feeRate: transaction.feeRate,
+      })
+      return
+    }
+    if (data === 'sign') this.events.psbtReview({ stage: 'sign' })
   }
 
   private async request(
@@ -488,10 +534,6 @@ export class BowserDevice implements DeviceAdapter {
     await this.send('/help')
   }
 
-  async cancel() {
-    await this.send('/cancel')
-  }
-
   private async uploadPsbt(network: NetworkName, psbt: string) {
     const chunkCount = Math.ceil(psbt.length / PSBT_SERIAL_CHUNK_LENGTH)
     const started = await this.request(
@@ -526,43 +568,30 @@ export class BowserDevice implements DeviceAdapter {
   async sign(transaction: UnsignedTransaction) {
     if (!this.authenticated)
       throw new Error('Unlock Bowser Wallet before signing')
-    const accepted = await this.uploadPsbt(
-      transaction.network,
-      transaction.psbt,
-    )
-    if (accepted.trim() !== '1')
-      throw new Error(
-        accepted === 'review_rejected'
-          ? 'Transaction review rejected on Bowser Wallet'
-          : accepted || 'Device could not parse or review the PSBT',
+    this.signingTransaction = transaction
+    this.events.psbtReview(null)
+    try {
+      const accepted = await this.uploadPsbt(
+        transaction.network,
+        transaction.psbt,
       )
+      if (accepted.trim() !== '1')
+        throw new Error(
+          accepted === 'review_rejected'
+            ? 'Transaction review rejected on Bowser Wallet'
+            : accepted || 'Device could not parse or review the PSBT',
+        )
 
-    // The trusted review has already completed physically. Mirror the same
-    // outputs and fee in the webapp as a recap, but never send a command that
-    // advances the hardware display.
-    for (let index = 0; index < transaction.outputs.length; index++) {
-      if (
-        !(await this.events.confirmOutput(
-          transaction.outputs[index],
-          index,
-          transaction.outputs.length,
-        ))
-      ) {
-        await this.cancel()
-        throw new Error('Transaction canceled')
-      }
+      const signed = await this.request('/sign', [], true, 120_000)
+      const [count, psbt] = signed.split(' ')
+      if (count === 'review_rejected')
+        throw new Error('Transaction signing rejected on Bowser Wallet')
+      if (!psbt || Number(count) < 1)
+        throw new Error('No transaction inputs were signed')
+      return { psbt }
+    } finally {
+      this.signingTransaction = null
+      this.events.psbtReview(null)
     }
-    if (!(await this.events.confirmFee(transaction.fee, transaction.feeRate))) {
-      await this.cancel()
-      throw new Error('Transaction canceled')
-    }
-
-    const signed = await this.request('/sign', [], true, 120_000)
-    const [count, psbt] = signed.split(' ')
-    if (count === 'review_rejected')
-      throw new Error('Transaction signing rejected on Bowser Wallet')
-    if (!psbt || Number(count) < 1)
-      throw new Error('No transaction inputs were signed')
-    return { psbt }
   }
 }
