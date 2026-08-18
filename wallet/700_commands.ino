@@ -83,6 +83,15 @@ CommandResponse executeCommand(Command c) {
   if (c.cmd == COMMAND_SEND_PSBT)
     return executeSignPsbt(c.data);
 
+  if (c.cmd == COMMAND_PSBT_BEGIN)
+    return executePsbtTransferBegin(c.data);
+
+  if (c.cmd == COMMAND_PSBT_CHUNK)
+    return executePsbtTransferChunk(c.data);
+
+  if (c.cmd == COMMAND_PSBT_COMMIT)
+    return executePsbtTransferCommit(c.data);
+
   if (c.cmd == COMMAND_RESTORE)
     return executeRestore(c.data);
 

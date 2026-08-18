@@ -44,7 +44,7 @@ CommandResponse executeShowAddress(String addressData) {
   clearSensitiveBytes((uint8_t *)&derived, sizeof(derived));
   clearSensitiveBytes((uint8_t *)&root, sizeof(root));
   if (derivedAddress == "") {
-    return {"Unsupported path", "Use BIP44, BIP49 or BIP84"};
+    return {"Unsupported path", "Use BIP44, BIP49, BIP84 or BIP86"};
   }
 
   if (isEmptyParam(address)) {

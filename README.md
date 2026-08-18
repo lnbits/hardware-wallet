@@ -152,6 +152,17 @@ The web installer shows every planned target, but only available targets are
 selectable. Tagged builds compile and package only those available targets in
 CI; coming-soon profiles remain buildable locally for development.
 
+When testing through the local web installer, use the combined command so the
+installer cannot keep serving an older package after a new compile:
+
+```bash
+./tools/build_installer_firmware.sh <target>
+```
+
+See [the installer instructions](installer/README.md#build-and-package-local-firmware)
+for the supported target names and the command that rebuilds all available
+boards.
+
 ### Verify the firmware release hash
 
 Every tagged release compiles the firmware from that tag in GitHub Actions,
@@ -278,13 +289,14 @@ device asks for one final physical confirmation before producing a signature.
 `#`, the positive touch button, or a short button press accepts; `*`, the
 negative touch button, or a long press rejects.
 
-The signer currently accepts PSBT v0 with `SIGHASH_ALL`, standard P2PKH,
-P2WPKH, and P2SH-P2WPKH inputs, plus standard P2SH, P2WSH, and P2SH-P2WSH
-multisig. It preserves the coordinator's PSBT metadata and adds this device's
-partial signatures without finalizing the transaction. Taproot, PSBT v2,
+The signer accepts PSBT v0 and v2 with `SIGHASH_ALL` (or Taproot's equivalent
+`SIGHASH_DEFAULT`), standard P2PKH, P2WPKH, P2SH-P2WPKH, and BIP86 Taproot
+key-path inputs, plus standard P2SH, P2WSH, and P2SH-P2WSH multisig. It
+preserves the coordinator's PSBT version and metadata and adds this device's
+partial signatures without finalizing the PSBT. Taproot script-path spends,
 nonstandard scripts, and alternate sighash modes are rejected explicitly.
-Multisig outputs are reviewed as external outputs unless and until Bowser has a
-registered multisig wallet policy that can prove they are change.
+Multisig outputs are reviewed as external outputs unless and until Bowser has
+a registered multisig wallet policy that can prove they are change.
 
 Wallets created by current firmware are stored as an authenticated encrypted
 record. Separate encryption and authentication keys are derived from the

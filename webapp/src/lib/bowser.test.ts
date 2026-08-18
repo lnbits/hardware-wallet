@@ -5,6 +5,8 @@ import type { UnsignedTransaction } from './types'
 const device = () =>
   new BowserDevice({
     confirmPair: async () => true,
+    confirmOutput: async () => true,
+    confirmFee: async () => true,
     log: vi.fn(),
     state: vi.fn(),
   })
@@ -18,6 +20,12 @@ type CryptoInternals = {
 type TransportInternals = CryptoInternals & {
   writer: { write: (value: Uint8Array) => Promise<void> }
   handleLine: (line: string) => Promise<void>
+  request: (
+    command: string,
+    args?: Array<string | number>,
+    secure?: boolean,
+    timeout?: number,
+  ) => Promise<string>
   send: (
     command: string,
     args?: Array<string | number>,
@@ -44,6 +52,14 @@ describe('Bowser encrypted transport framing', () => {
     expect(() => bowser.decrypt('00')).toThrow(
       'Invalid encrypted response length',
     )
+  })
+
+  it('keeps maximum PSBT chunk frames within 255 serial bytes', () => {
+    const bowser = device() as unknown as CryptoInternals
+    bowser.sharedSecret = new Uint8Array(32).fill(7)
+    const encrypted = bowser.encrypt(`/psbt-chunk 1023 ${'A'.repeat(64)}`)
+
+    expect(encrypted.length + 1).toBeLessThanOrEqual(255)
   })
 
   it('passes a normalized 24-word mnemonic as one restore argument', async () => {
@@ -84,6 +100,26 @@ describe('Bowser encrypted transport framing', () => {
       15 * 60_000,
     )
     expect(bowser.walletConfigured).toBe(true)
+    expect(bowser.authenticated).toBe(true)
+  })
+
+  it('allows the slower C6 password KDF to finish', async () => {
+    const bowser = device()
+    const request = vi.fn().mockResolvedValue('1')
+    ;(
+      bowser as unknown as {
+        request: typeof request
+      }
+    ).request = request
+
+    await bowser.login('password', 'optional passphrase')
+
+    expect(request).toHaveBeenCalledWith(
+      '/password',
+      ['password', 'optional passphrase'],
+      true,
+      120_000,
+    )
     expect(bowser.authenticated).toBe(true)
   })
 
@@ -134,13 +170,26 @@ describe('Bowser encrypted transport framing', () => {
     )
   })
 
-  it('waits for device-only PSBT review without sending review advances', async () => {
-    const bowser = device()
+  it('shows the browser PSBT recap without sending hardware review advances', async () => {
+    const confirmOutput = vi.fn().mockResolvedValue(true)
+    const confirmFee = vi.fn().mockResolvedValue(true)
+    const bowser = new BowserDevice({
+      confirmPair: async () => true,
+      confirmOutput,
+      confirmFee,
+      log: vi.fn(),
+      state: vi.fn(),
+    })
     bowser.authenticated = true
-    const request = vi
-      .fn()
-      .mockResolvedValueOnce('1')
-      .mockResolvedValueOnce('2 signed-psbt')
+    const request = vi.fn(
+      async (command: string, args: Array<string | number> = []) => {
+        if (command === '/psbt-begin') return '1 3'
+        if (command === '/psbt-chunk') return `1 ${args[0]}`
+        if (command === '/psbt-commit') return '1'
+        if (command === '/sign') return '2 signed-psbt'
+        throw new Error(`Unexpected command: ${command}`)
+      },
+    )
     const send = vi.fn()
     ;(
       bowser as unknown as {
@@ -155,10 +204,12 @@ describe('Bowser encrypted transport framing', () => {
     ).send = send
     const transaction: UnsignedTransaction = {
       network: 'Mainnet',
-      psbt: 'unsigned-psbt',
-      inputs: [],
+      psbt: 'A'.repeat(130),
+      inputs: [
+        { accountType: 'p2tr' } as UnsignedTransaction['inputs'][number],
+      ],
       outputs: [
-        { address: 'bc1qrecipient', amount: 1000 },
+        { address: 'bc1precipient', amount: 1000, accountType: 'p2tr' },
         { address: 'bc1qchange', amount: 500, change: true },
       ],
       fee: 100,
@@ -171,29 +222,154 @@ describe('Bowser encrypted transport framing', () => {
     })
     expect(request).toHaveBeenNthCalledWith(
       1,
-      '/psbt',
-      ['Mainnet', 'unsigned-psbt'],
+      '/psbt-begin',
+      ['Mainnet', 130],
+      true,
+      20_000,
+    )
+    expect(request).toHaveBeenNthCalledWith(
+      2,
+      '/psbt-chunk',
+      [0, 'A'.repeat(64)],
+      true,
+      20_000,
+    )
+    expect(request).toHaveBeenNthCalledWith(
+      3,
+      '/psbt-chunk',
+      [1, 'A'.repeat(64)],
+      true,
+      20_000,
+    )
+    expect(request).toHaveBeenNthCalledWith(
+      4,
+      '/psbt-chunk',
+      [2, 'AA'],
+      true,
+      20_000,
+    )
+    expect(request).toHaveBeenNthCalledWith(
+      5,
+      '/psbt-commit',
+      [],
       true,
       15 * 60_000,
     )
-    expect(request).toHaveBeenNthCalledWith(2, '/sign', [], true, 120_000)
+    expect(request).toHaveBeenNthCalledWith(6, '/sign', [], true, 120_000)
+    expect(confirmOutput).toHaveBeenCalledTimes(2)
+    expect(confirmFee).toHaveBeenCalledWith(100, 2)
     expect(send).not.toHaveBeenCalled()
   })
 
-  it('reports hardware PSBT review rejection without requesting a signature', async () => {
+  it('can cancel from the browser recap without advancing device review', async () => {
+    const bowser = new BowserDevice({
+      confirmPair: async () => true,
+      confirmOutput: async () => false,
+      confirmFee: async () => true,
+      log: vi.fn(),
+      state: vi.fn(),
+    })
+    bowser.authenticated = true
+    const request = vi.fn(
+      async (command: string, args: Array<string | number> = []) => {
+        if (command === '/psbt-begin') return '1 1'
+        if (command === '/psbt-chunk') return `1 ${args[0]}`
+        if (command === '/psbt-commit') return '1'
+        throw new Error(`Unexpected command: ${command}`)
+      },
+    )
+    const send = vi.fn()
+    ;(
+      bowser as unknown as {
+        request: typeof request
+        send: typeof send
+      }
+    ).request = request
+    ;(
+      bowser as unknown as {
+        send: typeof send
+      }
+    ).send = send
+    const transaction = {
+      network: 'Testnet',
+      psbt: 'A'.repeat(64),
+      inputs: [],
+      outputs: [{ address: 'tb1qrecipient', amount: 1000 }],
+      fee: 100,
+      feeRate: 2,
+      vsize: 50,
+    } satisfies UnsignedTransaction
+
+    await expect(bowser.sign(transaction)).rejects.toThrow(
+      'Transaction canceled',
+    )
+    expect(send).toHaveBeenCalledOnce()
+    expect(send).toHaveBeenCalledWith('/cancel')
+    expect(request).toHaveBeenCalledTimes(3)
+  })
+
+  it('surfaces the firmware PSBT policy reason', async () => {
     const bowser = device()
     bowser.authenticated = true
-    const request = vi.fn().mockResolvedValue('review_rejected')
+    const request = vi
+      .fn()
+      .mockResolvedValueOnce('1 1')
+      .mockResolvedValueOnce('1 0')
+      .mockResolvedValueOnce('psbt_unsupported Input keypath missing')
     ;(
       bowser as unknown as {
         request: typeof request
       }
     ).request = request
     const transaction = {
-      network: 'Mainnet',
-      psbt: 'unsigned-psbt',
+      network: 'Testnet',
+      psbt: 'A'.repeat(64),
       inputs: [],
-      outputs: [],
+      outputs: [{ address: 'tb1qrecipient', amount: 1000 }],
+      fee: 100,
+      feeRate: 2,
+      vsize: 50,
+    } satisfies UnsignedTransaction
+
+    await expect(bowser.sign(transaction)).rejects.toThrow(
+      'psbt_unsupported Input keypath missing',
+    )
+  })
+
+  it('reports device PSBT review rejection without requesting a signature', async () => {
+    const bowser = new BowserDevice({
+      confirmPair: async () => true,
+      confirmOutput: async () => true,
+      confirmFee: async () => true,
+      log: vi.fn(),
+      state: vi.fn(),
+    })
+    bowser.authenticated = true
+    const request = vi.fn(
+      async (command: string, args: Array<string | number> = []) => {
+        if (command === '/psbt-begin') return '1 2'
+        if (command === '/psbt-chunk') return `1 ${args[0]}`
+        if (command === '/psbt-commit') return 'review_rejected'
+        throw new Error(`Unexpected command: ${command}`)
+      },
+    )
+    const send = vi.fn()
+    ;(
+      bowser as unknown as {
+        request: typeof request
+        send: typeof send
+      }
+    ).request = request
+    ;(
+      bowser as unknown as {
+        send: typeof send
+      }
+    ).send = send
+    const transaction = {
+      network: 'Mainnet',
+      psbt: 'A'.repeat(65),
+      inputs: [],
+      outputs: [{ address: 'bc1qrecipient', amount: 1000 }],
       fee: 100,
       feeRate: 2,
       vsize: 50,
@@ -202,13 +378,44 @@ describe('Bowser encrypted transport framing', () => {
     await expect(bowser.sign(transaction)).rejects.toThrow(
       'Transaction review rejected on Bowser Wallet',
     )
-    expect(request).toHaveBeenCalledOnce()
+    expect(request).toHaveBeenCalledTimes(4)
+    expect(send).not.toHaveBeenCalled()
+  })
+
+  it('stops before commit when a PSBT chunk is rejected', async () => {
+    const bowser = device()
+    bowser.authenticated = true
+    const request = vi
+      .fn()
+      .mockResolvedValueOnce('1 2')
+      .mockResolvedValueOnce('0 invalid_chunk')
+    ;(
+      bowser as unknown as {
+        request: typeof request
+      }
+    ).request = request
+    const transaction = {
+      network: 'Testnet',
+      psbt: 'A'.repeat(65),
+      inputs: [],
+      outputs: [],
+      fee: 100,
+      feeRate: 2,
+      vsize: 50,
+    } satisfies UnsignedTransaction
+
+    await expect(bowser.sign(transaction)).rejects.toThrow(
+      'PSBT chunk 1 was rejected: 0 invalid_chunk',
+    )
+    expect(request).toHaveBeenCalledTimes(2)
   })
 
   it('logs command names but never incoming secure or firmware-log payloads', async () => {
     const log = vi.fn()
     const bowser = new BowserDevice({
       confirmPair: async () => true,
+      confirmOutput: async () => true,
+      confirmFee: async () => true,
       log,
       state: vi.fn(),
     }) as unknown as TransportInternals
@@ -227,6 +434,8 @@ describe('Bowser encrypted transport framing', () => {
     const state = vi.fn()
     const bowser = new BowserDevice({
       confirmPair: async () => true,
+      confirmOutput: async () => true,
+      confirmFee: async () => true,
       log: vi.fn(),
       state,
     }) as unknown as TransportInternals & { walletConfigured: boolean }
@@ -241,10 +450,31 @@ describe('Bowser encrypted transport framing', () => {
     expect(bowser.walletConfigured).toBe(true)
   })
 
+  it('fails a pending operation when firmware announces a reboot', async () => {
+    const bowser = new BowserDevice({
+      confirmPair: async () => true,
+      confirmOutput: async () => true,
+      confirmFee: async () => true,
+      log: vi.fn(),
+      state: vi.fn(),
+    }) as unknown as TransportInternals
+    bowser.sharedSecret = new Uint8Array(32).fill(7)
+    bowser.writer = { write: vi.fn().mockResolvedValue(undefined) }
+
+    const pending = expect(
+      bowser.request('/psbt-commit', [], true, 10_000),
+    ).rejects.toThrow('Bowser Wallet restarted during the operation')
+    await bowser.handleLine('/password-clear 1')
+
+    await pending
+  })
+
   it('never logs outgoing passwords, passphrases, or mnemonics', async () => {
     const log = vi.fn()
     const bowser = new BowserDevice({
       confirmPair: async () => true,
+      confirmOutput: async () => true,
+      confirmFee: async () => true,
       log,
       state: vi.fn(),
     }) as unknown as TransportInternals

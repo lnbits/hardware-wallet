@@ -25,6 +25,216 @@ std::string readExamplePsbt() {
   return text.substr(valueBegin, end - valueBegin);
 }
 
+void psbtOutputStorageMatchesVersion() {
+  unsigned char script[WALLY_SCRIPTPUBKEY_P2WPKH_LEN] = {0x00, 0x14};
+  memset(script + 2, 0x42, sizeof(script) - 2);
+  struct wally_tx *tx = NULL;
+  assert(wally_tx_init_alloc(WALLY_TX_VERSION_2, 0, 0, 2, &tx) == WALLY_OK);
+  assert(wally_tx_add_raw_output(tx, 100000, script, sizeof(script), 0) == WALLY_OK);
+  assert(wally_tx_add_raw_output(tx, 189633, script, sizeof(script), 0) == WALLY_OK);
+  struct wally_psbt *psbt = NULL;
+  assert(wally_psbt_from_tx(tx, WALLY_PSBT_VERSION_0, 0, &psbt) == WALLY_OK);
+  assert(psbt != NULL && psbt->version == WALLY_PSBT_VERSION_0);
+  assert(psbt->tx != NULL && psbt->tx->num_outputs == 2);
+
+  const uint64_t expectedAmounts[] = {100000, 189633};
+  for (size_t i = 0; i < psbt->tx->num_outputs; ++i) {
+    uint64_t amount = 0;
+    assert(wally_psbt_get_output_amount(psbt, i, &amount) != WALLY_OK);
+    assert(wally_tx_output_get_satoshi(&psbt->tx->outputs[i], &amount) == WALLY_OK);
+    assert(amount == expectedAmounts[i]);
+    size_t scriptType = WALLY_SCRIPT_TYPE_UNKNOWN;
+    assert(wally_scriptpubkey_get_type(
+      psbt->tx->outputs[i].script,
+      psbt->tx->outputs[i].script_len,
+      &scriptType
+    ) == WALLY_OK);
+    assert(scriptType == WALLY_SCRIPT_TYPE_P2WPKH);
+  }
+
+  assert(wally_psbt_set_version(psbt, 0, WALLY_PSBT_VERSION_2) == WALLY_OK);
+  assert(psbt->version == WALLY_PSBT_VERSION_2 && psbt->tx == NULL);
+  for (size_t i = 0; i < psbt->num_outputs; ++i) {
+    size_t hasAmount = 0;
+    uint64_t amount = 0;
+    assert(wally_psbt_has_output_amount(psbt, i, &hasAmount) == WALLY_OK);
+    assert(hasAmount == 1);
+    assert(wally_psbt_get_output_amount(psbt, i, &amount) == WALLY_OK);
+    assert(amount == expectedAmounts[i]);
+    unsigned char actualScript[WALLY_SCRIPTPUBKEY_P2WPKH_LEN] = {0};
+    size_t actualScriptLength = 0;
+    assert(wally_psbt_get_output_script(
+      psbt, i, actualScript, sizeof(actualScript), &actualScriptLength
+    ) == WALLY_OK);
+    assert(actualScriptLength == sizeof(script));
+    assert(std::memcmp(actualScript, script, sizeof(script)) == 0);
+  }
+  wally_psbt_free(psbt);
+  wally_tx_free(tx);
+}
+
+void psbtV2SignsAndRoundTrips() {
+  const std::string encoded = readExamplePsbt();
+  struct wally_psbt *psbt = NULL;
+  assert(wally_psbt_from_base64_n(
+    encoded.c_str(), encoded.size(), WALLY_PSBT_PARSE_FLAG_STRICT, &psbt
+  ) == WALLY_OK);
+  assert(wally_psbt_set_version(psbt, 0, WALLY_PSBT_VERSION_2) == WALLY_OK);
+  assert(psbt->version == WALLY_PSBT_VERSION_2 && psbt->tx == NULL);
+
+  const char *mnemonic =
+    "link pool sudden unfair illness west sister helmet hard rally boring tool "
+    "avoid fantasy solar company favorite net cluster truly miss reduce margin memory";
+  unsigned char seed[BIP39_SEED_LEN_512] = {0};
+  struct ext_key root = {};
+  assert(bip39_mnemonic_to_seed512(mnemonic, NULL, seed, sizeof(seed)) == WALLY_OK);
+  assert(bip32_key_from_seed(seed, sizeof(seed), BIP32_VER_TEST_PRIVATE, 0, &root) == WALLY_OK);
+  assert(wally_psbt_signing_cache_enable(psbt, 0) == WALLY_OK);
+  assert(wally_psbt_sign_bip32(psbt, &root, EC_FLAG_GRIND_R) == WALLY_OK);
+  assert(wally_psbt_signing_cache_disable(psbt) == WALLY_OK);
+  for (size_t i = 0; i < psbt->num_inputs; ++i) {
+    size_t signatures = 0;
+    assert(wally_psbt_get_input_signatures_size(psbt, i, &signatures) == WALLY_OK);
+    assert(signatures > 0);
+  }
+
+  char *signedBase64 = NULL;
+  assert(wally_psbt_to_base64(psbt, 0, &signedBase64) == WALLY_OK);
+  struct wally_psbt *roundTripped = NULL;
+  assert(wally_psbt_from_base64(
+    signedBase64, WALLY_PSBT_PARSE_FLAG_STRICT, &roundTripped
+  ) == WALLY_OK);
+  assert(roundTripped->version == WALLY_PSBT_VERSION_2);
+  assert(roundTripped->num_inputs == psbt->num_inputs);
+  assert(roundTripped->num_outputs == psbt->num_outputs);
+  for (size_t i = 0; i < roundTripped->num_outputs; ++i) {
+    size_t hasAmount = 0;
+    assert(wally_psbt_has_output_amount(roundTripped, i, &hasAmount) == WALLY_OK);
+    assert(hasAmount == 1);
+    assert(roundTripped->outputs[i].script_len != 0);
+  }
+
+  wally_psbt_free(roundTripped);
+  wally_free_string(signedBase64);
+  wally_psbt_free(psbt);
+  wally_bzero(&root, sizeof(root));
+  wally_bzero(seed, sizeof(seed));
+}
+
+void bip86KeySpendSignsInBothPsbtVersions() {
+  const uint32_t path[] = {
+    86 | BIP32_INITIAL_HARDENED_CHILD,
+    1 | BIP32_INITIAL_HARDENED_CHILD,
+    0 | BIP32_INITIAL_HARDENED_CHILD,
+    0,
+    0,
+  };
+  unsigned char seed[32] = {0};
+  assert(wally_sha256(reinterpret_cast<const unsigned char *>("bowser bip86 signer"),
+                      19, seed, sizeof(seed)) == WALLY_OK);
+  struct ext_key root = {}, child = {};
+  assert(bip32_key_from_seed(seed, sizeof(seed), BIP32_VER_TEST_PRIVATE, 0, &root) == WALLY_OK);
+  assert(bip32_key_from_parent_path(
+    &root, path, 5, BIP32_FLAG_KEY_PRIVATE, &child
+  ) == WALLY_OK);
+
+  unsigned char tweaked[EC_PUBLIC_KEY_LEN] = {0};
+  assert(wally_ec_public_key_bip341_tweak(
+    child.pub_key, EC_PUBLIC_KEY_LEN, NULL, 0, 0, tweaked, sizeof(tweaked)
+  ) == WALLY_OK);
+  unsigned char inputScript[WALLY_SCRIPTPUBKEY_P2TR_LEN] = {0};
+  size_t inputScriptLength = 0;
+  assert(wally_witness_program_from_bytes_and_version(
+    tweaked + 1, EC_XONLY_PUBLIC_KEY_LEN, 1, 0,
+    inputScript, sizeof(inputScript), &inputScriptLength
+  ) == WALLY_OK);
+  assert(inputScriptLength == WALLY_SCRIPTPUBKEY_P2TR_LEN);
+
+  unsigned char outputScript[WALLY_SCRIPTPUBKEY_P2WPKH_LEN] = {0};
+  size_t outputScriptLength = 0;
+  assert(wally_witness_program_from_bytes(
+    child.pub_key, EC_PUBLIC_KEY_LEN, WALLY_SCRIPT_HASH160,
+    outputScript, sizeof(outputScript), &outputScriptLength
+  ) == WALLY_OK);
+
+  const uint32_t versions[] = {WALLY_PSBT_VERSION_0, WALLY_PSBT_VERSION_2};
+  for (uint32_t version : versions) {
+    struct wally_tx *tx = NULL;
+    unsigned char previousTxid[WALLY_TXHASH_LEN] = {0x86};
+    assert(wally_tx_init_alloc(WALLY_TX_VERSION_2, 0, 1, 1, &tx) == WALLY_OK);
+    assert(wally_tx_add_raw_input(tx, previousTxid, sizeof(previousTxid), 0,
+      WALLY_TX_SEQUENCE_FINAL, NULL, 0, NULL, 0) == WALLY_OK);
+    assert(wally_tx_add_raw_output(
+      tx, 90000, outputScript, outputScriptLength, 0
+    ) == WALLY_OK);
+
+    struct wally_psbt *psbt = NULL;
+    assert(wally_psbt_from_tx(tx, version, 0, &psbt) == WALLY_OK);
+    struct wally_tx_output *utxo = NULL;
+    assert(wally_tx_output_init_alloc(
+      100000, inputScript, inputScriptLength, &utxo
+    ) == WALLY_OK);
+    assert(wally_psbt_set_input_witness_utxo(psbt, 0, utxo) == WALLY_OK);
+    assert(wally_psbt_set_input_taproot_internal_key(
+      psbt, 0, child.pub_key + 1, EC_XONLY_PUBLIC_KEY_LEN
+    ) == WALLY_OK);
+    assert(wally_map_clear(&psbt->inputs[0].taproot_leaf_paths) == WALLY_OK);
+    assert(wally_map_clear(&psbt->inputs[0].taproot_leaf_hashes) == WALLY_OK);
+    assert(wally_map_init(
+      1, wally_keypath_xonly_public_key_verify,
+      &psbt->inputs[0].taproot_leaf_paths
+    ) == WALLY_OK);
+    assert(wally_map_init(
+      1, wally_merkle_path_xonly_public_key_verify,
+      &psbt->inputs[0].taproot_leaf_hashes
+    ) == WALLY_OK);
+    assert(wally_psbt_input_taproot_keypath_add(
+      &psbt->inputs[0], child.pub_key + 1, EC_XONLY_PUBLIC_KEY_LEN,
+      NULL, 0, root.hash160, BIP32_KEY_FINGERPRINT_LEN, path, 5
+    ) == WALLY_OK);
+
+    assert(wally_psbt_signing_cache_enable(psbt, 0) == WALLY_OK);
+    assert(wally_psbt_sign_bip32(psbt, &root, EC_FLAG_GRIND_R) == WALLY_OK);
+    assert(wally_psbt_signing_cache_disable(psbt) == WALLY_OK);
+    size_t taprootSignatureLength = 0, ecdsaSignatures = 0;
+    assert(wally_psbt_get_input_taproot_signature_len(
+      psbt, 0, &taprootSignatureLength
+    ) == WALLY_OK);
+    assert(taprootSignatureLength == EC_SIGNATURE_LEN);
+    assert(wally_psbt_get_input_signatures_size(psbt, 0, &ecdsaSignatures) == WALLY_OK);
+    assert(ecdsaSignatures == 0);
+
+    char *signedBase64 = NULL;
+    assert(wally_psbt_to_base64(psbt, 0, &signedBase64) == WALLY_OK);
+    struct wally_psbt *roundTripped = NULL;
+    assert(wally_psbt_from_base64(
+      signedBase64, WALLY_PSBT_PARSE_FLAG_STRICT, &roundTripped
+    ) == WALLY_OK);
+    assert(roundTripped->version == version);
+    assert(wally_psbt_finalize(roundTripped, 0) == WALLY_OK);
+    size_t finalized = 0;
+    assert(wally_psbt_is_finalized(roundTripped, &finalized) == WALLY_OK);
+    assert(finalized == 1);
+    struct wally_tx *signedTx = NULL;
+    assert(wally_psbt_extract(roundTripped, 0, &signedTx) == WALLY_OK);
+    size_t witnessItems = 0;
+    assert(wally_tx_get_input_witness_num_items(signedTx, 0, &witnessItems) == WALLY_OK);
+    assert(witnessItems == 1);
+
+    wally_tx_free(signedTx);
+    wally_psbt_free(roundTripped);
+    wally_free_string(signedBase64);
+    wally_tx_output_free(utxo);
+    wally_psbt_free(psbt);
+    wally_tx_free(tx);
+  }
+
+  wally_bzero(tweaked, sizeof(tweaked));
+  wally_bzero(&child, sizeof(child));
+  wally_bzero(&root, sizeof(root));
+  wally_bzero(seed, sizeof(seed));
+}
+
 void bip39AndBip32Work() {
   const char *mnemonic =
     "abandon abandon abandon abandon abandon abandon abandon abandon "
@@ -259,21 +469,47 @@ void standardMultisigPsbtSigns() {
   assert(wally_psbt_input_keypath_add(&psbt->inputs[0], child2.pub_key, EC_PUBLIC_KEY_LEN,
     root2.hash160, BIP32_KEY_FINGERPRINT_LEN, path, 6) == WALLY_OK);
 
-  size_t signingLength = 0;
-  assert(wally_psbt_get_input_signing_script_len(psbt, 0, &signingLength) == WALLY_OK);
-  std::vector<unsigned char> signingScript(signingLength);
-  assert(wally_psbt_get_input_signing_script(
-    psbt, 0, signingScript.data(), signingScript.size(), &signingLength
-  ) == WALLY_OK);
-  size_t signingType = WALLY_SCRIPT_TYPE_UNKNOWN;
-  assert(wally_scriptpubkey_get_type(
-    signingScript.data(), signingLength, &signingType
-  ) == WALLY_OK);
-  assert(signingType == WALLY_SCRIPT_TYPE_P2WSH);
-  assert(wally_psbt_sign_bip32(psbt, &root1, EC_FLAG_GRIND_R) == WALLY_OK);
-  size_t signatures = 0;
-  assert(wally_psbt_get_input_signatures_size(psbt, 0, &signatures) == WALLY_OK);
-  assert(signatures == 1);
+  const uint32_t versions[] = {WALLY_PSBT_VERSION_0, WALLY_PSBT_VERSION_2};
+  for (uint32_t version : versions) {
+    struct wally_psbt *candidate = NULL;
+    assert(wally_psbt_clone_alloc(psbt, 0, &candidate) == WALLY_OK);
+    assert(wally_psbt_set_version(candidate, 0, version) == WALLY_OK);
+    size_t signingLength = 0;
+    assert(wally_psbt_get_input_signing_script_len(
+      candidate, 0, &signingLength
+    ) == WALLY_OK);
+    std::vector<unsigned char> signingScript(signingLength);
+    assert(wally_psbt_get_input_signing_script(
+      candidate, 0, signingScript.data(), signingScript.size(), &signingLength
+    ) == WALLY_OK);
+    size_t signingType = WALLY_SCRIPT_TYPE_UNKNOWN;
+    assert(wally_scriptpubkey_get_type(
+      signingScript.data(), signingLength, &signingType
+    ) == WALLY_OK);
+    assert(signingType == WALLY_SCRIPT_TYPE_P2WSH);
+    assert(wally_psbt_sign_bip32(candidate, &root1, EC_FLAG_GRIND_R) == WALLY_OK);
+    size_t signatures = 0;
+    assert(wally_psbt_get_input_signatures_size(
+      candidate, 0, &signatures
+    ) == WALLY_OK);
+    assert(signatures == 1);
+
+    char *signedBase64 = NULL;
+    assert(wally_psbt_to_base64(candidate, 0, &signedBase64) == WALLY_OK);
+    struct wally_psbt *roundTripped = NULL;
+    assert(wally_psbt_from_base64(
+      signedBase64, WALLY_PSBT_PARSE_FLAG_STRICT, &roundTripped
+    ) == WALLY_OK);
+    assert(roundTripped->version == version);
+    assert(roundTripped->inputs[0].keypaths.num_items == 2);
+    assert(wally_psbt_get_input_signatures_size(
+      roundTripped, 0, &signatures
+    ) == WALLY_OK);
+    assert(signatures == 1);
+    wally_psbt_free(roundTripped);
+    wally_free_string(signedBase64);
+    wally_psbt_free(candidate);
+  }
 
   wally_tx_output_free(utxo);
   wally_psbt_free(psbt);
@@ -293,6 +529,9 @@ int main() {
   bip39AndBip32Work();
   walletStorageKdfIsCompatible();
   existingTestnetXpubIsCompatible();
+  psbtOutputStorageMatchesVersion();
+  psbtV2SignsAndRoundTrips();
+  bip86KeySpendSignsInBothPsbtVersions();
   psbtSigningPreservesMetadata();
   standardMultisigPsbtSigns();
   wally_cleanup(0);

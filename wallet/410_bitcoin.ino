@@ -100,7 +100,8 @@ bool standardPathMatchesNetwork(const String &path, bool mainnet) {
     components[0] == BIP32_INITIAL_HARDENED_CHILD + 44 ||
     components[0] == BIP32_INITIAL_HARDENED_CHILD + 48 ||
     components[0] == BIP32_INITIAL_HARDENED_CHILD + 49 ||
-    components[0] == BIP32_INITIAL_HARDENED_CHILD + 84;
+    components[0] == BIP32_INITIAL_HARDENED_CHILD + 84 ||
+    components[0] == BIP32_INITIAL_HARDENED_CHILD + 86;
   return standardPurpose &&
          components[1] == BIP32_INITIAL_HARDENED_CHILD + (mainnet ? 0 : 1);
 }
@@ -160,6 +161,27 @@ String rootFingerprint(const struct ext_key *root) {
   return bytesToHexString(root->hash160, BIP32_KEY_FINGERPRINT_LEN);
 }
 
+bool p2trKeySpendScriptFromPublicKey(
+  const uint8_t *publicKey,
+  size_t publicKeyLength,
+  uint8_t *script,
+  size_t scriptCapacity,
+  size_t *scriptLength
+) {
+  uint8_t tweaked[EC_PUBLIC_KEY_LEN] = {0};
+  const bool success =
+    wally_ec_public_key_bip341_tweak(
+      publicKey, publicKeyLength, NULL, 0, 0,
+      tweaked, sizeof(tweaked)
+    ) == WALLY_OK &&
+    wally_witness_program_from_bytes_and_version(
+      tweaked + 1, EC_XONLY_PUBLIC_KEY_LEN, 1, 0,
+      script, scriptCapacity, scriptLength
+    ) == WALLY_OK;
+  clearSensitiveBytes(tweaked, sizeof(tweaked));
+  return success;
+}
+
 bool scriptForSingleKeyPath(
   const uint8_t *publicKey,
   const String &path,
@@ -176,6 +198,12 @@ bool scriptForSingleKeyPath(
       publicKey, EC_PUBLIC_KEY_LEN, WALLY_SCRIPT_HASH160,
       script, scriptCapacity, scriptLength
     ) == WALLY_OK;
+  }
+
+  if (purpose == BIP32_INITIAL_HARDENED_CHILD + 86) {
+    return p2trKeySpendScriptFromPublicKey(
+      publicKey, EC_PUBLIC_KEY_LEN, script, scriptCapacity, scriptLength
+    );
   }
 
   uint8_t witness[WALLY_SEGWIT_V0_ADDRESS_PUBKEY_MAX_LEN] = {0};

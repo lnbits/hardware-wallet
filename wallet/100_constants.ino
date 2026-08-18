@@ -13,11 +13,13 @@ const String COMMAND_PASSWORD_CLEAR = "/password-clear";
 const String COMMAND_ADDRESS = "/address";
 const String COMMAND_SEED = "/seed";
 const String COMMAND_SEND_PSBT = "/psbt";
+const String COMMAND_PSBT_BEGIN = "/psbt-begin";
+const String COMMAND_PSBT_CHUNK = "/psbt-chunk";
+const String COMMAND_PSBT_COMMIT = "/psbt-commit";
 const String COMMAND_SIGN_PSBT = "/sign";
 const String COMMAND_XPUB = "/xpub";
 const String COMMAND_TRNG = "/trng";
-// Deprecated compatibility input. It is ignored after physical PSBT review
-// and can never advance a trusted-display screen.
+// Legacy WebSerial review input. SD review always uses physical controls.
 const String COMMAND_CONFIRM_NEXT = "/confirm-next";
 const String COMMAND_CANCEL = "/cancel";
 const String COMMAND_PAIR = "/pair";

@@ -1,10 +1,75 @@
 const size_t BOWSER_PSBT_MAX_REDEEM_SCRIPT_LEN = 520;
+const size_t BOWSER_PSBT_MAX_PATH_COMPONENTS = 8;
+const uint64_t BOWSER_PSBT_IN_TAP_MERKLE_ROOT = 0x18;
+
+bool taprootKeypathsHaveNoLeaves(const struct wally_map *leafHashes) {
+  if (leafHashes == NULL) return false;
+  for (size_t i = 0; i < leafHashes->num_items; i++) {
+    if (leafHashes->items[i].value_len != 0) return false;
+  }
+  return true;
+}
+
+bool readBip86InternalKey(const struct wally_psbt *psbt, size_t index,
+                          uint8_t internalKey[EC_XONLY_PUBLIC_KEY_LEN]) {
+  if (psbt == NULL || index >= psbt->num_inputs) return false;
+  const struct wally_psbt_input *input = &psbt->inputs[index];
+  size_t internalKeyLength = 0;
+  return input->taproot_leaf_paths.num_items != 0 &&
+         input->taproot_leaf_paths.num_items == input->taproot_leaf_hashes.num_items &&
+         taprootKeypathsHaveNoLeaves(&input->taproot_leaf_hashes) &&
+         input->taproot_leaf_signatures.num_items == 0 &&
+         input->taproot_leaf_scripts.num_items == 0 &&
+         wally_map_get_integer(
+           &input->psbt_fields, BOWSER_PSBT_IN_TAP_MERKLE_ROOT
+         ) == NULL &&
+         wally_psbt_get_input_taproot_internal_key(
+           psbt, index, internalKey, EC_XONLY_PUBLIC_KEY_LEN, &internalKeyLength
+         ) == WALLY_OK &&
+         internalKeyLength == EC_XONLY_PUBLIC_KEY_LEN;
+}
+
+bool psbtInputIsBip86KeySpend(const struct wally_psbt *psbt, size_t index,
+                              const uint8_t *utxoScript, size_t utxoScriptLength) {
+  uint8_t internalKey[EC_XONLY_PUBLIC_KEY_LEN] = {0};
+  uint8_t expected[WALLY_SCRIPTPUBKEY_P2TR_LEN] = {0};
+  size_t expectedLength = 0;
+  const bool matches = readBip86InternalKey(psbt, index, internalKey) &&
+    p2trKeySpendScriptFromPublicKey(
+      internalKey, sizeof(internalKey), expected, sizeof(expected), &expectedLength
+    ) && expectedLength == utxoScriptLength &&
+    memcmp(expected, utxoScript, utxoScriptLength) == 0;
+  clearSensitiveBytes(internalKey, sizeof(internalKey));
+  clearSensitiveBytes(expected, sizeof(expected));
+  return matches;
+}
+
+bool readPsbtOutputAmount(const struct wally_psbt *psbt, size_t index,
+                          uint64_t *amount) {
+  if (psbt == NULL || amount == NULL || index >= psbt->num_outputs) return false;
+  if (psbt->version == WALLY_PSBT_VERSION_0) {
+    // PSBT v0 output amounts live in the global unsigned transaction.
+    return psbt->tx != NULL && index < psbt->tx->num_outputs &&
+           wally_tx_output_get_satoshi(&psbt->tx->outputs[index], amount) == WALLY_OK;
+  }
+  if (psbt->version == WALLY_PSBT_VERSION_2) {
+    // PSBT v2 stores the amount in each output map. Require the field to be
+    // present rather than treating libwally's zero-initialized value as real.
+    size_t hasAmount = 0;
+    return wally_psbt_has_output_amount(psbt, index, &hasAmount) == WALLY_OK &&
+           hasAmount == 1 &&
+           wally_psbt_get_output_amount(psbt, index, amount) == WALLY_OK;
+  }
+  return false;
+}
 
 bool readPsbtOutput(const struct wally_psbt *psbt, size_t index,
                     uint8_t *script, size_t capacity, size_t *scriptLength,
                     uint64_t *amount) {
-  return wally_psbt_get_output_script(psbt, index, script, capacity, scriptLength) == WALLY_OK &&
-         wally_psbt_get_output_amount(psbt, index, amount) == WALLY_OK;
+  return readPsbtOutputAmount(psbt, index, amount) &&
+         wally_psbt_get_output_script(
+           psbt, index, script, capacity, scriptLength
+         ) == WALLY_OK;
 }
 
 String psbtOutputDescription(const struct wally_psbt *psbt, size_t index, bool mainnet) {
@@ -20,28 +85,47 @@ String psbtOutputDescription(const struct wally_psbt *psbt, size_t index, bool m
 
 bool psbtOutputIsSingleSigChange(const struct wally_psbt *psbt, size_t index,
                                  const struct ext_key *root) {
-  if (index >= psbt->num_outputs || psbt->outputs[index].keypaths.num_items != 1) return false;
+  uint8_t actual[WALLY_SCRIPTPUBKEY_OP_RETURN_MAX_LEN] = {0};
+  size_t actualLength = 0;
+  uint64_t ignoredAmount = 0;
+  if (index >= psbt->num_outputs ||
+      !readPsbtOutput(psbt, index, actual, sizeof(actual), &actualLength, &ignoredAmount)) return false;
+  size_t scriptType = WALLY_SCRIPT_TYPE_UNKNOWN;
+  if (wally_scriptpubkey_get_type(actual, actualLength, &scriptType) != WALLY_OK) return false;
+  const bool taproot = scriptType == WALLY_SCRIPT_TYPE_P2TR;
+  const struct wally_map *keypaths = taproot
+    ? &psbt->outputs[index].taproot_leaf_paths
+    : &psbt->outputs[index].keypaths;
+  if (keypaths->num_items != 1 ||
+      (taproot &&
+       (psbt->outputs[index].taproot_tree.num_items != 0 ||
+        !taprootKeypathsHaveNoLeaves(&psbt->outputs[index].taproot_leaf_hashes)))) return false;
+
   struct ext_key derived = {};
   size_t found = 0;
   if (wally_map_keypath_get_bip32_public_key_from(
-        &psbt->outputs[index].keypaths, 0, root, &derived, &found) != WALLY_OK || found == 0) {
+        keypaths, 0, root, &derived, &found) != WALLY_OK || found == 0) {
     clearSensitiveBytes((uint8_t *)&derived, sizeof(derived));
     return false;
   }
 
-  uint8_t actual[WALLY_SCRIPTPUBKEY_OP_RETURN_MAX_LEN] = {0};
-  size_t actualLength = 0;
-  uint64_t ignoredAmount = 0;
-  if (!readPsbtOutput(psbt, index, actual, sizeof(actual), &actualLength, &ignoredAmount)) {
-    clearSensitiveBytes((uint8_t *)&derived, sizeof(derived));
-    return false;
-  }
-  size_t scriptType = WALLY_SCRIPT_TYPE_UNKNOWN;
-  wally_scriptpubkey_get_type(actual, actualLength, &scriptType);
-  uint8_t expected[WALLY_SCRIPTPUBKEY_P2PKH_LEN] = {0};
+  uint8_t expected[WALLY_SCRIPTPUBKEY_P2TR_LEN] = {0};
   size_t expectedLength = 0;
   bool built = false;
-  if (scriptType == WALLY_SCRIPT_TYPE_P2PKH) {
+  if (taproot) {
+    uint8_t internalKey[EC_XONLY_PUBLIC_KEY_LEN] = {0};
+    size_t internalKeyLength = 0;
+    built = wally_psbt_get_output_taproot_internal_key(
+              psbt, index, internalKey, sizeof(internalKey), &internalKeyLength
+            ) == WALLY_OK &&
+            internalKeyLength == sizeof(internalKey) &&
+            memcmp(internalKey, derived.pub_key + 1, sizeof(internalKey)) == 0 &&
+            p2trKeySpendScriptFromPublicKey(
+              derived.pub_key, EC_PUBLIC_KEY_LEN,
+              expected, sizeof(expected), &expectedLength
+            );
+    clearSensitiveBytes(internalKey, sizeof(internalKey));
+  } else if (scriptType == WALLY_SCRIPT_TYPE_P2PKH) {
     built = wally_scriptpubkey_p2pkh_from_bytes(
       derived.pub_key, EC_PUBLIC_KEY_LEN, WALLY_SCRIPT_HASH160,
       expected, sizeof(expected), &expectedLength) == WALLY_OK;
@@ -93,7 +177,7 @@ void printOutputDetails(const struct wally_psbt *psbt, const struct ext_key *roo
   tft.println(description);
   tft.setTextSize(uiTextSize(1));
   uint64_t amount = 0;
-  wally_psbt_get_output_amount(psbt, index, &amount);
+  readPsbtOutputAmount(psbt, index, &amount);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.println("");
   tft.println("Amount:");
@@ -105,8 +189,10 @@ void printOutputDetails(const struct wally_psbt *psbt, const struct ext_key *roo
 }
 
 bool validatePsbtPolicy(const struct wally_psbt *psbt, String *reason) {
-  if (psbt == NULL || psbt->version != WALLY_PSBT_VERSION_0) {
-    *reason = "Only PSBT v0 supported";
+  if (psbt == NULL ||
+      (psbt->version != WALLY_PSBT_VERSION_0 &&
+       psbt->version != WALLY_PSBT_VERSION_2)) {
+    *reason = "Only PSBT v0/v2 supported";
     return false;
   }
   if (psbt->num_inputs == 0 || psbt->num_inputs > 64 ||
@@ -127,10 +213,6 @@ bool validatePsbtPolicy(const struct wally_psbt *psbt, String *reason) {
       *reason = "Finalized input unsupported";
       return false;
     }
-    if (input->keypaths.num_items == 0) {
-      *reason = "Input keypath missing";
-      return false;
-    }
     const struct wally_tx_output *utxo = NULL;
     if (wally_psbt_get_input_best_utxo(psbt, i, &utxo) != WALLY_OK || utxo == NULL) {
       *reason = "Input UTXO missing";
@@ -141,8 +223,17 @@ bool validatePsbtPolicy(const struct wally_psbt *psbt, String *reason) {
     if (wally_tx_output_get_script(utxo, script, sizeof(script), &scriptLength) != WALLY_OK ||
         wally_scriptpubkey_get_type(script, scriptLength, &scriptType) != WALLY_OK ||
         (scriptType != WALLY_SCRIPT_TYPE_P2PKH && scriptType != WALLY_SCRIPT_TYPE_P2SH &&
-         scriptType != WALLY_SCRIPT_TYPE_P2WPKH && scriptType != WALLY_SCRIPT_TYPE_P2WSH)) {
+         scriptType != WALLY_SCRIPT_TYPE_P2WPKH && scriptType != WALLY_SCRIPT_TYPE_P2WSH &&
+         scriptType != WALLY_SCRIPT_TYPE_P2TR)) {
       *reason = "Unsupported input script";
+      return false;
+    }
+    if ((scriptType == WALLY_SCRIPT_TYPE_P2TR &&
+         !psbtInputIsBip86KeySpend(psbt, i, script, scriptLength)) ||
+        (scriptType != WALLY_SCRIPT_TYPE_P2TR && input->keypaths.num_items == 0)) {
+      *reason = scriptType == WALLY_SCRIPT_TYPE_P2TR
+        ? "Only BIP86 key spend supported"
+        : "Input keypath missing";
       return false;
     }
     if (scriptType == WALLY_SCRIPT_TYPE_P2SH || scriptType == WALLY_SCRIPT_TYPE_P2WSH) {
@@ -181,7 +272,8 @@ bool validatePsbtPolicy(const struct wally_psbt *psbt, String *reason) {
         (signingScriptType != WALLY_SCRIPT_TYPE_P2PKH &&
          signingScriptType != WALLY_SCRIPT_TYPE_P2WPKH &&
          signingScriptType != WALLY_SCRIPT_TYPE_P2WSH &&
-         signingScriptType != WALLY_SCRIPT_TYPE_MULTISIG)) {
+         signingScriptType != WALLY_SCRIPT_TYPE_MULTISIG &&
+         signingScriptType != WALLY_SCRIPT_TYPE_P2TR)) {
       *reason = "Invalid signing metadata";
       return false;
     }
@@ -193,7 +285,8 @@ bool validatePsbtPolicy(const struct wally_psbt *psbt, String *reason) {
     if (!readPsbtOutput(psbt, i, script, sizeof(script), &scriptLength, &amount) ||
         wally_scriptpubkey_get_type(script, scriptLength, &scriptType) != WALLY_OK ||
         (scriptType != WALLY_SCRIPT_TYPE_P2PKH && scriptType != WALLY_SCRIPT_TYPE_P2SH &&
-         scriptType != WALLY_SCRIPT_TYPE_P2WPKH && scriptType != WALLY_SCRIPT_TYPE_P2WSH)) {
+         scriptType != WALLY_SCRIPT_TYPE_P2WPKH && scriptType != WALLY_SCRIPT_TYPE_P2WSH &&
+         scriptType != WALLY_SCRIPT_TYPE_P2TR)) {
       *reason = "Unsupported output script";
       return false;
     }
@@ -206,7 +299,15 @@ bool validatePsbtNetworkKeypaths(const struct wally_psbt *psbt,
   const uint32_t expectedCoin = BIP32_INITIAL_HARDENED_CHILD + (mainnet ? 0 : 1);
   bool foundWalletKey = false;
   for (size_t inputIndex = 0; inputIndex < psbt->num_inputs; inputIndex++) {
-    const struct wally_map *keypaths = &psbt->inputs[inputIndex].keypaths;
+    const struct wally_tx_output *utxo = NULL;
+    size_t scriptType = WALLY_SCRIPT_TYPE_UNKNOWN;
+    if (wally_psbt_get_input_best_utxo(psbt, inputIndex, &utxo) != WALLY_OK ||
+        utxo == NULL ||
+        wally_scriptpubkey_get_type(utxo->script, utxo->script_len, &scriptType) != WALLY_OK) return false;
+    const bool taproot = scriptType == WALLY_SCRIPT_TYPE_P2TR;
+    const struct wally_map *keypaths = taproot
+      ? &psbt->inputs[inputIndex].taproot_leaf_paths
+      : &psbt->inputs[inputIndex].keypaths;
     size_t start = 0;
     while (start < keypaths->num_items) {
       struct ext_key derived = {};
@@ -214,21 +315,44 @@ bool validatePsbtNetworkKeypaths(const struct wally_psbt *psbt,
       const int result = wally_map_keypath_get_bip32_public_key_from(
         keypaths, start, root, &derived, &found
       );
-      clearSensitiveBytes((uint8_t *)&derived, sizeof(derived));
-      if (result != WALLY_OK) return false;
-      if (found == 0) break;
-      uint32_t path[BIP32_PATH_MAX_LEN] = {0};
+      if (result != WALLY_OK) {
+        clearSensitiveBytes((uint8_t *)&derived, sizeof(derived));
+        return false;
+      }
+      if (found == 0) {
+        clearSensitiveBytes((uint8_t *)&derived, sizeof(derived));
+        break;
+      }
+      // Standard Bowser paths use at most six components. Do not reserve
+      // libwally's protocol-wide 255-component maximum on the C6 task stack.
+      uint32_t path[BOWSER_PSBT_MAX_PATH_COMPONENTS] = {0};
       size_t pathLength = 0;
       if (wally_map_keypath_get_item_path(
-            keypaths, found - 1, path, BIP32_PATH_MAX_LEN, &pathLength
-          ) != WALLY_OK || pathLength < 2 || path[1] != expectedCoin ||
-          (path[0] != BIP32_INITIAL_HARDENED_CHILD + 44 &&
-           path[0] != BIP32_INITIAL_HARDENED_CHILD + 48 &&
-           path[0] != BIP32_INITIAL_HARDENED_CHILD + 49 &&
-           path[0] != BIP32_INITIAL_HARDENED_CHILD + 84)) {
+            keypaths, found - 1, path, BOWSER_PSBT_MAX_PATH_COMPONENTS, &pathLength
+          ) != WALLY_OK || pathLength < 2 ||
+          pathLength > BOWSER_PSBT_MAX_PATH_COMPONENTS || path[1] != expectedCoin ||
+          (taproot
+            ? path[0] != BIP32_INITIAL_HARDENED_CHILD + 86
+            : (path[0] != BIP32_INITIAL_HARDENED_CHILD + 44 &&
+               path[0] != BIP32_INITIAL_HARDENED_CHILD + 48 &&
+               path[0] != BIP32_INITIAL_HARDENED_CHILD + 49 &&
+               path[0] != BIP32_INITIAL_HARDENED_CHILD + 84))) {
+        clearSensitiveBytes((uint8_t *)&derived, sizeof(derived));
         clearSensitiveBytes((uint8_t *)path, sizeof(path));
         return false;
       }
+      if (taproot) {
+        uint8_t internalKey[EC_XONLY_PUBLIC_KEY_LEN] = {0};
+        const bool matches = readBip86InternalKey(psbt, inputIndex, internalKey) &&
+                             memcmp(internalKey, derived.pub_key + 1, sizeof(internalKey)) == 0;
+        clearSensitiveBytes(internalKey, sizeof(internalKey));
+        if (!matches) {
+          clearSensitiveBytes((uint8_t *)&derived, sizeof(derived));
+          clearSensitiveBytes((uint8_t *)path, sizeof(path));
+          return false;
+        }
+      }
+      clearSensitiveBytes((uint8_t *)&derived, sizeof(derived));
       clearSensitiveBytes((uint8_t *)path, sizeof(path));
       foundWalletKey = true;
       start = found;
@@ -248,7 +372,7 @@ bool calculatePsbtFee(const struct wally_psbt *psbt, uint64_t *fee) {
   }
   for (size_t i = 0; i < psbt->num_outputs; i++) {
     uint64_t amount = 0;
-    if (wally_psbt_get_output_amount(psbt, i, &amount) != WALLY_OK || UINT64_MAX - outputs < amount) return false;
+    if (!readPsbtOutputAmount(psbt, i, &amount) || UINT64_MAX - outputs < amount) return false;
     outputs += amount;
   }
   if (outputs > inputs) return false;

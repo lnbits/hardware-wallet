@@ -622,6 +622,22 @@
             'Only approve when both codes match.',
             'Codes match',
           ),
+        confirmOutput: (output, index, total) =>
+          ask(
+            `Reviewed output ${index + 1} of ${total}`,
+            `${amount(output.amount)} to ${output.change ? 'your change address' : output.address}`,
+            output.change
+              ? `${output.address} · approved on Bowser Wallet`
+              : 'This address was approved on the Bowser Wallet display.',
+            'Next',
+          ),
+        confirmFee: (fee, rate) =>
+          ask(
+            'Reviewed network fee',
+            amount(fee),
+            `${rate} sat/vB · approved on Bowser Wallet`,
+            'Continue to signing',
+          ),
         log: (line) => (serialLog = [...serialLog.slice(-149), line]),
         state: () => (deviceRevision += 1),
       })
@@ -1965,8 +1981,7 @@
                   <span class="empty-icon"><WalletCards /></span>
                   <h2>No {network} accounts yet</h2>
                   <p>
-                    Import a BIP44, 49, 84, or 86 xpub, or fetch BIP44, 49, or
-                    84 account data from Bowser Wallet.
+                    Import or fetch BIP44, 49, 84, or 86 account data.
                   </p>
                   <button
                     class="btn primary"
@@ -2696,8 +2711,7 @@
           ><option value="p2pkh">Legacy · BIP44</option><option value="p2sh"
             >Nested SegWit · BIP49</option
           ><option value="p2wpkh">Native SegWit · BIP84</option><option
-            value="p2tr"
-            disabled={accountForm.source === 'device'}>Taproot · BIP86</option
+            value="p2tr">Taproot · BIP86</option
           ></select
         >
       </div>
@@ -2849,19 +2863,10 @@
         ><span class="spacer"></span><button
           class="btn primary"
           onclick={signTransaction}
-          disabled={!deviceConnected ||
-            !!busy ||
-            unsignedTx.inputs.some((input) => input.accountType === 'p2tr') ||
-            unsignedTx.outputs.some((output) => output.accountType === 'p2tr')}
+          disabled={!deviceConnected || !!busy}
           ><KeyRound size={16} /> Sign with Bowser Wallet</button
         >
       </div>
-      {#if unsignedTx.inputs.some((input) => input.accountType === 'p2tr') || unsignedTx.outputs.some((output) => output.accountType === 'p2tr')}<div
-          class="callout warning"
-        >
-          Bowser Wallet does not sign Taproot transactions. Export this PSBT and
-          use a Taproot-capable signer, then import the signed PSBT below.
-        </div>{/if}
       <div class="divider"></div>
       <div class="field">
         <label for="signed-psbt">Import signed PSBT</label><textarea
