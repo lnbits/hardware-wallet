@@ -7,8 +7,9 @@ The installer loads the unmodified
 release from unpkg for every available board.
 
 Before changing this pin, verify connection and flashing on every available
-board. The T-Display and ESP32-3248S035C must continue to connect automatically
-without using their BOOT buttons. The other profiles are coming soon.
+board. The T-Display, ESP32-2432S028R / E32R28T, and ESP32-3248S035C must
+continue to connect automatically without using their BOOT buttons. The
+ESP32-3248S035R profile is coming soon.
 
 ## Build and package local firmware
 
@@ -21,7 +22,7 @@ installation is not required. It deliberately uses these target definitions:
 | Target | Status | ESP32 Arduino core | FQBN |
 | --- | --- | --- | --- |
 | `lilygo_tdisplay` | Available | `esp32:esp32@2.0.17` | `esp32:esp32:ttgo-lora32` |
-| `esp32_2432s028r` | **Coming soon** | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
+| `esp32_2432s028r` | Available | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
 | `esp32_3248s035r` | **Coming soon** | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
 | `esp32_3248s035c` | Available | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
 | `waveshare_esp32_c6_lcd_1_3` | Available | `esp32:esp32@3.3.11` | `esp32:esp32:esp32c6:CDCOnBoot=cdc` |
@@ -30,11 +31,12 @@ Use the combined build command when testing through the web installer:
 
 ```bash
 ./tools/build_installer_firmware.sh lilygo_tdisplay
+./tools/build_installer_firmware.sh esp32_2432s028r
 ./tools/build_installer_firmware.sh esp32_3248s035c
 ./tools/build_installer_firmware.sh waveshare_esp32_c6_lcd_1_3
 ```
 
-To rebuild all three boards currently offered by the installer, run:
+To rebuild all four boards currently offered by the installer, run:
 
 ```bash
 ./tools/build_installer_firmware.sh all

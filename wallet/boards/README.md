@@ -9,13 +9,17 @@ Release status:
 | Target | Status |
 | --- | --- |
 | `lilygo_tdisplay` | Available |
-| `esp32_2432s028r` | **Coming soon** |
+| `esp32_2432s028r` | Available |
 | `esp32_3248s035r` | **Coming soon** |
 | `esp32_3248s035c` | Available |
 | `waveshare_esp32_c6_lcd_1_3` | Available |
 
 Coming-soon profiles remain available for local development, but are not
 published by the web installer release workflow.
+
+The `esp32_2432s028r` profile also supports the LCDWIKI/Elecrow E32R28T board
+marked `2.8" LCD Display ESP32-32E 240x320 Resistance Touch`; its display,
+touch, backlight, and microSD wiring matches this profile.
 
 Each directory contains:
 
