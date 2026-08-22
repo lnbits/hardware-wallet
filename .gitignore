@@ -21,3 +21,13 @@ __pycache__/
 /libraries/TFT_eSPI/examples/
 /libraries/TFT_eSPI/library.json
 /libraries/TFT_eSPI/other stuff/
+
+# Arduino_GFX is vendored as runtime source only (QSPI + RM67162 subset).
+/libraries/Arduino_GFX/.gitattributes
+/libraries/Arduino_GFX/.github/
+/libraries/Arduino_GFX/.gitignore
+/libraries/Arduino_GFX/README.md
+/libraries/Arduino_GFX/gen_keywords.pl
+/libraries/Arduino_GFX/keywords.txt
+/libraries/Arduino_GFX/license.txt
+/libraries/Arduino_GFX/examples/
