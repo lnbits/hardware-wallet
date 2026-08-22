@@ -37,6 +37,20 @@ secp256k1, addresses, and PSBT parsing/signing/serialization. Build details and
 the pinned secp256k1-zkp revision are documented in `libwally/UPSTREAM.md`.
 The Bitcoin-only, English-only amalgamated build is shared by every board.
 
+## Arduino_GFX
+
+- Upstream: <https://github.com/moononournation/Arduino_GFX>
+- Version: 1.6.7
+- Runtime source modifications: `src/Arduino_GFX_Library.h` and `src/Arduino_GFX_Library.cpp`
+  trimmed to the QSPI + RM67162 subset; all display drivers except `Arduino_RM67162` and all
+  data bus drivers except `Arduino_ESP32QSPI`, `Arduino_HWSPI`, `Arduino_SWSPI`, and
+  `Arduino_Wire` removed to avoid compilation of platform-specific code not present in
+  ESP32 Arduino core 2.0.17.
+
+Used exclusively by the `lilygo_tdisplay_s3_amoled` target. All other targets continue to use
+TFT_eSPI. The `display_backends/arduino_gfx_rm67162.h` backend exposes a TFT_eSPI-compatible
+surface so application code requires no changes.
+
 ## Other dependencies
 
 ArduinoJson 6.19.0 matches its upstream source. QRCode is the modified
