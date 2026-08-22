@@ -104,7 +104,7 @@ arduino-cli upload --verbose \
   wallet
 ```
 
-For the ESP32-2432S028R touchscreen board *(coming soon)*:
+For the ESP32-2432S028R / E32R28T touchscreen board:
 
 ```bash
 ./tools/build_firmware.sh esp32_2432s028r
@@ -197,7 +197,7 @@ spread through the application as conditional compilation.
 | Target | Status | Display | Input | microSD |
 | --- | --- | --- | --- | --- |
 | `lilygo_tdisplay` | Available | LILYGO T-Display, 240×135 landscape | Two side buttons; optional 3×4 keyboard module | Optional module |
-| `esp32_2432s028r` | **Coming soon** | ESP32-2432S028R, 320×240 landscape | Resistive touchscreen with contextual on-screen controls and dice keypad | On-board |
+| `esp32_2432s028r` | Available | ESP32-2432S028R / E32R28T, 320×240 landscape | Resistive touchscreen with contextual on-screen controls and dice keypad | On-board |
 | `esp32_3248s035r` | **Coming soon** | ESP32-3248S035R, 480×320 landscape | Resistive touchscreen with contextual on-screen controls and dice keypad | On-board |
 | `esp32_3248s035c` | Available | ESP32-3248S035C, 480×320 landscape | Capacitive touchscreen with contextual on-screen controls and dice keypad | On-board |
 | `waveshare_esp32_c6_lcd_1_3` | Available | Waveshare ESP32-C6-LCD-1.3, 240×240 | BOOT: tap to accept/advance, hold to cancel/back | On-board |
@@ -212,7 +212,7 @@ target:
 | Target | Status | ESP32 Arduino core | FQBN |
 | --- | --- | --- | --- |
 | `lilygo_tdisplay` | Available | `esp32:esp32@2.0.17` | `esp32:esp32:ttgo-lora32` |
-| `esp32_2432s028r` | **Coming soon** | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
+| `esp32_2432s028r` | Available | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
 | `esp32_3248s035r` | **Coming soon** | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
 | `esp32_3248s035c` | Available | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
 | `waveshare_esp32_c6_lcd_1_3` | Available | `esp32:esp32@3.3.11` | `esp32:esp32:esp32c6:CDCOnBoot=cdc` |

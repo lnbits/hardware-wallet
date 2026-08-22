@@ -1,7 +1,8 @@
 #pragma once
 
-// Wiring reference:
+// Compatible wiring references:
 // https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/blob/main/PINS.md
+// https://www.lcdwiki.com/res/E32R28T/2.8inch_E32R28T_E32N28T_ESP32-32E_Demo_Instructions.pdf
 
 const BoardProfile BOARD = {
   "esp32_2432s028r",

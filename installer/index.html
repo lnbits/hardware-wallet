@@ -72,8 +72,8 @@
           <label for="firmware-target">Supported board</label>
           <select id="firmware-target">
             <option value="lilygo_tdisplay">LILYGO T-Display</option>
-            <option value="esp32_2432s028r" disabled>
-              ESP32-2432S028R touch — Coming soon
+            <option value="esp32_2432s028r">
+              ESP32-2432S028R / E32R28T resistive touch
             </option>
             <option value="esp32_3248s035r" disabled>
               ESP32-3248S035R resistive touch — Coming soon
@@ -180,6 +180,7 @@
       (() => {
         const supportedTargets = new Set([
           "lilygo_tdisplay",
+          "esp32_2432s028r",
           "esp32_3248s035c",
           "waveshare_esp32_c6_lcd_1_3",
         ]);

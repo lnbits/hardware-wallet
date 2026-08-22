@@ -6,7 +6,7 @@ usage() {
 Usage: tools/build_installer_firmware.sh <target|all> [version]
 
 Builds fresh firmware and replaces the matching local web-installer package.
-"all" builds the three boards currently offered by the installer.
+"all" builds the four boards currently offered by the installer.
 EOF
   exit 2
 }
@@ -20,7 +20,7 @@ case "${requested_target}" in
     targets=("${requested_target}")
     ;;
   all)
-    targets=(lilygo_tdisplay esp32_3248s035c waveshare_esp32_c6_lcd_1_3)
+    targets=(lilygo_tdisplay esp32_2432s028r esp32_3248s035c waveshare_esp32_c6_lcd_1_3)
     ;;
   *)
     usage
