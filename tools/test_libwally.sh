@@ -31,3 +31,9 @@ g++ -std=c++11 -Wall -Wextra -Werror -pedantic "${common_flags[@]}" \
   -o "${output_directory}/libwally_migration_test"
 cd "${repository_root}"
 "${output_directory}/libwally_migration_test"
+g++ -std=c++11 -Wall -Wextra -Werror -pedantic "${common_flags[@]}" \
+  -fsanitize=address,undefined -fno-omit-frame-pointer \
+  "${repository_root}/tests/psbt_signing_test.cpp" \
+  "${output_directory}/libwally.o" \
+  -o "${output_directory}/psbt_signing_test"
+"${output_directory}/psbt_signing_test"
