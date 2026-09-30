@@ -36,7 +36,7 @@ extern "C" {
 #include "esp_ota_ops.h"
 #include "esp_partition.h"
 
-#define BOWSER_FIRMWARE_VERSION "0.8.2"
+#define BOWSER_FIRMWARE_VERSION "0.8.3"
 
 fs::SPIFFSFS &FlashFS = SPIFFS;
 
