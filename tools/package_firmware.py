@@ -21,6 +21,10 @@ TARGETS = {
         "chip_family": "ESP32-C6",
         "bootloader_offset": 0x0,
     },
+    "lilygo_tdisplay_s3_amoled": {
+        "chip_family": "ESP32-S3",
+        "bootloader_offset": 0x0,
+    },
 }
 
 
