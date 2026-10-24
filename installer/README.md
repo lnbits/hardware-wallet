@@ -23,6 +23,7 @@ installation is not required. It deliberately uses these target definitions:
 | --- | --- | --- | --- |
 | `lilygo_tdisplay` | Available | `esp32:esp32@2.0.17` | `esp32:esp32:ttgo-lora32` |
 | `esp32_2432s028r` | Available | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
+| `esp32_2432s028r_2usb` | Available | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
 | `esp32_3248s035r` | **Coming soon** | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
 | `esp32_3248s035c` | Available | `esp32:esp32@2.0.17` | `esp32:esp32:esp32` |
 | `waveshare_esp32_c6_lcd_1_3` | Available | `esp32:esp32@3.3.11` | `esp32:esp32:esp32c6:CDCOnBoot=cdc` |
@@ -32,11 +33,12 @@ Use the combined build command when testing through the web installer:
 ```bash
 ./tools/build_installer_firmware.sh lilygo_tdisplay
 ./tools/build_installer_firmware.sh esp32_2432s028r
+./tools/build_installer_firmware.sh esp32_2432s028r_2usb
 ./tools/build_installer_firmware.sh esp32_3248s035c
 ./tools/build_installer_firmware.sh waveshare_esp32_c6_lcd_1_3
 ```
 
-To rebuild all four boards currently offered by the installer, run:
+To rebuild all five boards currently offered by the installer, run:
 
 ```bash
 ./tools/build_installer_firmware.sh all

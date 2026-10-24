@@ -75,6 +75,9 @@
             <option value="esp32_2432s028r">
               ESP32-2432S028R / E32R28T (2.8") resistive touch
             </option>
+            <option value="esp32_2432s028r_2usb">
+              ESP32-2432S028R (2.8") with micro USB and USB-C
+            </option>
             <option value="esp32_3248s035r" disabled>
               ESP32-3248S035R (3.5") resistive touch — Coming soon
             </option>
@@ -181,6 +184,7 @@
         const supportedTargets = new Set([
           "lilygo_tdisplay",
           "esp32_2432s028r",
+          "esp32_2432s028r_2usb",
           "esp32_3248s035c",
           "waveshare_esp32_c6_lcd_1_3",
         ]);
@@ -206,6 +210,10 @@
           esp32_2432s028r: {
             image: "assets/images/devices/touch.png",
             alt: "ESP32-2432S028R touchscreen board",
+          },
+          esp32_2432s028r_2usb: {
+            image: "assets/images/devices/touch.png",
+            alt: "ESP32-2432S028R touchscreen board with two USB ports",
           },
           esp32_3248s035r: {
             image: "assets/images/devices/touch.png",

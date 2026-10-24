@@ -10,6 +10,7 @@ Release status:
 | --- | --- |
 | `lilygo_tdisplay` | Available |
 | `esp32_2432s028r` | Available |
+| `esp32_2432s028r_2usb` | Available |
 | `esp32_3248s035r` | **Coming soon** |
 | `esp32_3248s035c` | Available |
 | `waveshare_esp32_c6_lcd_1_3` | Available |
@@ -20,6 +21,11 @@ published by the web installer release workflow.
 The `esp32_2432s028r` profile also supports the LCDWIKI/Elecrow E32R28T board
 marked `2.8" LCD Display ESP32-32E 240x320 Resistance Touch`; its display,
 touch, backlight, and microSD wiring matches this profile.
+
+ESP32-2432S028R boards with both a micro USB and a USB-C port use the same
+wiring with an ST7789 display controller in place of the ILI9341. Firmware
+built for `esp32_2432s028r` shows wrong colours on them; use
+`esp32_2432s028r_2usb` instead.
 
 Each directory contains:
 
